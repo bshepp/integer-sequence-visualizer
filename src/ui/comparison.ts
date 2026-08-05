@@ -100,7 +100,7 @@ export function drawEnsembleChart(
 export function buildComparisonBar(
   state: ComparisonState,
   onChange: () => void,
-): { el: HTMLElement; update(vizHasStats: boolean): void } {
+): { el: HTMLElement; update(vizHasStats: boolean): void; refresh(): void } {
   const el = document.createElement('div');
   el.className = 'comparison-bar';
 
@@ -159,6 +159,16 @@ export function buildComparisonBar(
       const opt = modeSel.querySelector<HTMLOptionElement>('option[value="ensemble"]')!;
       opt.disabled = !vizHasStats;
       if (!vizHasStats && state.mode === 'ensemble') { state.mode = 'off'; modeSel.value = 'off'; }
+    },
+    // Reflects `state` (mutated externally, e.g. by decoding a shared URL)
+    // back onto the controls. Needed because the selects/inputs only push
+    // changes into `state` on user interaction — they don't observe it.
+    refresh() {
+      modeSel.value = state.mode;
+      surrSel.value = state.surrogate;
+      seedInput.value = String(state.seed);
+      nInput.value = String(state.ensembleN);
+      flipBtn.hidden = state.mode !== 'flip';
     },
   };
 }

@@ -30,25 +30,6 @@ export function mountApp(root: HTMLElement): void {
   const comparison = defaultComparison();
   let currentRef: SeqRef | null = null;
 
-  // Apply URL hash state BEFORE building controls so picker, param controls,
-  // and the comparison bar all show the shared values. A garbage-but-decodable
-  // hash must not break mount: vizId is checked against the registry, params
-  // are merged over defaults, mode/surrogate fall back if unrecognized.
-  const initial = decodeState(location.hash);
-  if (initial) {
-    // Seed currentRef immediately: the initial redraw's syncUrl rewrites the
-    // hash before the async OEIS lookup resolves, and a failed lookup must not
-    // strip the shared ref (reload should be able to retry). applySeq
-    // re-derives an equal ref on successful load.
-    currentRef = initial.seqRef ?? null;
-    if (allVisualizers().some((v) => v.id === initial.vizId)) {
-      state.vizId = initial.vizId;
-      state.params = { ...defaultParams(getVisualizer(initial.vizId).params), ...initial.params };
-    }
-    if (MODES.includes(initial.mode)) comparison.mode = initial.mode;
-    if (SURROGATES.includes(initial.surrogate)) comparison.surrogate = initial.surrogate;
-    if (typeof initial.seed === 'number') comparison.seed = initial.seed;
-  }
   let ensembleCancel: { cancel(): void } | null = null;
   let ensembleBands: Record<string, Bands> | null = null;
   let ensembleKey = '';
@@ -197,12 +178,20 @@ export function mountApp(root: HTMLElement): void {
   });
   bar.el.appendChild(sweepBtn);
 
+  // The hash the app itself last wrote via syncUrl. The hashchange handler
+  // compares against this to ignore its own writes: replaceState shouldn't
+  // fire hashchange per spec, but browsers vary, and a redraw -> syncUrl ->
+  // hashchange -> re-apply -> redraw loop would be far worse than a stale view.
+  let lastHashWritten = '';
+
   function syncUrl(): void {
     try {
-      history.replaceState(null, '', '#' + encodeState({
+      const hash = '#' + encodeState({
         seqRef: currentRef, vizId: state.vizId, params: state.params,
         mode: comparison.mode, surrogate: comparison.surrogate, seed: comparison.seed,
-      }));
+      });
+      lastHashWritten = hash;
+      history.replaceState(null, '', hash);
     } catch {
       // history may be unavailable or restricted (e.g. sandboxed test envs)
     }
@@ -314,19 +303,57 @@ export function mountApp(root: HTMLElement): void {
     }
   }
 
-  window.addEventListener('resize', redraw);
-  redraw();
+  // Apply a decoded UrlState: shared by the startup call below AND the
+  // hashchange handler, so a share URL applies identically whether it's a
+  // cold load or a same-document navigation (pushing/replacing the hash
+  // doesn't reload the page, so startup-only decoding would miss it). A
+  // garbage-but-decodable hash must not break anything: vizId is checked
+  // against the registry, params are merged over defaults, mode/surrogate
+  // fall back if unrecognized, and decodeState itself returns null for
+  // anything that isn't valid encoded JSON (leaving current state untouched).
+  function applyHash(hash: string): void {
+    const decoded = decodeState(hash);
+    if (decoded) {
+      // Seed currentRef immediately: the redraw() below runs syncUrl before
+      // an async OEIS lookup resolves, and a failed lookup must not strip the
+      // shared ref (reload/re-share should still be able to retry it).
+      // applySeq re-derives an equal ref once the sequence actually loads.
+      currentRef = decoded.seqRef ?? null;
+      if (allVisualizers().some((v) => v.id === decoded.vizId)) {
+        state.vizId = decoded.vizId;
+        state.params = { ...defaultParams(getVisualizer(decoded.vizId).params), ...decoded.params };
+        picker.value = state.vizId;
+        rebuildParams();
+      }
+      if (MODES.includes(decoded.mode)) comparison.mode = decoded.mode;
+      if (SURROGATES.includes(decoded.surrogate)) comparison.surrogate = decoded.surrogate;
+      if (typeof decoded.seed === 'number') comparison.seed = decoded.seed;
+      bar.refresh();
+      bar.update(Boolean(getVisualizer(state.vizId).statistics));
+    }
+    redraw();
 
-  // Restore the shared sequence, if the URL carried one. currentRef was
-  // already seeded from the hash above; applySeq re-derives it on success.
-  const ref = initial?.seqRef;
-  if (ref?.kind === 'oeis') {
-    lookupById(ref.aNumber).then(applySeq).catch((e) => showError(e instanceof Error ? e.message : String(e)));
-  } else if (ref?.kind === 'formula') {
-    try { applySeq(sequenceFromFormula(ref.src, ref.count)); }
-    catch (e) { showError(e instanceof Error ? e.message : String(e)); }
-  } else if (ref?.kind === 'paste') {
-    try { applySeq({ terms: ref.terms.map(BigInt), name: 'Pasted sequence', offset: 0, source: 'paste' }); }
-    catch (e) { showError(e instanceof Error ? e.message : String(e)); }
+    // Restore the shared sequence, if this hash carried one.
+    const ref = decoded?.seqRef;
+    if (ref?.kind === 'oeis') {
+      lookupById(ref.aNumber).then(applySeq).catch((e) => showError(e instanceof Error ? e.message : String(e)));
+    } else if (ref?.kind === 'formula') {
+      try { applySeq(sequenceFromFormula(ref.src, ref.count)); }
+      catch (e) { showError(e instanceof Error ? e.message : String(e)); }
+    } else if (ref?.kind === 'paste') {
+      try { applySeq({ terms: ref.terms.map(BigInt), name: 'Pasted sequence', offset: 0, source: 'paste' }); }
+      catch (e) { showError(e instanceof Error ? e.message : String(e)); }
+    }
   }
+
+  window.addEventListener('resize', redraw);
+  window.addEventListener('hashchange', () => {
+    // Ignore echoes of our own syncUrl writes. Per spec, history.replaceState
+    // shouldn't fire hashchange at all, but that's not guaranteed across
+    // browsers — without this guard a self-inflicted event here would
+    // re-apply state, redraw, call syncUrl, and potentially repeat.
+    if (location.hash === lastHashWritten) return;
+    applyHash(location.hash);
+  });
+  applyHash(location.hash);
 }

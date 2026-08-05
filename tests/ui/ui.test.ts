@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { buildParamControls } from '../../src/ui/paramControls';
 import { buildSequencePanel } from '../../src/ui/sequencePanel';
 import { mountApp } from '../../src/ui/app';
@@ -7,6 +7,21 @@ import { PRESETS } from '../../src/sequence/presets';
 import { encodeState, decodeState, type UrlState } from '../../src/ui/urlState';
 import { clearSearchIndexCache } from '../../src/sequence/oeisClient';
 import type { ParamSpec } from '../../src/viz/types';
+
+// mountApp adds a window-level 'hashchange' listener and (correctly, for a
+// real page that mounts once) never removes it. jsdom shares a single
+// `window`/`location` across every test in this file, so every past
+// mountApp() call's listener is still live: dispatching 'hashchange' below
+// would otherwise also re-run every earlier test's app instance, whose own
+// redraw() -> syncUrl() can rewrite the shared location.hash mid-dispatch
+// and contaminate the test under test. Track every such listener so the
+// hash-navigation tests can strip them and observe only their own instance.
+const trackedHashchangeListeners: EventListenerOrEventListenerObject[] = [];
+const realWindowAddEventListener = window.addEventListener.bind(window);
+window.addEventListener = ((type: string, listener: any, options?: any) => {
+  if (type === 'hashchange' && listener) trackedHashchangeListeners.push(listener);
+  return realWindowAddEventListener(type, listener, options);
+}) as typeof window.addEventListener;
 
 describe('PRESETS', () => {
   it('includes the SeqFan finds and classics', () => {
@@ -198,5 +213,97 @@ describe('mountApp', () => {
     expect(oeisLink).toBeDefined();
     const ccLink = links.find((a) => a.href === 'https://creativecommons.org/licenses/by-sa/4.0/');
     expect(ccLink).toBeDefined();
+  });
+});
+
+describe('mountApp — same-document hash navigation', () => {
+  function clearTrackedHashchangeListeners(): void {
+    for (const l of trackedHashchangeListeners.splice(0)) window.removeEventListener('hashchange', l as EventListener);
+  }
+
+  // Strip listeners left by any earlier test (see tracking shim above) so a
+  // dispatched hashchange only reaches the instance this test just mounted.
+  beforeEach(() => {
+    clearTrackedHashchangeListeners();
+  });
+  afterEach(() => {
+    clearTrackedHashchangeListeners();
+    history.replaceState(null, '', location.pathname);
+  });
+
+  it('re-applies decoded state when location.hash changes without a reload (share URL navigation)', () => {
+    const root = document.createElement('div');
+    mountApp(root);
+    const picker = root.querySelector<HTMLSelectElement>('.viz-picker')!;
+    const modeSelect = root.querySelector<HTMLSelectElement>('.mode-select')!;
+    const surrSelect = root.querySelector<HTMLSelectElement>('.surrogate-select')!;
+    const seedInput = root.querySelector<HTMLInputElement>('.seed-input')!;
+
+    // Sanity: starting state is the default, not the target we're about to share.
+    expect(picker.value).not.toBe('polyarc');
+
+    const target: UrlState = {
+      seqRef: null,
+      vizId: 'polyarc',
+      params: { angle: 45, modulus: 9, centered: false },
+      mode: 'side',
+      surrogate: 'difference',
+      seed: 42,
+    };
+    location.hash = '#' + encodeState(target);
+    window.dispatchEvent(new Event('hashchange'));
+
+    expect(picker.value).toBe('polyarc');
+    expect(modeSelect.value).toBe('side');
+    expect(surrSelect.value).toBe('difference');
+    expect(seedInput.value).toBe('42');
+  });
+
+  it('does not loop when a redraw-triggered syncUrl write is echoed back as hashchange', () => {
+    const root = document.createElement('div');
+    mountApp(root);
+    const picker = root.querySelector<HTMLSelectElement>('.viz-picker')!;
+    const replaceStateSpy = vi.spyOn(history, 'replaceState');
+
+    const target: UrlState = {
+      seqRef: null,
+      vizId: 'polyarc',
+      params: { angle: 45, modulus: 9, centered: false },
+      mode: 'side',
+      surrogate: 'difference',
+      seed: 42,
+    };
+    location.hash = '#' + encodeState(target);
+    replaceStateSpy.mockClear();
+    window.dispatchEvent(new Event('hashchange')); // real navigation: applies once, redraws, syncUrl writes
+
+    expect(picker.value).toBe('polyarc');
+    const callsAfterRealApply = replaceStateSpy.mock.calls.length;
+    expect(callsAfterRealApply).toBeGreaterThan(0); // the apply's own redraw did write the hash back
+
+    // location.hash now equals exactly what the app's own syncUrl just wrote.
+    // Some browsers fire hashchange even for a same-value/programmatic write;
+    // simulate that echo without changing location.hash at all.
+    window.dispatchEvent(new Event('hashchange'));
+
+    expect(replaceStateSpy.mock.calls.length).toBe(callsAfterRealApply); // no re-apply, no extra redraw/syncUrl
+    expect(picker.value).toBe('polyarc'); // state untouched by the echo
+
+    replaceStateSpy.mockRestore();
+  });
+
+  it('ignores a garbage hash on hashchange without crashing, leaving current state intact', () => {
+    const root = document.createElement('div');
+    mountApp(root);
+    const picker = root.querySelector<HTMLSelectElement>('.viz-picker')!;
+    const modeSelect = root.querySelector<HTMLSelectElement>('.mode-select')!;
+    const beforeViz = picker.value;
+    const beforeMode = modeSelect.value;
+
+    location.hash = '#not-!!-valid-base64-or-json';
+
+    expect(() => window.dispatchEvent(new Event('hashchange'))).not.toThrow();
+    expect(picker.value).toBe(beforeViz);
+    expect(modeSelect.value).toBe(beforeMode);
   });
 });
