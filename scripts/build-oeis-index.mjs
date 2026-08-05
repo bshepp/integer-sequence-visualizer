@@ -29,6 +29,7 @@ import {
   createWriteStream,
   existsSync,
   mkdirSync,
+  readFileSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -93,11 +94,21 @@ async function ensureFile(url, destPath, { force, trustExisting }) {
   console.log(`Saved ${path.basename(destPath)}.`);
 }
 
-// Streams a gzipped text file and invokes onLine(line) for each line
-// (without its trailing newline), without holding the whole decompressed
-// text in memory at once.
-async function readGzLines(gzPath, onLine) {
-  const stream = createReadStream(gzPath).pipe(createGunzip());
+// Splits a Readable text stream into lines, invoking onLine(line) for each
+// (without its trailing newline). IMPORTANT: this switches the stream to
+// utf8 encoding via setEncoding(), which makes Node buffer partial
+// multi-byte UTF-8 sequences across chunk boundaries internally (a
+// StringDecoder) instead of decoding each Buffer chunk in isolation. A
+// naive `carry += chunk` on raw Buffer chunks coerces each chunk to a
+// string independently — any multi-byte character that happens to
+// straddle a chunk boundary silently becomes two U+FFFD replacement
+// characters instead of one real character, with no exception thrown.
+// names.gz is full of accented names (Bézout, Erdős, Recamán, Ménage,
+// Möbius) so this is not a hypothetical edge case for this data.
+// Exported so tests can drive it directly with deliberately split chunks,
+// without needing a real gzip fixture or relying on a boundary hit.
+export async function readLinesFromStream(stream, onLine) {
+  stream.setEncoding('utf8');
   let carry = '';
   for await (const chunk of stream) {
     carry += chunk;
@@ -108,6 +119,27 @@ async function readGzLines(gzPath, onLine) {
     }
   }
   if (carry) onLine(carry);
+}
+
+// Streams a gzipped text file and invokes onLine(line) for each line,
+// without holding the whole decompressed text in memory at once.
+async function readGzLines(gzPath, onLine) {
+  const stream = createReadStream(gzPath).pipe(createGunzip());
+  await readLinesFromStream(stream, onLine);
+}
+
+// Pure helpers for the end-of-build encoding guard (see main()). Exported
+// so they're independently testable without running the whole build.
+export function countReplacementChars(text) {
+  return (text.match(/�/g) ?? []).length;
+}
+
+export function countNonAsciiLines(text) {
+  let count = 0;
+  for (const line of text.split('\n')) {
+    if (/[^\x00-\x7F]/.test(line)) count++;
+  }
+  return count;
 }
 
 function shardFor(aNumber) {
@@ -223,7 +255,8 @@ async function main() {
   for (const [shard, json] of jsonByShard) {
     writeFileSync(path.join(OUT_DIR, 'seq', `${shard}.json`), json);
   }
-  writeFileSync(path.join(OUT_DIR, 'search-index.txt'), searchIndexText);
+  const searchIndexPath = path.join(OUT_DIR, 'search-index.txt');
+  writeFileSync(searchIndexPath, searchIndexText);
 
   const meta = {
     generated: new Date().toISOString(),
@@ -235,16 +268,43 @@ async function main() {
   writeFileSync(path.join(OUT_DIR, 'meta.json'), metaText);
   totalBytes += Buffer.byteLength(metaText);
 
+  // End-of-build encoding guard: re-read the file we just wrote (not the
+  // in-memory string) and scan it for U+FFFD replacement characters. Their
+  // presence means a multi-byte character was mis-decoded somewhere in the
+  // pipeline (see readLinesFromStream's docs) — fail loudly here rather
+  // than silently shipping corrupted names to production.
+  const writtenIndexText = readFileSync(searchIndexPath, 'utf8');
+  const nonAsciiLines = countNonAsciiLines(writtenIndexText);
+  const replacementChars = countReplacementChars(writtenIndexText);
+
   console.log('---');
   console.log(`Sequences: ${nameMap.size}`);
   console.log(`Shards: ${jsonByShard.size}`);
   console.log(`Terms cap: ${capped ? `${TERMS_CAP_WHEN_OVERSIZED} terms/sequence (applied)` : 'none (full stripped.gz terms retained)'}`);
   console.log(`seq/*.json: ${mb(seqBytes)}`);
   console.log(`search-index.txt: ${mb(searchIndexBytes)}`);
+  console.log(`Non-ASCII names: ${nonAsciiLines}`);
   console.log(`Total bytes written: ${totalBytes} (${mb(totalBytes)})`);
+
+  if (replacementChars > 0) {
+    throw new Error(
+      `Encoding corruption detected: ${replacementChars} U+FFFD replacement character(s) found ` +
+      `in ${searchIndexPath}. This means a multi-byte UTF-8 character was mis-decoded somewhere ` +
+      `in the build (e.g. split across a stream chunk boundary). Aborting before this reaches ` +
+      `production — do not deploy this public/data/ directory.`,
+    );
+  }
 }
 
-main().catch((err) => {
-  console.error(err.stack ?? String(err));
-  process.exitCode = 1;
-});
+// Only run the build when this file is executed directly (`node
+// scripts/build-oeis-index.mjs`), not when it's imported — e.g. by tests
+// importing readLinesFromStream/countReplacementChars/countNonAsciiLines
+// in isolation, which must not trigger a live download of OEIS's bulk
+// files as a side effect of merely loading the module.
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  main().catch((err) => {
+    console.error(err.stack ?? String(err));
+    process.exitCode = 1;
+  });
+}

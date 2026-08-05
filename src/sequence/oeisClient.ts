@@ -37,7 +37,15 @@ export async function lookupById(aNumber: string, fetchFn: FetchLike = defaultFe
   const id = normalizeANumber(aNumber);
   const notFound = () => new Error(`No OEIS sequence found for ${id}.`);
   const res = await fetchFn(`/data/seq/${shardFor(id)}.json`);
-  if (!res.ok) throw notFound();
+  if (!res.ok) {
+    // A 5xx means the /data/* origin itself is broken (bad deploy, outage),
+    // which would otherwise look identical to "every sequence is missing" —
+    // surface that distinctly rather than folding it into the not-found
+    // message. A missing shard normally 404s (unknown/out-of-range id) and
+    // is treated the same as a present-shard-but-missing-key below.
+    if (res.status >= 500) throw new Error(`OEIS data request failed (HTTP ${res.status}).`);
+    throw notFound();
+  }
   const shard = (await res.json()) as ShardFile;
   const entry = shard[id];
   if (!entry) throw notFound();
@@ -55,6 +63,18 @@ export function clearSearchIndexCache(): void {
   searchIndexPromise = null;
 }
 
+// V8 can implement String#slice() as a SlicedString view into its parent
+// string's backing buffer rather than a fresh copy, once the slice is long
+// enough (short slices like most A-numbers are copied outright, but OEIS
+// names routinely aren't). Left alone, the ~400k `name` slices below would
+// each keep the entire ~30+ MB search-index text pinned in memory for the
+// rest of the page's life, even though only the small hit objects were
+// meant to be retained. Concatenating onto a fresh string and re-slicing
+// that (uniquely-owned, not-the-parent) result forces a real, small copy.
+function copyStr(s: string): string {
+  return (' ' + s).slice(1);
+}
+
 function loadSearchIndex(fetchFn: FetchLike): Promise<OeisSearchHit[]> {
   if (!searchIndexPromise) {
     searchIndexPromise = (async () => {
@@ -66,7 +86,7 @@ function loadSearchIndex(fetchFn: FetchLike): Promise<OeisSearchHit[]> {
         if (!line) continue;
         const tab = line.indexOf('\t');
         if (tab < 0) continue;
-        hits.push({ aNumber: line.slice(0, tab), name: line.slice(tab + 1) });
+        hits.push({ aNumber: copyStr(line.slice(0, tab)), name: copyStr(line.slice(tab + 1)) });
       }
       return hits;
     })().catch((err: unknown) => {

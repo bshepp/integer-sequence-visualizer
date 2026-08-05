@@ -67,6 +67,14 @@ describe('lookupById', () => {
     await expect(lookupById('A999999', f)).rejects.toThrow(/A999999/);
   });
 
+  it('distinguishes a broken /data/* origin (5xx) from a genuinely unknown id (404)', async () => {
+    const f = fakeFetch({ '/data/seq/000.json': { ok: false, status: 503 } });
+    await expect(lookupById('A000045', f)).rejects.toThrow(/503/);
+    // Must not read as a routine "not found" — a broken origin means every
+    // lookup is failing, not that this specific sequence doesn't exist.
+    await expect(lookupById('A000045', f)).rejects.not.toThrow(/No OEIS sequence found/);
+  });
+
   it.each([
     ['A000045', '000'],
     ['A019488', '019'],
