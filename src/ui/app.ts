@@ -10,6 +10,12 @@ import { defaultComparison, surrogateSequence, drawEnsembleChart, buildCompariso
 import { startEnsembleWorker, type EnsembleJob } from '../nullmodel/ensemble';
 import type { Bands } from '../nullmodel/bands';
 import { buildSweepView } from './sweep';
+import { encodeState, decodeState, type SeqRef } from './urlState';
+import { lookupById } from '../sequence/oeisClient';
+import { sequenceFromFormula } from '../sequence/formula';
+
+const MODES = ['off', 'side', 'flip', 'ensemble'];
+const SURROGATES = ['permutation', 'difference', 'matched'];
 
 export function mountApp(root: HTMLElement): void {
   registerAll();
@@ -21,6 +27,22 @@ export function mountApp(root: HTMLElement): void {
   };
 
   const comparison = defaultComparison();
+  let currentRef: SeqRef | null = null;
+
+  // Apply URL hash state BEFORE building controls so picker, param controls,
+  // and the comparison bar all show the shared values. A garbage-but-decodable
+  // hash must not break mount: vizId is checked against the registry, params
+  // are merged over defaults, mode/surrogate fall back if unrecognized.
+  const initial = decodeState(location.hash);
+  if (initial) {
+    if (allVisualizers().some((v) => v.id === initial.vizId)) {
+      state.vizId = initial.vizId;
+      state.params = { ...defaultParams(getVisualizer(initial.vizId).params), ...initial.params };
+    }
+    if (MODES.includes(initial.mode)) comparison.mode = initial.mode;
+    if (SURROGATES.includes(initial.surrogate)) comparison.surrogate = initial.surrogate;
+    if (typeof initial.seed === 'number') comparison.seed = initial.seed;
+  }
   let ensembleCancel: { cancel(): void } | null = null;
   let ensembleBands: Record<string, Bands> | null = null;
   let ensembleKey = '';
@@ -39,13 +61,25 @@ export function mountApp(root: HTMLElement): void {
   // sidebar
   const sidebar = document.createElement('aside');
   sidebar.className = 'sidebar';
+  // Derive the shareable ref from the sequence itself: this keeps a b-file
+  // upgrade (same source/aNumber, more terms) pointing at the same OEIS ref.
+  function refFor(seq: Sequence): SeqRef | null {
+    if (seq.source === 'oeis' && seq.aNumber) return { kind: 'oeis', aNumber: seq.aNumber };
+    if (seq.source === 'formula') return { kind: 'formula', src: seq.name, count: seq.terms.length };
+    if (seq.source === 'paste') return { kind: 'paste', terms: seq.terms.map(String) };
+    return null;
+  }
+
+  function applySeq(seq: Sequence): void {
+    state.seq = seq;
+    currentRef = refFor(seq);
+    panel.setInfo(seq);
+    bar.update(Boolean(getVisualizer(state.vizId).statistics));
+    redraw();
+  }
+
   const panel = buildSequencePanel({
-    onSequence(seq) {
-      state.seq = seq;
-      panel.setInfo(seq);
-      bar.update(Boolean(getVisualizer(state.vizId).statistics));
-      redraw();
-    },
+    onSequence: applySeq,
     onError: showError,
   });
   sidebar.appendChild(panel.el);
@@ -68,6 +102,7 @@ export function mountApp(root: HTMLElement): void {
     o.textContent = `${v.family} · ${v.name}`;
     picker.appendChild(o);
   }
+  picker.value = state.vizId;
   picker.addEventListener('change', () => {
     state.vizId = picker.value;
     state.params = defaultParams(getVisualizer(state.vizId).params);
@@ -119,7 +154,25 @@ export function mountApp(root: HTMLElement): void {
   });
   bar.el.appendChild(sweepBtn);
 
+  function syncUrl(): void {
+    try {
+      history.replaceState(null, '', '#' + encodeState({
+        seqRef: currentRef, vizId: state.vizId, params: state.params,
+        mode: comparison.mode, surrogate: comparison.surrogate, seed: comparison.seed,
+      }));
+    } catch {
+      // history may be unavailable or restricted (e.g. sandboxed test envs)
+    }
+  }
+
+  // drawScene has early returns (no 2d context, no sequence yet); wrapping it
+  // keeps syncUrl at the end of every redraw regardless of which path ran.
   function redraw(): void {
+    drawScene();
+    syncUrl();
+  }
+
+  function drawScene(): void {
     const rect = canvasWrap.getBoundingClientRect();
     const width = Math.max(200, rect.width);
     const height = Math.max(200, rect.height);
@@ -207,4 +260,17 @@ export function mountApp(root: HTMLElement): void {
 
   window.addEventListener('resize', redraw);
   redraw();
+
+  // Restore the shared sequence, if the URL carried one. applySeq re-derives
+  // currentRef from the loaded sequence, so no per-path assignment is needed.
+  const ref = initial?.seqRef;
+  if (ref?.kind === 'oeis') {
+    lookupById(ref.aNumber).then(applySeq).catch((e) => showError(e instanceof Error ? e.message : String(e)));
+  } else if (ref?.kind === 'formula') {
+    try { applySeq(sequenceFromFormula(ref.src, ref.count)); }
+    catch (e) { showError(e instanceof Error ? e.message : String(e)); }
+  } else if (ref?.kind === 'paste') {
+    try { applySeq({ terms: ref.terms.map(BigInt), name: 'Pasted sequence', offset: 0, source: 'paste' }); }
+    catch (e) { showError(e instanceof Error ? e.message : String(e)); }
+  }
 }
