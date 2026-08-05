@@ -18,8 +18,8 @@
     "url": "git+https://github.com/bshepp/integer-sequence-visualizer.git"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Brian Sheppard",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/bshepp/integer-sequence-visualizer/issues"
   },
