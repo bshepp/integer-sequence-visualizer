@@ -34,7 +34,9 @@ aws s3 cp "$tmp" "s3://$BUCKET/$INDEX_KEY" \
   --only-show-errors
 
 echo "==> invalidating CloudFront"
-aws cloudfront create-invalidation \
+# MSYS_NO_PATHCONV stops Git Bash on Windows from rewriting the leading-slash
+# invalidation paths into Windows paths, which CloudFront rejects.
+MSYS_NO_PATHCONV=1 aws cloudfront create-invalidation \
   --distribution-id "$DISTRIBUTION" \
   --paths "/" "/index.html" "/$INDEX_KEY" \
   --query "Invalidation.Id" --output text
