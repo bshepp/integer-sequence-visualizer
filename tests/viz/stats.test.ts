@@ -4,6 +4,7 @@ import { computeHistogram, histogramViz, shouldUseLogScale } from '../../src/viz
 import { autocorrelation, autocorrViz } from '../../src/viz/autocorrelation';
 import { defaultParams } from '../../src/viz/types';
 import { fakeCtx } from '../helpers/fakeCtx';
+import { makeSurrogate } from '../../src/nullmodel/surrogates';
 
 const mk = (terms: bigint[]): SequenceView =>
   new SequenceView({ terms, name: 't', offset: 0, source: 'paste' } as Sequence);
@@ -60,6 +61,42 @@ describe('histogramViz adaptive terms target', () => {
     const seq = mk([10n ** 30n, 10n ** 31n, 1n, 2n]);
     const stats = histogramViz.statistics!(seq, { target: 'logmagnitude', bins: 5 });
     expect(stats.count!.reduce((a, b) => a + b, 0)).toBe(seq.length);
+  });
+});
+
+describe('histogramViz honors an explicit logScaleOverride (cross-surrogate scale sync)', () => {
+  // A sequence whose own auto-detected scale is log (two terms ~2e16, well
+  // past the safe-integer threshold), mixed with several ~1e13 terms that
+  // are safe but still a tiny fraction of the outliers' magnitude.
+  const REAL = [
+    0n, 10_000_000_000_000n, 20_000_000_000_000n, 30_000_000_000_000n, 40_000_000_000_000n,
+    20_000_000_000_000_000n, 20_000_000_000_050_000n,
+  ];
+  // A 'difference' surrogate (same gap multiset, reshuffled) that happens to
+  // place both overflowing gaps so that only the very last term ends up
+  // beyond the safe range. Confirmed deterministic for this exact input:
+  // shouldUseLogScale is FALSE for this draw even though REAL's is TRUE —
+  // exactly the cross-draw disagreement the ensemble sync fix targets.
+  const SURROGATE = makeSurrogate(REAL, 'difference', 2);
+
+  it('real and this surrogate draw disagree on their own auto-detected scale', () => {
+    expect(shouldUseLogScale(mk(REAL))).toBe(true);
+    expect(shouldUseLogScale(mk(SURROGATE))).toBe(false);
+  });
+
+  it('without an override, the disagreeing surrogate auto-detects linear scale, collapsing 6 of 7 values into one bin', () => {
+    const stats = histogramViz.statistics!(mk(SURROGATE), { target: 'terms', bins: 10 });
+    expect(Math.max(...stats.count!)).toBeGreaterThanOrEqual(6);
+  });
+
+  it('logScaleOverride:true forces log scale on that same surrogate, spreading the values across more bins', () => {
+    const stats = histogramViz.statistics!(mk(SURROGATE), { target: 'terms', bins: 10, logScaleOverride: true });
+    expect(Math.max(...stats.count!)).toBeLessThanOrEqual(4);
+  });
+
+  it('logScaleOverride:false forces linear scale even on a sequence that would auto-detect log', () => {
+    const stats = histogramViz.statistics!(mk(REAL), { target: 'terms', bins: 10, logScaleOverride: false });
+    expect(Math.max(...stats.count!)).toBeGreaterThanOrEqual(5);
   });
 });
 

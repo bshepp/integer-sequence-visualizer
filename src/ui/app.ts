@@ -3,6 +3,7 @@ import { SequenceView } from '../sequence/sequence';
 import { registerAll } from '../viz/all';
 import { allVisualizers, getVisualizer } from '../viz/registry';
 import { defaultParams, type Params } from '../viz/types';
+import { shouldUseLogScale } from '../viz/histogram';
 import { buildParamControls } from './paramControls';
 import { buildSequencePanel } from './sequencePanel';
 import { initMessages, showError, showNotice } from './messages';
@@ -268,13 +269,26 @@ export function mountApp(root: HTMLElement): void {
         : state.seq;
       draw(shown, width, height, 0, comparison.showSurrogate ? `${comparison.surrogate} surrogate` : 'real');
     } else if (comparison.mode === 'ensemble' && viz.statistics) {
+      // The adaptive log/linear scale decision (histogram's 'terms' target,
+      // see shouldUseLogScale in viz/histogram.ts) must be made ONCE from the
+      // real sequence and shared by the real line AND every surrogate draw.
+      // runEnsemble calls statistics() once per surrogate draw, independently
+      // of this real-line call; for 'permutation' surrogates the value
+      // multiset is invariant so the decision always agrees regardless, but
+      // 'difference' and 'matched' surrogates do not preserve that, so a
+      // given draw could otherwise pick a different scale than the real line
+      // (or than other draws), and percentileBands would then blend
+      // incompatible units into one meaningless band. logScaleOverride is
+      // ignored by every other target/visualizer, so it's harmless to always
+      // include it here.
+      const paramsWithScale: Params = { ...state.params, logScaleOverride: shouldUseLogScale(view) };
       const job: EnsembleJob = {
         terms: state.seq.terms.map(String),
         surrogate: comparison.surrogate,
         count: comparison.ensembleN,
         seed: comparison.seed,
         vizId: state.vizId,
-        params: { ...state.params },
+        params: paramsWithScale,
       };
       const key = JSON.stringify(job);
       if (key !== ensembleKey) {
@@ -289,7 +303,7 @@ export function mountApp(root: HTMLElement): void {
         });
       }
       if (ensembleBands) {
-        drawEnsembleChart(ctx, { width, height }, viz.statistics(view, state.params), ensembleBands);
+        drawEnsembleChart(ctx, { width, height }, viz.statistics(view, paramsWithScale), ensembleBands);
       } else {
         ctx.fillStyle = '#9aa0aa';
         ctx.font = '14px system-ui';

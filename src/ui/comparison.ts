@@ -23,6 +23,12 @@ export function surrogateSequence(seq: Sequence, type: SurrogateType, seed: numb
   return { ...s, name: `${seq.name} (${type} surrogate)` };
 }
 
+// NaN widths (e.g. malformed/empty upstream data) compare false against
+// epsilon and so read as "not degenerate" — intentional fail-safe: drawing
+// the (possibly odd-looking) band is preferable to asserting a specific
+// "zero width" explanation we can't actually confirm. An empty band.lo is
+// vacuously degenerate (every() on []); harmless since drawEnsembleChart has
+// nothing to plot for a zero-length band regardless.
 export function isDegenerateBand(band: Bands, epsilon = 1e-9): boolean {
   return band.lo.every((lo, i) => (band.hi[i]! - lo) < epsilon);
 }
@@ -83,7 +89,10 @@ export function drawEnsembleChart(
     if (isDegenerateBand(band)) {
       ctx.fillStyle = '#9aa0aa';
       ctx.font = '11px system-ui';
-      ctx.fillText('band has zero width — this surrogate cannot change this statistic', MARGIN, top + 30);
+      // A couple of px shy of top + MARGIN (where the plot area/band fill
+      // begins) so the caption can't crowd the plot when several stat panels
+      // share the canvas height.
+      ctx.fillText('band has zero width — this surrogate cannot change this statistic', MARGIN, top + MARGIN - 4);
     }
   });
 }

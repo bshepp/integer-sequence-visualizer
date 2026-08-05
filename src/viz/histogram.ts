@@ -35,7 +35,24 @@ export function shouldUseLogScale(seq: SequenceView): boolean {
   return false;
 }
 
-function targetValues(seq: SequenceView, target: string): number[] {
+// `logScaleOverride`, when provided, pins the terms-target linear/log
+// decision instead of letting each call re-derive it from whatever sequence
+// it happens to receive. This matters for ensemble mode: the real line calls
+// statistics() once on the real sequence, while runEnsemble calls it once per
+// surrogate draw. shouldUseLogScale(seq) is exact per-sequence, but nothing
+// guarantees two different sequences agree on it — 'permutation' surrogates
+// preserve the value multiset so they always agree by construction, but
+// 'difference' and 'matched' surrogates do not, so a given draw can pick a
+// different scale than the real line. Mixing scales across draws (or against
+// the real line) means the bin edges each draw computes are not on
+// comparable units — the exact "silently wrong, not a crash" failure mode
+// BV-2's adaptive fallback exists to eliminate, just reintroduced across
+// draws instead of within one sequence. The caller (src/ui/app.ts) computes
+// the decision once from the real sequence and threads it into both the
+// real-line statistics() call and every EnsembleJob.params dispatched to a
+// surrogate draw, so every draw agrees. When absent, callers (including
+// direct/unit-test use) keep today's per-sequence auto-detect behavior.
+function targetValues(seq: SequenceView, target: string, logScaleOverride?: boolean): number[] {
   const out: number[] = [];
   if (target === 'gaps') {
     for (let i = 0; i + 1 < seq.length; i++) out.push(clampBig(seq.term(i + 1) - seq.term(i)));
@@ -48,13 +65,18 @@ function targetValues(seq: SequenceView, target: string): number[] {
   } else {
     // target === 'terms': adaptively fall back to log-magnitude so the chart
     // never silently piles every overflowing term into one misleading bin.
-    if (shouldUseLogScale(seq)) {
+    const useLog = logScaleOverride ?? shouldUseLogScale(seq);
+    if (useLog) {
       for (let i = 0; i < seq.length; i++) out.push(seq.logMagnitude(i));
     } else {
       for (let i = 0; i < seq.length; i++) out.push(seq.toNumber(i));
     }
   }
   return out.length > 0 ? out : [0];
+}
+
+function overrideFromParams(params: Params): boolean | undefined {
+  return typeof params.logScaleOverride === 'boolean' ? params.logScaleOverride : undefined;
 }
 
 export const histogramViz: Visualizer = {
@@ -67,11 +89,17 @@ export const histogramViz: Visualizer = {
     { kind: 'number', id: 'bins', label: 'Bins', default: 20, min: 4, max: 60, step: 1 },
   ],
   statistics(seq: SequenceView, params: Params) {
-    const { counts } = computeHistogram(targetValues(seq, String(params.target)), Number(params.bins));
+    const { counts } = computeHistogram(
+      targetValues(seq, String(params.target), overrideFromParams(params)),
+      Number(params.bins),
+    );
     return { count: counts };
   },
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
-    const { counts } = computeHistogram(targetValues(seq, String(params.target)), Number(params.bins));
+    const { counts } = computeHistogram(
+      targetValues(seq, String(params.target), overrideFromParams(params)),
+      Number(params.bins),
+    );
     const w = size.width - 2 * MARGIN;
     const h = size.height - 2 * MARGIN;
     const maxC = Math.max(...counts, 1);
