@@ -19,7 +19,8 @@ so the eye (or a statistic) can judge which visual structure is real.
 
 ## Goals
 
-- Live, publicly hosted static webpage; arbitrary OEIS sequence lookup.
+- Live, publicly hosted static webpage; arbitrary OEIS sequence lookup,
+  including on-demand b-file fetch for thousands of terms.
 - Four visualization families: grid/spiral, trajectory/turtle (including an
   NCurve-style polyarc curve), statistical views, line/scatter basics.
 - Null-model layer available across all visualizers: surrogate generation,
@@ -30,9 +31,6 @@ so the eye (or a statistic) can judge which visual structure is real.
 
 ## Non-goals (v1)
 
-- B-file fetching (thousands of terms). Long sequences come from formula or
-  paste input. The OEIS client is structured so b-file support can be added
-  later without touching visualizers.
 - Feature-vector extraction / clustering of sequences (future research
   direction; the `statistics()` interface is a stepping stone).
 - Server-side rendering, accounts, or persistence beyond URL state.
@@ -80,8 +78,13 @@ composition: fixed sequence, one parameter varied, thumbnail grid.
   `mod(i, n)`, `digits(i)`, `sign(i)`, `length`.
 - **OEIS client** (via proxy): lookup by A-number
   (`/api/search?q=id:A000045&fmt=json`), keyword search returning a results
-  list. Responses parsed defensively; parse failures surface as user-visible
-  errors, never silent empties.
+  list, and on-demand **b-file fetch** (`/api/A000045/b000045.txt`) parsed
+  from its `index value` line format (comments and blank lines skipped,
+  gaps in the index tolerated up to the first discontinuity). B-files load
+  behind a "Load all terms" button with a default cap of 10,000 terms
+  (raisable in the UI) since some b-files run to megabytes. Responses parsed
+  defensively; parse failures surface as user-visible errors, never silent
+  empties.
 - **Paste parser**: comma/whitespace-separated integers, tolerant of
   brackets and OEIS copy-paste formats.
 - **Formula evaluator**: safe expression parser (no `eval`) over `n` with
@@ -94,8 +97,10 @@ composition: fixed sequence, one parameter varied, thumbnail grid.
   A039685 (zipper), A039970 (Slinky) — plus classics (A000045 Fibonacci,
   A000040 primes, A005132 Recamán).
 
-OEIS main-entry lookups yield ~30–60 terms; that suffices for statistical
-views and small grids. Formula/paste are the long-sequence path.
+OEIS main-entry lookups yield ~30–60 terms immediately; the b-file button
+upgrades the loaded sequence in place (same `Sequence` identity, visualizers
+simply re-render with more terms). Formula/paste remain the path for
+non-OEIS sequences.
 
 ## Visualizers (`src/viz/`)
 
@@ -174,7 +179,8 @@ Single-page workbench, dark theme.
 
 - **Left sidebar**: input tabs (A-number / OEIS search / paste + formula),
   presets shelf, loaded-sequence info card (name, A-number linked to
-  oeis.org, term count, source).
+  oeis.org, term count, source, and a "Load all terms" b-file button with
+  cap control when the sequence came from OEIS).
 - **Top bar**: visualizer picker grouped by family; auto-generated param
   controls for the active visualizer.
 - **Main area**: canvas; comparison control (Off / Side-by-side / Flip /
@@ -188,6 +194,8 @@ Single-page workbench, dark theme.
 - Proxy/network failure → visible message + retry button; never a blank
   canvas.
 - Unknown A-number / empty search → plain message.
+- B-file unavailable or malformed → keep the already-loaded main-entry
+  terms, show a notice.
 - Formula errors → live inline validation; invalid formulas cannot be
   applied.
 - Sequence shorter than `minTerms` → render what's possible + notice.
@@ -199,7 +207,9 @@ Single-page workbench, dark theme.
 
 Vitest, focused on logic that fails subtly:
 
-- OEIS response parsing against recorded JSON fixtures.
+- OEIS response parsing against recorded JSON fixtures; b-file parsing
+  against recorded text fixtures (comments, negative values, index gaps,
+  oversized files hitting the cap).
 - Formula evaluator: precedence, integer semantics, error cases.
 - Paste parser: OEIS copy-paste formats, brackets, negatives.
 - Surrogate generators — invariants: permutation preserves exact multiset;
@@ -221,7 +231,6 @@ Visual quality judged by eye in the dev server; no screenshot testing.
 
 ## Future directions (recorded, not scoped)
 
-- B-file deep fetch for long OEIS sequences.
 - Feature vectors from `statistics()` → clustering → emergent "names"
   (thread open-question #3).
 - Favorites gallery (à la George Whale's).
