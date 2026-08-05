@@ -23,6 +23,10 @@ export function surrogateSequence(seq: Sequence, type: SurrogateType, seed: numb
   return { ...s, name: `${seq.name} (${type} surrogate)` };
 }
 
+export function isDegenerateBand(band: Bands, epsilon = 1e-9): boolean {
+  return band.lo.every((lo, i) => (band.hi[i]! - lo) < epsilon);
+}
+
 export function drawEnsembleChart(
   ctx: CanvasRenderingContext2D,
   size: Size,
@@ -75,6 +79,12 @@ export function drawEnsembleChart(
     ctx.fillStyle = '#e6e6e6';
     ctx.font = '12px system-ui';
     ctx.fillText(key, MARGIN, top + 16);
+
+    if (isDegenerateBand(band)) {
+      ctx.fillStyle = '#9aa0aa';
+      ctx.font = '11px system-ui';
+      ctx.fillText('band has zero width — this surrogate cannot change this statistic', MARGIN, top + 30);
+    }
   });
 }
 

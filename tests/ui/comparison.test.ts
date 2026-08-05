@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
 import {
-  defaultComparison, surrogateSequence, drawEnsembleChart, buildComparisonBar,
+  defaultComparison, surrogateSequence, drawEnsembleChart, buildComparisonBar, isDegenerateBand,
 } from '../../src/ui/comparison';
+import type { Bands } from '../../src/nullmodel/bands';
 import { fakeCtx } from '../helpers/fakeCtx';
 
 const seq = { terms: [1n, 2n, 3n, 4n, 5n], name: 'Test', offset: 0, source: 'paste' as const };
@@ -25,6 +26,35 @@ describe('drawEnsembleChart', () => {
       drawEnsembleChart(ctx, { width: 400, height: 300 },
         { a: [1.5, 0.5], b: [0, 1] }, { a: bands, b: bands }),
     ).not.toThrow();
+  });
+});
+
+describe('isDegenerateBand', () => {
+  it('is true when lo/median/hi are all equal arrays', () => {
+    const band: Bands = { lo: [1, 2, 3], median: [1, 2, 3], hi: [1, 2, 3] };
+    expect(isDegenerateBand(band)).toBe(true);
+  });
+  it('is false when hi exceeds lo at any index', () => {
+    const band: Bands = { lo: [1, 2, 3], median: [1, 2, 3], hi: [1, 2, 5] };
+    expect(isDegenerateBand(band)).toBe(false);
+  });
+});
+
+describe('drawEnsembleChart degenerate band caption', () => {
+  it('records a fillText call explaining the zero-width band', () => {
+    const { ctx, callLog } = fakeCtx();
+    const band: Bands = { lo: [1, 1], median: [1, 1], hi: [1, 1] };
+    drawEnsembleChart(ctx, { width: 400, height: 300 }, { a: [1, 1] }, { a: band });
+    const texts = callLog.filter((c) => c.name === 'fillText').map((c) => String(c.args[0]));
+    expect(texts.some((t) => t.toLowerCase().includes('zero width'))).toBe(true);
+  });
+
+  it('does not add the caption for a normal (non-degenerate) band', () => {
+    const { ctx, callLog } = fakeCtx();
+    const band: Bands = { lo: [0, 0], median: [1, 1], hi: [2, 2] };
+    drawEnsembleChart(ctx, { width: 400, height: 300 }, { a: [1.5, 0.5] }, { a: band });
+    const texts = callLog.filter((c) => c.name === 'fillText').map((c) => String(c.args[0]));
+    expect(texts.some((t) => t.toLowerCase().includes('zero width'))).toBe(false);
   });
 });
 
