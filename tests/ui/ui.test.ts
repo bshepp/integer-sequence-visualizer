@@ -4,6 +4,7 @@ import { buildParamControls } from '../../src/ui/paramControls';
 import { buildSequencePanel } from '../../src/ui/sequencePanel';
 import { mountApp } from '../../src/ui/app';
 import { PRESETS } from '../../src/sequence/presets';
+import { encodeState, decodeState, type UrlState } from '../../src/ui/urlState';
 import type { ParamSpec } from '../../src/viz/types';
 
 describe('PRESETS', () => {
@@ -66,5 +67,26 @@ describe('mountApp', () => {
     expect(root.querySelector('canvas')).not.toBeNull();
     const picker = root.querySelector<HTMLSelectElement>('.viz-picker')!;
     expect(picker.options.length).toBe(9);
+  });
+
+  it('keeps the shared seqRef in the hash even when the startup OEIS lookup fails', async () => {
+    // In this environment lookupById's relative-URL fetch('/api/…') rejects,
+    // exercising the offline/API-down path: the ref must survive both the
+    // initial redraw's syncUrl and the failed lookup, so a reload can retry.
+    const shared: UrlState = {
+      seqRef: { kind: 'oeis', aNumber: 'A000045' },
+      vizId: 'polyarc',
+      params: { angle: 30, modulus: 7, centered: true },
+      mode: 'side',
+      surrogate: 'permutation',
+      seed: 1,
+    };
+    location.hash = '#' + encodeState(shared);
+    const root = document.createElement('div');
+    mountApp(root);
+    expect(decodeState(location.hash)!.seqRef).toEqual({ kind: 'oeis', aNumber: 'A000045' });
+    await new Promise((r) => setTimeout(r, 20)); // let the doomed lookup reject
+    expect(decodeState(location.hash)!.seqRef).toEqual({ kind: 'oeis', aNumber: 'A000045' });
+    history.replaceState(null, '', location.pathname); // reset URL for other tests
   });
 });

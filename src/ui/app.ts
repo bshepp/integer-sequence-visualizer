@@ -35,6 +35,11 @@ export function mountApp(root: HTMLElement): void {
   // are merged over defaults, mode/surrogate fall back if unrecognized.
   const initial = decodeState(location.hash);
   if (initial) {
+    // Seed currentRef immediately: the initial redraw's syncUrl rewrites the
+    // hash before the async OEIS lookup resolves, and a failed lookup must not
+    // strip the shared ref (reload should be able to retry). applySeq
+    // re-derives an equal ref on successful load.
+    currentRef = initial.seqRef ?? null;
     if (allVisualizers().some((v) => v.id === initial.vizId)) {
       state.vizId = initial.vizId;
       state.params = { ...defaultParams(getVisualizer(initial.vizId).params), ...initial.params };
@@ -261,8 +266,8 @@ export function mountApp(root: HTMLElement): void {
   window.addEventListener('resize', redraw);
   redraw();
 
-  // Restore the shared sequence, if the URL carried one. applySeq re-derives
-  // currentRef from the loaded sequence, so no per-path assignment is needed.
+  // Restore the shared sequence, if the URL carried one. currentRef was
+  // already seeded from the hash above; applySeq re-derives it on success.
   const ref = initial?.seqRef;
   if (ref?.kind === 'oeis') {
     lookupById(ref.aNumber).then(applySeq).catch((e) => showError(e instanceof Error ? e.message : String(e)));
