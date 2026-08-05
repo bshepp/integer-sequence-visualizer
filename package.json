@@ -1,0 +1,33 @@
+{
+  "name": "integer-sequence-visualizer",
+  "version": "1.0.0",
+  "description": "A live webpage that renders [OEIS](https://oeis.org) sequences with multiple visualization techniques and a first-class **null-model comparison layer** — so you can test whether the structure you see is a property of the sequence or an artifact of the rendering technique.",
+  "main": "index.js",
+  "type": "module",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bshepp/integer-sequence-visualizer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bshepp/integer-sequence-visualizer/issues"
+  },
+  "homepage": "https://github.com/bshepp/integer-sequence-visualizer#readme",
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
+  }
+}
