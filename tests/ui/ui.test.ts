@@ -57,6 +57,19 @@ describe('buildSequencePanel', () => {
     panel.setInfo({ terms: [1n], name: 'n*n', offset: 0, source: 'formula' });
     expect(panel.el.querySelector('.bfile-button')).toBeNull();
   });
+
+  it('exactly one tab-pane is visible at a time, and it changes on tab click', () => {
+    const { el } = buildSequencePanel({ onSequence: () => {}, onError: () => {} });
+    const panes = Array.from(el.querySelectorAll<HTMLElement>('.tab-pane'));
+    const visibleBefore = panes.filter((p) => p.hidden === false);
+    expect(visibleBefore.length).toBe(1);
+
+    const buttons = el.querySelectorAll<HTMLButtonElement>('.tab-button');
+    buttons[1]!.click(); // Search tab
+    const visibleAfter = panes.filter((p) => p.hidden === false);
+    expect(visibleAfter.length).toBe(1);
+    expect(visibleAfter[0]).not.toBe(visibleBefore[0]);
+  });
 });
 
 describe('mountApp', () => {

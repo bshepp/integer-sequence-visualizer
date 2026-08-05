@@ -19,6 +19,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .tab-button { flex: 1; background: transparent; color: var(--muted); border: 1px solid #333; border-radius: 4px; padding: 4px; cursor: pointer; }
 .tab-button.active { color: var(--text); border-color: var(--accent); }
 .tab-pane { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.tab-pane[hidden] { display: none; }
 .tab-pane input, .tab-pane textarea, .tab-pane button, .tab-pane select { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 6px; font: inherit; }
 .tab-pane button { cursor: pointer; }
 .formula-error { color: #f7768e; font-size: 12px; min-height: 1em; }
