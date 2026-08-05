@@ -21,11 +21,13 @@ interface OeisResponse { count: number; results: OeisResult[] | null; }
 async function fetchJson(url: string, fetchFn: FetchLike): Promise<OeisResponse> {
   const res = await fetchFn(url);
   if (!res.ok) throw new Error(`OEIS request failed (HTTP ${res.status}).`);
-  const body = (await res.json()) as OeisResponse;
-  if (typeof body !== 'object' || body === null || !('results' in body)) {
-    throw new Error('Unexpected response from OEIS.');
-  }
-  return body;
+  const body = (await res.json()) as unknown;
+  // Live OEIS fmt=json responses are a bare array of results, or null for no
+  // matches; older responses used a { count, results } envelope. Accept both.
+  if (body === null) return { count: 0, results: null };
+  if (Array.isArray(body)) return { count: body.length, results: body as OeisResult[] };
+  if (typeof body === 'object' && 'results' in body) return body as OeisResponse;
+  throw new Error('Unexpected response from OEIS.');
 }
 
 function resultToSequence(r: OeisResult): Sequence {
