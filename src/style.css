@@ -7,9 +7,27 @@
   --accent: #7aa2f7;
 }
 * { box-sizing: border-box; }
+html, body { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, sans-serif; }
+#app { display: flex; flex-direction: column; height: 100%; }
 
-.layout { display: grid; grid-template-columns: 300px 1fr; height: 100vh; }
+.app-header {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 8px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid #000;
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+.app-wordmark { display: flex; align-items: baseline; gap: 8px; }
+.app-title { font-size: 17px; font-weight: 700; letter-spacing: 0.02em; color: var(--text); }
+.app-subtitle { font-size: 12px; color: var(--muted); }
+.app-tagline { margin: 0; font-size: 12px; color: var(--muted); }
+
+.layout { display: grid; grid-template-columns: 300px 1fr; flex: 1; min-height: 0; }
 .sidebar { background: var(--panel); padding: 12px; overflow-y: auto; }
 .main { display: flex; flex-direction: column; min-width: 0; }
 .topbar { display: flex; gap: 12px; align-items: center; padding: 10px 14px; background: var(--panel); border-left: 1px solid #000; flex-wrap: wrap; }
@@ -27,7 +45,9 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .search-results button { width: 100%; text-align: left; background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 6px; cursor: pointer; font-size: 12px; }
 .presets-shelf { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
 .preset-button { background: #24262c; color: var(--accent); border: 1px solid #3a3d44; border-radius: 12px; padding: 3px 10px; cursor: pointer; font-size: 12px; }
-.info-card { border-top: 1px solid #333; padding-top: 10px; font-size: 13px; }
+.section-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin: 16px 0 6px; }
+.section-label:first-child { margin-top: 0; }
+.info-card { font-size: 13px; }
 .info-name { font-weight: 600; margin-bottom: 4px; }
 .info-meta { color: var(--muted); margin-bottom: 8px; }
 .bfile-cap { width: 80px; margin-left: 6px; }
@@ -49,3 +69,15 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .sweep-cell { margin: 0; cursor: pointer; background: var(--panel); border: 1px solid #333; border-radius: 6px; padding: 6px; }
 .sweep-cell:hover { border-color: var(--accent); }
 .sweep-cell figcaption { color: var(--muted); font-size: 12px; text-align: center; padding-top: 4px; }
+
+.attribution {
+  flex: none;
+  padding: 6px 16px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted);
+  background: var(--panel);
+  border-top: 1px solid #000;
+}
+.attribution a { color: var(--muted); text-decoration: underline; }
+.attribution a:hover, .attribution a:focus-visible { color: var(--accent); }

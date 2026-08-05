@@ -54,6 +54,24 @@ export function mountApp(root: HTMLElement): void {
   let ensembleStatus: 'idle' | 'running' = 'idle';
 
   root.replaceChildren();
+
+  const header = document.createElement('header');
+  header.className = 'app-header';
+  const wordmark = document.createElement('div');
+  wordmark.className = 'app-wordmark';
+  const title = document.createElement('span');
+  title.className = 'app-title';
+  title.textContent = 'Ulam';
+  const subtitle = document.createElement('span');
+  subtitle.className = 'app-subtitle';
+  subtitle.textContent = 'OEIS sequence visualizer';
+  wordmark.append(title, subtitle);
+  const tagline = document.createElement('p');
+  tagline.className = 'app-tagline';
+  tagline.textContent = 'Render an integer sequence, then test whether the structure you see survives a null model.';
+  header.append(wordmark, tagline);
+  root.appendChild(header);
+
   const layout = document.createElement('div');
   layout.className = 'layout';
   root.appendChild(layout);
@@ -62,6 +80,25 @@ export function mountApp(root: HTMLElement): void {
   messages.className = 'messages';
   root.appendChild(messages);
   initMessages(messages);
+
+  const footer = document.createElement('footer');
+  footer.className = 'attribution';
+  footer.append('Sequence data from ');
+  const oeisLink = document.createElement('a');
+  oeisLink.href = 'https://oeis.org/';
+  oeisLink.target = '_blank';
+  oeisLink.rel = 'noopener noreferrer';
+  oeisLink.textContent = 'The On-Line Encyclopedia of Integer Sequences';
+  footer.appendChild(oeisLink);
+  footer.append('®, © OEIS Foundation Inc., used under ');
+  const ccLink = document.createElement('a');
+  ccLink.href = 'https://creativecommons.org/licenses/by-sa/4.0/';
+  ccLink.target = '_blank';
+  ccLink.rel = 'noopener noreferrer';
+  ccLink.textContent = 'CC BY-SA 4.0';
+  footer.appendChild(ccLink);
+  footer.append('.');
+  root.appendChild(footer);
 
   // sidebar
   const sidebar = document.createElement('aside');

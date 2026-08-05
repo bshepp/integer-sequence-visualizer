@@ -13,7 +13,15 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
   const el = document.createElement('div');
   el.className = 'sequence-panel';
 
+  function sectionLabel(text: string): HTMLElement {
+    const label = document.createElement('div');
+    label.className = 'section-label';
+    label.textContent = text;
+    return label;
+  }
+
   // --- tabs ---
+  el.appendChild(sectionLabel('Load a sequence'));
   const tabBar = document.createElement('div');
   tabBar.className = 'tab-bar';
   const panes: Record<string, HTMLElement> = {};
@@ -113,6 +121,7 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
   }
 
   // presets shelf
+  el.appendChild(sectionLabel('Gallery'));
   const shelf = document.createElement('div');
   shelf.className = 'presets-shelf';
   for (const p of PRESETS) {
@@ -126,6 +135,7 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
   el.appendChild(shelf);
 
   // info card
+  el.appendChild(sectionLabel('Loaded'));
   const info = document.createElement('div');
   info.className = 'info-card';
   el.appendChild(info);

@@ -70,6 +70,16 @@ describe('buildSequencePanel', () => {
     expect(visibleAfter.length).toBe(1);
     expect(visibleAfter[0]).not.toBe(visibleBefore[0]);
   });
+
+  it('groups the sidebar into labeled sections without disturbing existing structure', () => {
+    const { el } = buildSequencePanel({ onSequence: () => {}, onError: () => {} });
+    const labels = Array.from(el.querySelectorAll('.section-label')).map((n) => n.textContent);
+    expect(labels).toEqual(['Load a sequence', 'Gallery', 'Loaded']);
+    // Regression guard: section labels must not have displaced the elements
+    // existing tests and app.ts rely on.
+    expect(el.querySelectorAll('.tab-button').length).toBe(3);
+    expect(el.querySelectorAll('.preset-button').length).toBe(PRESETS.length);
+  });
 });
 
 describe('mountApp', () => {
@@ -101,5 +111,27 @@ describe('mountApp', () => {
     await new Promise((r) => setTimeout(r, 20)); // let the doomed lookup reject
     expect(decodeState(location.hash)!.seqRef).toEqual({ kind: 'oeis', aNumber: 'A000045' });
     history.replaceState(null, '', location.pathname); // reset URL for other tests
+  });
+
+  it('renders a header bar with the product title and premise', () => {
+    const root = document.createElement('div');
+    mountApp(root);
+    const header = root.querySelector('.app-header');
+    expect(header).not.toBeNull();
+    expect(header!.textContent).toContain('Ulam');
+    expect(header!.textContent).toMatch(/null model/i);
+  });
+
+  it('renders a persistent attribution footer crediting OEIS under CC BY-SA 4.0', () => {
+    const root = document.createElement('div');
+    mountApp(root);
+    const footer = root.querySelector('.attribution');
+    expect(footer).not.toBeNull();
+    expect(footer!.textContent).toContain('On-Line Encyclopedia of Integer Sequences');
+    const links = Array.from(footer!.querySelectorAll('a'));
+    const oeisLink = links.find((a) => a.href === 'https://oeis.org/');
+    expect(oeisLink).toBeDefined();
+    const ccLink = links.find((a) => a.href === 'https://creativecommons.org/licenses/by-sa/4.0/');
+    expect(ccLink).toBeDefined();
   });
 });
