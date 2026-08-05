@@ -6,6 +6,9 @@ import { defaultParams, type Params } from '../viz/types';
 import { buildParamControls } from './paramControls';
 import { buildSequencePanel } from './sequencePanel';
 import { initMessages, showError, showNotice } from './messages';
+import { defaultComparison, surrogateSequence, drawEnsembleChart, buildComparisonBar } from './comparison';
+import { startEnsembleWorker, type EnsembleJob } from '../nullmodel/ensemble';
+import type { Bands } from '../nullmodel/bands';
 
 export function mountApp(root: HTMLElement): void {
   registerAll();
@@ -15,6 +18,12 @@ export function mountApp(root: HTMLElement): void {
     vizId: allVisualizers()[0]!.id,
     params: defaultParams(allVisualizers()[0]!.params),
   };
+
+  const comparison = defaultComparison();
+  let ensembleCancel: { cancel(): void } | null = null;
+  let ensembleBands: Record<string, Bands> | null = null;
+  let ensembleKey = '';
+  let ensembleStatus: 'idle' | 'running' = 'idle';
 
   root.replaceChildren();
   const layout = document.createElement('div');
@@ -33,6 +42,7 @@ export function mountApp(root: HTMLElement): void {
     onSequence(seq) {
       state.seq = seq;
       panel.setInfo(seq);
+      bar.update(Boolean(getVisualizer(state.vizId).statistics));
       redraw();
     },
     onError: showError,
@@ -61,6 +71,7 @@ export function mountApp(root: HTMLElement): void {
     state.vizId = picker.value;
     state.params = defaultParams(getVisualizer(state.vizId).params);
     rebuildParams();
+    bar.update(Boolean(getVisualizer(state.vizId).statistics));
     redraw();
   });
   topbar.appendChild(picker);
@@ -82,6 +93,10 @@ export function mountApp(root: HTMLElement): void {
   main.appendChild(canvasWrap);
   const canvas = document.createElement('canvas');
   canvasWrap.appendChild(canvas);
+
+  const bar = buildComparisonBar(comparison, redraw);
+  main.insertBefore(bar.el, canvasWrap);
+  bar.update(Boolean(getVisualizer(state.vizId).statistics));
 
   function redraw(): void {
     const rect = canvasWrap.getBoundingClientRect();
@@ -108,10 +123,64 @@ export function mountApp(root: HTMLElement): void {
     if (view.length < viz.minTerms) {
       showNotice(`${viz.name} works best with at least ${viz.minTerms} terms (loaded: ${view.length}).`);
     }
-    try {
-      viz.render(view, state.params, ctx, { width, height });
-    } catch (e) {
-      showError(`Render failed: ${e instanceof Error ? e.message : String(e)}`);
+    const draw = (seq: typeof state.seq, w: number, h: number, ox: number, label: string) => {
+      ctx.save();
+      ctx.translate(ox, 0);
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      ctx.clip();
+      try {
+        viz.render(new SequenceView(seq!), state.params, ctx, { width: w, height: h });
+      } catch (e) {
+        showError(`Render failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
+      ctx.fillStyle = '#9aa0aa';
+      ctx.font = '12px system-ui';
+      ctx.fillText(label, 10, h - 10);
+      ctx.restore();
+    };
+
+    if (comparison.mode === 'side') {
+      const surr = surrogateSequence(state.seq, comparison.surrogate, comparison.seed);
+      draw(state.seq, width / 2 - 1, height, 0, 'real');
+      ctx.strokeStyle = '#333';
+      ctx.beginPath(); ctx.moveTo(width / 2, 0); ctx.lineTo(width / 2, height); ctx.stroke();
+      draw(surr, width / 2 - 1, height, width / 2 + 1, `${comparison.surrogate} surrogate`);
+    } else if (comparison.mode === 'flip') {
+      const shown = comparison.showSurrogate
+        ? surrogateSequence(state.seq, comparison.surrogate, comparison.seed)
+        : state.seq;
+      draw(shown, width, height, 0, comparison.showSurrogate ? `${comparison.surrogate} surrogate` : 'real');
+    } else if (comparison.mode === 'ensemble' && viz.statistics) {
+      const job: EnsembleJob = {
+        terms: state.seq.terms.map(String),
+        surrogate: comparison.surrogate,
+        count: comparison.ensembleN,
+        seed: comparison.seed,
+        vizId: state.vizId,
+        params: { ...state.params },
+      };
+      const key = JSON.stringify(job);
+      if (key !== ensembleKey) {
+        ensembleKey = key;
+        ensembleBands = null;
+        ensembleCancel?.cancel();
+        ensembleStatus = 'running';
+        ensembleCancel = startEnsembleWorker(job, {
+          onProgress: () => {},
+          onResult: (stats) => { ensembleBands = stats; ensembleStatus = 'idle'; redraw(); },
+          onError: (m) => { ensembleStatus = 'idle'; showError(`Ensemble failed: ${m}`); },
+        });
+      }
+      if (ensembleBands) {
+        drawEnsembleChart(ctx, { width, height }, viz.statistics(view, state.params), ensembleBands);
+      } else {
+        ctx.fillStyle = '#9aa0aa';
+        ctx.font = '14px system-ui';
+        ctx.fillText(`Computing ${comparison.ensembleN}-surrogate ensemble…`, 24, 40);
+      }
+    } else {
+      draw(state.seq, width, height, 0, '');
     }
   }
 

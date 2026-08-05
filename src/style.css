@@ -38,3 +38,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .banner { padding: 8px 14px; border-radius: 6px; font-size: 13px; max-width: 360px; }
 .banner-error { background: #3d1f26; color: #f7768e; border: 1px solid #f7768e55; }
 .banner-notice { background: #1f2a3d; color: #7aa2f7; border: 1px solid #7aa2f755; }
+.comparison-bar { display: flex; gap: 8px; align-items: center; padding: 8px 14px; background: var(--panel); border-top: 1px solid #000; flex-wrap: wrap; }
+.comparison-bar select, .comparison-bar input, .comparison-bar button { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 4px 8px; font: inherit; }
+.comparison-bar input { width: 70px; }
+.bar-label { color: var(--muted); font-size: 13px; }

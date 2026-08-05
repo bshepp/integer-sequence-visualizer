@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { runEnsemble, type EnsembleJob } from '../../src/nullmodel/ensemble';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { runEnsemble, startEnsembleWorker, type EnsembleJob } from '../../src/nullmodel/ensemble';
 
 const job = (over: Partial<EnsembleJob> = {}): EnsembleJob => ({
   terms: ['0', '1', '1', '2', '3', '5', '8', '13'],
@@ -35,5 +35,41 @@ describe('runEnsemble', () => {
   it('throws for unknown viz or one without statistics', () => {
     expect(() => runEnsemble(job({ vizId: 'nope' }))).toThrow(/nope/);
     expect(() => runEnsemble(job({ vizId: 'turtle' }))).toThrow(/statistics/i);
+  });
+});
+
+describe('startEnsembleWorker', () => {
+  class FakeWorker {
+    static last: FakeWorker | null = null;
+    onmessage: ((e: { data: unknown }) => void) | null = null;
+    onerror: ((e: { message?: string }) => void) | null = null;
+    terminated = false;
+    constructor(public url: URL, public opts?: WorkerOptions) { FakeWorker.last = this; }
+    postMessage(_msg: unknown): void {}
+    terminate(): void { this.terminated = true; }
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    FakeWorker.last = null;
+  });
+
+  it('reports worker load failures through onError and terminates', () => {
+    vi.stubGlobal('Worker', FakeWorker);
+    const onError = vi.fn();
+    startEnsembleWorker(job(), { onProgress: () => {}, onResult: () => {}, onError });
+    const w = FakeWorker.last!;
+    expect(w.onerror).toBeTypeOf('function');
+    w.onerror!({ message: 'boom' });
+    expect(onError).toHaveBeenCalledWith('boom');
+    expect(w.terminated).toBe(true);
+  });
+
+  it('falls back to a generic message when the error event has none', () => {
+    vi.stubGlobal('Worker', FakeWorker);
+    const onError = vi.fn();
+    startEnsembleWorker(job(), { onProgress: () => {}, onResult: () => {}, onError });
+    FakeWorker.last!.onerror!({});
+    expect(onError).toHaveBeenCalledWith('Ensemble worker failed to load.');
   });
 });

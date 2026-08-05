@@ -61,6 +61,10 @@ export function startEnsembleWorker(
   },
 ): { cancel(): void } {
   const worker = new Worker(new URL('./ensembleWorker.ts', import.meta.url), { type: 'module' });
+  worker.onerror = (e) => {
+    handlers.onError(e.message || 'Ensemble worker failed to load.');
+    worker.terminate();
+  };
   worker.onmessage = (e: MessageEvent<EnsembleMessage>) => {
     const msg = e.data;
     if (msg.type === 'progress') handlers.onProgress(msg.done, msg.total);
