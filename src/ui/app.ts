@@ -9,6 +9,7 @@ import { initMessages, showError, showNotice } from './messages';
 import { defaultComparison, surrogateSequence, drawEnsembleChart, buildComparisonBar } from './comparison';
 import { startEnsembleWorker, type EnsembleJob } from '../nullmodel/ensemble';
 import type { Bands } from '../nullmodel/bands';
+import { buildSweepView } from './sweep';
 
 export function mountApp(root: HTMLElement): void {
   registerAll();
@@ -97,6 +98,26 @@ export function mountApp(root: HTMLElement): void {
   const bar = buildComparisonBar(comparison, redraw);
   main.insertBefore(bar.el, canvasWrap);
   bar.update(Boolean(getVisualizer(state.vizId).statistics));
+
+  const sweepBtn = document.createElement('button');
+  sweepBtn.textContent = 'Sweep…';
+  sweepBtn.addEventListener('click', () => {
+    if (!state.seq) { showNotice('Load a sequence first.'); return; }
+    const numeric = getVisualizer(state.vizId).params.filter((p) => p.kind === 'number');
+    if (numeric.length === 0) { showNotice('This visualizer has no numeric parameters to sweep.'); return; }
+    const paramId = numeric.length === 1
+      ? numeric[0]!.id
+      : window.prompt(`Sweep which parameter? (${numeric.map((p) => p.id).join(', ')})`, numeric[0]!.id) ?? numeric[0]!.id;
+    if (!numeric.some((p) => p.id === paramId)) { showError(`Unknown parameter "${paramId}".`); return; }
+    const overlay = buildSweepView({
+      seq: state.seq, viz: getVisualizer(state.vizId), baseParams: { ...state.params },
+      paramId, count: 12,
+      onPick(value) { state.params[paramId] = value; rebuildParams(); redraw(); },
+      onClose() { overlay.remove(); },
+    });
+    root.appendChild(overlay);
+  });
+  bar.el.appendChild(sweepBtn);
 
   function redraw(): void {
     const rect = canvasWrap.getBoundingClientRect();
