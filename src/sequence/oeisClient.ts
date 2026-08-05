@@ -15,42 +15,86 @@ export function normalizeANumber(input: string): string {
 
 export interface OeisSearchHit { aNumber: string; name: string; }
 
-interface OeisResult { number: number; name: string; data: string; offset: string; }
-interface OeisResponse { count: number; results: OeisResult[] | null; }
+// Static data hosted at /data/, built by scripts/build-oeis-index.mjs from
+// OEIS's own daily bulk downloads (names.gz + stripped.gz). OEIS's /search
+// endpoint 403s for datacenter IPs behind Cloudflare's bot challenge, so the
+// deployed app cannot proxy it; these static files are the documented path
+// for bulk consumers instead. See the task-19b brief for the full story.
+interface ShardEntry { n: string; d: string; }
+type ShardFile = Record<string, ShardEntry>;
 
-async function fetchJson(url: string, fetchFn: FetchLike): Promise<OeisResponse> {
-  const res = await fetchFn(url);
-  if (!res.ok) throw new Error(`OEIS request failed (HTTP ${res.status}).`);
-  const body = (await res.json()) as unknown;
-  // Live OEIS fmt=json responses are a bare array of results, or null for no
-  // matches; older responses used a { count, results } envelope. Accept both.
-  if (body === null) return { count: 0, results: null };
-  if (Array.isArray(body)) return { count: body.length, results: body as OeisResult[] };
-  if (typeof body === 'object' && 'results' in body) return body as OeisResponse;
-  throw new Error('Unexpected response from OEIS.');
+function shardFor(aNumber: string): string {
+  const n = Number(aNumber.slice(1));
+  return String(Math.floor(n / 1000)).padStart(3, '0');
 }
 
-function resultToSequence(r: OeisResult): Sequence {
-  const aNumber = 'A' + String(r.number).padStart(6, '0');
-  const terms = r.data.split(',').map((t) => BigInt(t.trim()));
-  const offset = parseInt(r.offset.split(',')[0] ?? '0', 10);
-  return { terms, aNumber, name: r.name, offset, source: 'oeis' };
+function parseTerms(termsCsv: string): bigint[] {
+  if (!termsCsv) return [];
+  return termsCsv.split(',').map((t) => BigInt(t));
 }
 
 export async function lookupById(aNumber: string, fetchFn: FetchLike = defaultFetch): Promise<Sequence> {
   const id = normalizeANumber(aNumber);
-  const body = await fetchJson(`/api/search?q=${encodeURIComponent('id:' + id)}&fmt=json`, fetchFn);
-  const first = body.results?.[0];
-  if (!first) throw new Error(`No OEIS sequence found for ${id}.`);
-  return resultToSequence(first);
+  const notFound = () => new Error(`No OEIS sequence found for ${id}.`);
+  const res = await fetchFn(`/data/seq/${shardFor(id)}.json`);
+  if (!res.ok) throw notFound();
+  const shard = (await res.json()) as ShardFile;
+  const entry = shard[id];
+  if (!entry) throw notFound();
+  return { terms: parseTerms(entry.d), aNumber: id, name: entry.n, offset: 0, source: 'oeis' };
+}
+
+// The search index (/data/search-index.txt, one "A000045\tname" line per
+// sequence) is tens of MB uncompressed. It is fetched at most once per page
+// load and cached in this module-level promise; every search() call reuses
+// it. clearSearchIndexCache() exists solely so tests can reset that cache
+// between cases — production code never needs to call it.
+let searchIndexPromise: Promise<OeisSearchHit[]> | null = null;
+
+export function clearSearchIndexCache(): void {
+  searchIndexPromise = null;
+}
+
+function loadSearchIndex(fetchFn: FetchLike): Promise<OeisSearchHit[]> {
+  if (!searchIndexPromise) {
+    searchIndexPromise = (async () => {
+      const res = await fetchFn('/data/search-index.txt');
+      if (!res.ok) throw new Error(`Failed to load the OEIS search index (HTTP ${res.status}).`);
+      const text = await res.text();
+      const hits: OeisSearchHit[] = [];
+      for (const line of text.split('\n')) {
+        if (!line) continue;
+        const tab = line.indexOf('\t');
+        if (tab < 0) continue;
+        hits.push({ aNumber: line.slice(0, tab), name: line.slice(tab + 1) });
+      }
+      return hits;
+    })().catch((err: unknown) => {
+      searchIndexPromise = null; // allow a retry on the next search
+      throw err;
+    });
+  }
+  return searchIndexPromise;
 }
 
 export async function search(query: string, fetchFn: FetchLike = defaultFetch): Promise<OeisSearchHit[]> {
-  const body = await fetchJson(`/api/search?q=${encodeURIComponent(query)}&fmt=json`, fetchFn);
-  return (body.results ?? []).map((r) => ({
-    aNumber: 'A' + String(r.number).padStart(6, '0'),
-    name: r.name,
-  }));
+  const index = await loadSearchIndex(fetchFn);
+  const q = query.trim();
+  if (!q) return [];
+  const qLower = q.toLowerCase();
+  let idQuery: string | null = null;
+  try { idQuery = normalizeANumber(q); } catch { idQuery = null; }
+
+  const hits: OeisSearchHit[] = [];
+  for (const hit of index) {
+    const matches = hit.name.toLowerCase().includes(qLower) ||
+      (idQuery !== null && hit.aNumber.startsWith(idQuery));
+    if (matches) {
+      hits.push(hit);
+      if (hits.length >= 50) break;
+    }
+  }
+  return hits;
 }
 
 export function parseBFile(text: string, cap: number): bigint[] {
