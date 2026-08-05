@@ -1,4 +1,4 @@
 import './style.css';
+import { mountApp } from './ui/app';
 
-const app = document.querySelector<HTMLDivElement>('#app')!;
-app.textContent = 'OEIS Sequence Visualizer — scaffold OK';
+mountApp(document.querySelector<HTMLDivElement>('#app')!);
