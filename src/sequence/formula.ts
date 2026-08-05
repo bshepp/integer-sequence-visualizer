@@ -72,18 +72,18 @@ class Parser {
   }
 
   parseTerm(): Node {
-    let left = this.parsePower();
+    let left = this.parseUnary();
     for (;;) {
-      if (this.eatOp('*')) { const r = this.parsePower(); const l = left; left = (n) => l(n) * r(n); }
+      if (this.eatOp('*')) { const r = this.parseUnary(); const l = left; left = (n) => l(n) * r(n); }
       else if (this.eatOp('/')) {
-        const r = this.parsePower(); const l = left;
+        const r = this.parseUnary(); const l = left;
         left = (n) => {
           const d = r(n);
           if (d === 0n) throw new Error('Division by zero');
           return l(n) / d;
         };
       } else if (this.eatOp('%')) {
-        const r = this.parsePower(); const l = left;
+        const r = this.parseUnary(); const l = left;
         left = (n) => {
           const d = r(n);
           if (d === 0n) throw new Error('Modulo by zero');
@@ -94,9 +94,9 @@ class Parser {
   }
 
   parsePower(): Node {
-    const base = this.parseUnary();
+    const base = this.parsePrimary();
     if (this.eatOp('^')) {
-      const exp = this.parsePower(); // right-associative
+      const exp = this.parseUnary(); // right-associative; admits unary minus in exponent
       return (n) => {
         const e = exp(n);
         if (e < 0n) throw new Error('Negative exponent not allowed');
@@ -109,7 +109,7 @@ class Parser {
 
   parseUnary(): Node {
     if (this.eatOp('-')) { const inner = this.parseUnary(); return (n) => -inner(n); }
-    return this.parsePrimary();
+    return this.parsePower();
   }
 
   parsePrimary(): Node {

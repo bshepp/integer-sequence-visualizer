@@ -20,6 +20,12 @@ describe('compileFormula', () => {
     expect(compileFormula('2^100')(0n)).toBe(2n ** 100n);
   });
 
+  it('unary minus binds looser than ^ (matches math convention)', () => {
+    expect(compileFormula('-2^2')(0n)).toBe(-4n);
+    expect(compileFormula('(-2)^2')(0n)).toBe(4n);
+    expect(compileFormula('-n^2')(3n)).toBe(-9n);
+  });
+
   it('division truncates toward zero; % is remainder', () => {
     expect(compileFormula('7/2')(0n)).toBe(3n);
     expect(compileFormula('-7/2')(0n)).toBe(-3n);
