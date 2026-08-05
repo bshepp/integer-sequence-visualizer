@@ -9,6 +9,19 @@ describe('sweepValues', () => {
     expect(sweepValues({ min: 2, max: 12, step: 1 }, 6)).toEqual([2, 4, 6, 8, 10, 12]);
     expect(sweepValues({ min: 1, max: 3, step: 1 }, 12)).toEqual([1, 2, 3]);
   });
+
+  it('always includes exact endpoints even when step misaligns with the span', () => {
+    for (const [spec, count] of [
+      [{ min: 0, max: 10, step: 3 }, 5],
+      [{ min: 0, max: 10, step: 4 }, 4],
+    ] as const) {
+      const out = sweepValues(spec, count);
+      expect(out[0]).toBe(spec.min);
+      expect(out[out.length - 1]).toBe(spec.max);
+      for (let i = 1; i < out.length; i++) expect(out[i]!).toBeGreaterThan(out[i - 1]!);
+      for (const v of out.slice(1, -1)) expect((v - spec.min) % spec.step).toBe(0);
+    }
+  });
 });
 
 describe('buildSweepView', () => {

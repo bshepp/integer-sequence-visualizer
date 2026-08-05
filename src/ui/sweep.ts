@@ -1,14 +1,20 @@
 import { SequenceView, type Sequence } from '../sequence/sequence';
 import type { Params, Visualizer } from '../viz/types';
 
+// `count` values spread uniformly across [min, max]. The endpoints (`min`, `max`)
+// are always included exactly. Interior values are snapped to the step grid
+// (relative to `min`) and clamped strictly inside (min, max) — this keeps the
+// two ends exact even when `step` doesn't evenly divide the span. Deduplicated,
+// ascending. `count` >= 2.
 export function sweepValues(spec: { min: number; max: number; step: number }, count: number): number[] {
-  const out: number[] = [];
-  for (let i = 0; i < count; i++) {
+  const interior: number[] = [];
+  for (let i = 1; i < count - 1; i++) {
     const raw = spec.min + ((spec.max - spec.min) * i) / (count - 1);
     const snapped = spec.min + Math.round((raw - spec.min) / spec.step) * spec.step;
-    out.push(Math.min(spec.max, snapped));
+    const clamped = Math.min(spec.max, Math.max(spec.min, snapped));
+    if (clamped > spec.min && clamped < spec.max) interior.push(clamped);
   }
-  return [...new Set(out)];
+  return [...new Set([spec.min, ...interior, spec.max])];
 }
 
 export function buildSweepView(opts: {
