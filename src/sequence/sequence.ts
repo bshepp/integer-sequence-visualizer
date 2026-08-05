@@ -45,6 +45,9 @@ export class SequenceView {
   }
 
   digits(i: number, base = 10): number[] {
+    if (base < 2 || !Number.isInteger(base)) {
+      throw new RangeError(`digits(): base must be an integer >= 2, got ${base}`);
+    }
     let t = this.term(i);
     if (t < 0n) t = -t;
     if (t === 0n) return [0];

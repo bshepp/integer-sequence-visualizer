@@ -51,4 +51,11 @@ describe('SequenceView', () => {
     expect(v.sign(1)).toBe(0);
     expect(v.sign(2)).toBe(1);
   });
+
+  it('digits rejects invalid bases', () => {
+    const v = new SequenceView(mkSeq([123n]));
+    expect(() => v.digits(0, 1)).toThrow(RangeError);
+    expect(() => v.digits(0, 2.5)).toThrow(RangeError);
+    expect(v.digits(0, 2)).toEqual([1, 1, 1, 1, 0, 1, 1]);
+  });
 });
