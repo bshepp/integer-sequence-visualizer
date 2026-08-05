@@ -65,11 +65,24 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     input.placeholder = 'e.g. partition numbers';
     const btn = document.createElement('button');
     btn.textContent = 'Search';
+    const status = document.createElement('div');
+    status.className = 'search-status';
     const results = document.createElement('ul');
     results.className = 'search-results';
-    const run = () =>
+    // The search index is tens of MB uncompressed and is fetched at most
+    // once (oeisClient caches it module-wide); only that first, genuinely
+    // slow fetch should disable the button and show a loading message —
+    // subsequent searches reuse the cached index and stay instant.
+    let indexLoaded = false;
+    const run = () => {
+      const firstLoad = !indexLoaded;
+      if (firstLoad) {
+        btn.disabled = true;
+        status.textContent = 'Loading search index…';
+      }
       search(input.value)
         .then((hits) => {
+          indexLoaded = true;
           results.replaceChildren();
           if (hits.length === 0) { handlers.onError('No matches.'); return; }
           for (const hit of hits.slice(0, 12)) {
@@ -81,10 +94,17 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
             results.appendChild(li);
           }
         })
-        .catch((e) => handlers.onError(e instanceof Error ? e.message : String(e)));
+        .catch((e) => handlers.onError(e instanceof Error ? e.message : String(e)))
+        .finally(() => {
+          if (firstLoad) {
+            btn.disabled = false;
+            status.textContent = '';
+          }
+        });
+    };
     btn.addEventListener('click', run);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
-    pane.append(input, btn, results);
+    pane.append(input, btn, status, results);
     el.appendChild(pane);
   }
 

@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { buildParamControls } from '../../src/ui/paramControls';
 import { buildSequencePanel } from '../../src/ui/sequencePanel';
 import { mountApp } from '../../src/ui/app';
 import { PRESETS } from '../../src/sequence/presets';
 import { encodeState, decodeState, type UrlState } from '../../src/ui/urlState';
+import { clearSearchIndexCache } from '../../src/sequence/oeisClient';
 import type { ParamSpec } from '../../src/viz/types';
 
 describe('PRESETS', () => {
@@ -79,6 +80,70 @@ describe('buildSequencePanel', () => {
     // existing tests and app.ts rely on.
     expect(el.querySelectorAll('.tab-button').length).toBe(3);
     expect(el.querySelectorAll('.preset-button').length).toBe(PRESETS.length);
+  });
+});
+
+describe('buildSequencePanel — search index loading UX', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function openSearchPane(el: HTMLElement) {
+    el.querySelectorAll<HTMLButtonElement>('.tab-button')[1]!.click(); // Search tab
+    const pane = Array.from(el.querySelectorAll<HTMLElement>('.tab-pane')).find((p) => !p.hidden)!;
+    return {
+      input: pane.querySelector<HTMLInputElement>('input')!,
+      btn: pane.querySelector<HTMLButtonElement>('button')!,
+      status: pane.querySelector<HTMLElement>('.search-status')!,
+    };
+  }
+
+  it('disables Search and shows a loading status while the index fetch is in flight, restoring on failure via onError', async () => {
+    clearSearchIndexCache();
+    const onError = vi.fn();
+    const { el } = buildSequencePanel({ onSequence: () => {}, onError });
+    const { input, btn, status } = openSearchPane(el);
+
+    input.value = 'fibonacci';
+    btn.click(); // synchronous: loading state is set before the (real, rejecting) fetch settles
+
+    expect(btn.disabled).toBe(true);
+    expect(status.textContent).toMatch(/loading/i);
+
+    await new Promise((r) => setTimeout(r, 20)); // let the doomed relative-URL fetch reject
+
+    expect(btn.disabled).toBe(false);
+    expect(status.textContent).toBe('');
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(typeof onError.mock.calls[0]![0]).toBe('string');
+  });
+
+  it('shows the loading status only for the first search, never once the index is cached', async () => {
+    clearSearchIndexCache();
+    const indexText = 'A000045\tFibonacci numbers.\n';
+    const fetchMock = vi.fn(async () => ({
+      ok: true, status: 200, json: async () => ({}), text: async () => indexText,
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { el } = buildSequencePanel({ onSequence: () => {}, onError: () => {} });
+    const { input, btn, status } = openSearchPane(el);
+
+    input.value = 'fibonacci';
+    btn.click();
+    expect(btn.disabled).toBe(true);
+    expect(status.textContent).toMatch(/loading/i);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(btn.disabled).toBe(false);
+    expect(status.textContent).toBe('');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    input.value = 'fibonacci';
+    btn.click(); // second search: index already cached — no loading phase this time
+    expect(btn.disabled).toBe(false);
+    expect(status.textContent).toBe('');
+    await new Promise((r) => setTimeout(r, 20));
+    expect(fetchMock).toHaveBeenCalledTimes(1); // still just the one index fetch
   });
 });
 

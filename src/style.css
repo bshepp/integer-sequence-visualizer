@@ -41,6 +41,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .tab-pane input, .tab-pane textarea, .tab-pane button, .tab-pane select { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 6px; font: inherit; }
 .tab-pane button { cursor: pointer; }
 .formula-error { color: #f7768e; font-size: 12px; min-height: 1em; }
+.search-status { color: var(--muted); font-size: 12px; min-height: 1em; }
 .search-results { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .search-results button { width: 100%; text-align: left; background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 6px; cursor: pointer; font-size: 12px; }
 .presets-shelf { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
