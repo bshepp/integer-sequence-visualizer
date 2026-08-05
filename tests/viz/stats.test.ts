@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SequenceView, type Sequence } from '../../src/sequence/sequence';
-import { computeHistogram, histogramViz } from '../../src/viz/histogram';
+import { computeHistogram, histogramViz, shouldUseLogScale } from '../../src/viz/histogram';
 import { autocorrelation, autocorrViz } from '../../src/viz/autocorrelation';
 import { defaultParams } from '../../src/viz/types';
 import { fakeCtx } from '../helpers/fakeCtx';
@@ -31,6 +31,35 @@ describe('histogramViz.statistics targets', () => {
   it('leading takes the first digit of each term', () => {
     const stats = histogramViz.statistics!(mk([123n, 91n, 8n]), { target: 'leading', bins: 9 });
     expect(stats.count!.reduce((a, b) => a + b, 0)).toBe(3);
+  });
+});
+
+describe('shouldUseLogScale', () => {
+  it('is false for small terms well within float64 safe range', () => {
+    expect(shouldUseLogScale(mk([1n, 2n, 3n]))).toBe(false);
+  });
+  it('is false for a sequence with exactly one huge term', () => {
+    expect(shouldUseLogScale(mk([10n ** 30n, 1n, 2n]))).toBe(false);
+  });
+  it('is true for a sequence with two distinct huge terms', () => {
+    expect(shouldUseLogScale(mk([10n ** 30n, 10n ** 31n, 1n]))).toBe(true);
+  });
+});
+
+describe('histogramViz adaptive terms target', () => {
+  it('does not collapse huge distinct terms into a single bin (regression)', () => {
+    // All terms exceed Number.MAX_SAFE_INTEGER, so a naive toNumber() histogram
+    // clamps every one of them to the same value and pins them in one bin.
+    const seq = mk([10n ** 30n, 10n ** 31n, 10n ** 32n, 10n ** 33n]);
+    const stats = histogramViz.statistics!(seq, { target: 'terms', bins: 10 });
+    const nonZeroBins = stats.count!.filter((c) => c > 0).length;
+    expect(nonZeroBins).toBeGreaterThanOrEqual(2);
+  });
+
+  it('explicit logmagnitude target returns counts summing to sequence length', () => {
+    const seq = mk([10n ** 30n, 10n ** 31n, 1n, 2n]);
+    const stats = histogramViz.statistics!(seq, { target: 'logmagnitude', bins: 5 });
+    expect(stats.count!.reduce((a, b) => a + b, 0)).toBe(seq.length);
   });
 });
 

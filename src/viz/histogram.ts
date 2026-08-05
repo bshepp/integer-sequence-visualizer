@@ -19,6 +19,22 @@ export function computeHistogram(values: number[], binCount: number): { edges: n
   return { edges, counts };
 }
 
+// A single term beyond float64-safe range is harmless in a value histogram —
+// it's only when 2+ distinct terms collapse onto the same clamped value that
+// the chart becomes misleading (they all pile into one bin).
+const LOG_SAFE_THRESHOLD = 15.9; // log10(2^53) ≈ 15.95
+
+export function shouldUseLogScale(seq: SequenceView): boolean {
+  let overflowCount = 0;
+  for (let i = 0; i < seq.length; i++) {
+    if (seq.logMagnitude(i) > LOG_SAFE_THRESHOLD) {
+      overflowCount++;
+      if (overflowCount > 1) return true;
+    }
+  }
+  return false;
+}
+
 function targetValues(seq: SequenceView, target: string): number[] {
   const out: number[] = [];
   if (target === 'gaps') {
@@ -27,8 +43,16 @@ function targetValues(seq: SequenceView, target: string): number[] {
     for (let i = 0; i < seq.length; i++) out.push(...seq.digits(i));
   } else if (target === 'leading') {
     for (let i = 0; i < seq.length; i++) out.push(seq.digits(i)[0]!);
+  } else if (target === 'logmagnitude') {
+    for (let i = 0; i < seq.length; i++) out.push(seq.logMagnitude(i));
   } else {
-    for (let i = 0; i < seq.length; i++) out.push(seq.toNumber(i));
+    // target === 'terms': adaptively fall back to log-magnitude so the chart
+    // never silently piles every overflowing term into one misleading bin.
+    if (shouldUseLogScale(seq)) {
+      for (let i = 0; i < seq.length; i++) out.push(seq.logMagnitude(i));
+    } else {
+      for (let i = 0; i < seq.length; i++) out.push(seq.toNumber(i));
+    }
   }
   return out.length > 0 ? out : [0];
 }
@@ -39,7 +63,7 @@ export const histogramViz: Visualizer = {
   family: 'stats',
   minTerms: 4,
   params: [
-    { kind: 'select', id: 'target', label: 'Of', default: 'terms', options: ['terms', 'gaps', 'digits', 'leading'] },
+    { kind: 'select', id: 'target', label: 'Of', default: 'terms', options: ['terms', 'logmagnitude', 'gaps', 'digits', 'leading'] },
     { kind: 'number', id: 'bins', label: 'Bins', default: 20, min: 4, max: 60, step: 1 },
   ],
   statistics(seq: SequenceView, params: Params) {
