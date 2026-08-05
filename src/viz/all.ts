@@ -3,6 +3,8 @@ import { scatterViz } from './scatter';
 import { differencesViz } from './differences';
 import { histogramViz } from './histogram';
 import { autocorrViz } from './autocorrelation';
+import { ulamViz } from './ulamSpiral';
+import { modGridViz } from './modGrid';
 
 let registered = false;
 
@@ -10,5 +12,5 @@ export function registerAll(): void {
   if (registered) return;
   registered = true;
   // Later tasks append their visualizers to this list.
-  for (const v of [scatterViz, differencesViz, histogramViz, autocorrViz]) registerVisualizer(v);
+  for (const v of [scatterViz, differencesViz, histogramViz, autocorrViz, ulamViz, modGridViz]) registerVisualizer(v);
 }
