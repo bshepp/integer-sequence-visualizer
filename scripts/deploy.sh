@@ -36,9 +36,14 @@ aws s3 cp "$tmp" "s3://$BUCKET/$INDEX_KEY" \
 echo "==> invalidating CloudFront"
 # MSYS_NO_PATHCONV stops Git Bash on Windows from rewriting the leading-slash
 # invalidation paths into Windows paths, which CloudFront rejects.
+# /data/* covers the regenerated seq/*.json + meta.json (build:data output,
+# synced above along with everything else in dist/) as well as the search
+# index — without it, only "/", "/index.html", and the index itself were
+# invalidated, so a re-run of build:data (new OEIS sequences, corrected
+# metadata) stayed served stale from cache until it happened to expire.
 MSYS_NO_PATHCONV=1 aws cloudfront create-invalidation \
   --distribution-id "$DISTRIBUTION" \
-  --paths "/" "/index.html" "/$INDEX_KEY" \
+  --paths "/" "/index.html" "/$INDEX_KEY" "/data/*" \
   --query "Invalidation.Id" --output text
 
 echo "==> done: https://ulam.briansheppard.com/"
