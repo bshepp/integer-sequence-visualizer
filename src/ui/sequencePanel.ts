@@ -172,6 +172,7 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
       const a = document.createElement('a');
       a.href = `https://oeis.org/${seq.aNumber}`;
       a.target = '_blank';
+      a.rel = 'noopener noreferrer';
       a.textContent = seq.aNumber;
       meta.appendChild(a);
     }
@@ -187,7 +188,11 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
       btn.textContent = 'Load all terms (b-file)';
       btn.addEventListener('click', () => {
         btn.disabled = true;
-        fetchBFile(seq.aNumber!, Number(cap.value))
+        // Number('') === 0 for a cleared field, and parseBFile(text, 0)
+        // used to silently return a one-term sequence instead of erroring —
+        // guard here too so the common "cleared the input, clicked load"
+        // slip doesn't even reach that path.
+        fetchBFile(seq.aNumber!, Math.max(1, Number(cap.value)))
           .then((terms) => handlers.onSequence(withTerms(seq, terms)))
           .catch((e) => handlers.onError(e instanceof Error ? e.message : String(e)))
           .finally(() => { btn.disabled = false; });

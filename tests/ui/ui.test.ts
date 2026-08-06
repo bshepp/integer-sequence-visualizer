@@ -7,6 +7,7 @@ import { PRESETS } from '../../src/sequence/presets';
 import { encodeState, decodeState, type UrlState } from '../../src/ui/urlState';
 import { clearSearchIndexCache } from '../../src/sequence/oeisClient';
 import type { ParamSpec } from '../../src/viz/types';
+import { fakeCtx } from '../helpers/fakeCtx';
 
 // mountApp adds a window-level 'hashchange' listener and (correctly, for a
 // real page that mounts once) never removes it. jsdom shares a single
@@ -72,6 +73,14 @@ describe('buildSequencePanel', () => {
     expect(panel.el.querySelector('.bfile-button')).not.toBeNull();
     panel.setInfo({ terms: [1n], name: 'n*n', offset: 0, source: 'formula' });
     expect(panel.el.querySelector('.bfile-button')).toBeNull();
+  });
+
+  it('the OEIS A-number link opens with rel="noopener noreferrer" (task FR, M10)', () => {
+    const panel = buildSequencePanel({ onSequence: () => {}, onError: () => {} });
+    panel.setInfo({ terms: [1n], aNumber: 'A000045', name: 'Fibonacci numbers', offset: 0, source: 'oeis' });
+    const link = panel.el.querySelector<HTMLAnchorElement>('.info-meta a')!;
+    expect(link.target).toBe('_blank');
+    expect(link.rel.split(/\s+/).sort()).toEqual(['noopener', 'noreferrer']);
   });
 
   it('exactly one tab-pane is visible at a time, and it changes on tab click', () => {
@@ -305,5 +314,120 @@ describe('mountApp — same-document hash navigation', () => {
     expect(() => window.dispatchEvent(new Event('hashchange'))).not.toThrow();
     expect(picker.value).toBe(beforeViz);
     expect(modeSelect.value).toBe(beforeMode);
+  });
+});
+
+function loadPastedSequence(root: HTMLElement, text: string): void {
+  const tabButtons = root.querySelectorAll<HTMLButtonElement>('.tab-button');
+  tabButtons[2]!.click(); // 'Custom' tab
+  const textarea = root.querySelector<HTMLTextAreaElement>('textarea')!;
+  textarea.value = text;
+  const loadBtn = Array.from(root.querySelectorAll('button')).find((b) => b.textContent === 'Load pasted')!;
+  loadBtn.click();
+}
+
+describe('mountApp — sweep button Cancel handling (task FR, M9)', () => {
+  // Picking 'turtle' writes it into location.hash via redraw()'s syncUrl()
+  // (mountApp's own hashchange listener is never removed — see this file's
+  // top-of-file comment — and neither is that hash write). Left in place, a
+  // later test's fresh mountApp() would decode it on mount and start on
+  // 'turtle' instead of its own default, exactly the kind of cross-test
+  // pollution the "same-document hash navigation" describe block below
+  // already guards against for its own tests.
+  afterEach(() => {
+    vi.restoreAllMocks();
+    history.replaceState(null, '', location.pathname);
+  });
+
+  it('Cancel on the parameter prompt aborts the sweep instead of running it on the first parameter', () => {
+    const root = document.createElement('div');
+    mountApp(root);
+    loadPastedSequence(root, '1,2,3,4,5,6,7,8');
+    const picker = root.querySelector<HTMLSelectElement>('.viz-picker')!;
+    picker.value = 'turtle'; // has 2 numeric params (angle, k) -> prompt is shown
+    picker.dispatchEvent(new Event('change'));
+
+    // window.prompt returns null specifically on Cancel (as opposed to ""
+    // for an OK'd-but-emptied field); `?? default` used to treat both the
+    // same, silently running the sweep on the first numeric parameter.
+    vi.spyOn(window, 'prompt').mockReturnValue(null);
+    const sweepBtn = Array.from(root.querySelectorAll('button')).find((b) => b.textContent === 'Sweep…')!;
+    sweepBtn.click();
+
+    expect(root.querySelector('.sweep-overlay')).toBeNull();
+  });
+
+  it('answering the prompt still opens the sweep overlay for the chosen parameter', () => {
+    const root = document.createElement('div');
+    mountApp(root);
+    loadPastedSequence(root, '1,2,3,4,5,6,7,8');
+    const picker = root.querySelector<HTMLSelectElement>('.viz-picker')!;
+    picker.value = 'turtle';
+    picker.dispatchEvent(new Event('change'));
+
+    vi.spyOn(window, 'prompt').mockReturnValue('k');
+    const sweepBtn = Array.from(root.querySelectorAll('button')).find((b) => b.textContent === 'Sweep…')!;
+    sweepBtn.click();
+
+    expect(root.querySelector('.sweep-overlay')).not.toBeNull();
+  });
+});
+
+describe('mountApp — ensemble failure does not stay permanently stuck on "Computing…" (task FR, I3)', () => {
+  class FakeWorker {
+    static instances: FakeWorker[] = [];
+    onmessage: ((e: { data: unknown }) => void) | null = null;
+    onerror: ((e: { message?: string }) => void) | null = null;
+    terminated = false;
+    constructor(public url: URL, public opts?: WorkerOptions) { FakeWorker.instances.push(this); }
+    postMessage(_msg: unknown): void {}
+    terminate(): void { this.terminated = true; }
+  }
+
+  beforeEach(() => {
+    // Defensive: this test needs to mount starting on 'scatter' (the
+    // default), not whatever vizId a stale location.hash from an earlier
+    // test happens to encode.
+    history.replaceState(null, '', location.pathname);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    history.replaceState(null, '', location.pathname);
+    FakeWorker.instances = [];
+  });
+
+  it('retries on the next redraw instead of being wedged on the failed job forever', () => {
+    vi.stubGlobal('Worker', FakeWorker);
+    // jsdom has no real canvas 2D context in this project (no `canvas` npm
+    // package installed — see the "Not implemented" warnings elsewhere in
+    // this suite), so drawScene()'s `if (!ctx) return;` would otherwise skip
+    // the ensemble-dispatch code entirely before this test ever reached it.
+    // Patch getContext() to hand back fakeCtx's no-op-but-callable context
+    // so the real ensemble branch actually runs.
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      () => fakeCtx().ctx as unknown as RenderingContext,
+    );
+    const root = document.createElement('div');
+    mountApp(root);
+    // Default visualizer (scatter) has statistics(), so ensemble mode is
+    // available without changing the picker.
+    loadPastedSequence(root, '1,2,3,4,5,6,7,8');
+    const modeSelect = root.querySelector<HTMLSelectElement>('.mode-select')!;
+    modeSelect.value = 'ensemble';
+    modeSelect.dispatchEvent(new Event('change')); // dispatches the first ensemble job
+
+    expect(FakeWorker.instances.length).toBe(1);
+    FakeWorker.instances[0]!.onerror!({ message: 'boom' }); // the job fails
+
+    // Before the fix: ensembleKey stayed pointed at the failed job, so this
+    // next redraw (same params - nothing the user did actually changed the
+    // job) would take the "already dispatched" branch and just keep
+    // re-painting "Computing…" forever, without ever trying again.
+    modeSelect.dispatchEvent(new Event('change')); // a redraw, not a job change
+
+    expect(FakeWorker.instances.length).toBe(2); // it retried
+    expect(FakeWorker.instances[1]!.terminated).toBe(false);
   });
 });

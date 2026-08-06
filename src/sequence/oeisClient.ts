@@ -118,6 +118,14 @@ export async function search(query: string, fetchFn: FetchLike = defaultFetch): 
 }
 
 export function parseBFile(text: string, cap: number): bigint[] {
+  // Number('') === 0 (and a cleared/garbage cap input can also produce NaN
+  // or a negative number), so a caller that forwards a blindly-coerced UI
+  // field can ask for `cap: 0` — which used to silently succeed, returning
+  // zero terms only for the pathological "no data lines" case but otherwise
+  // returning whatever `terms.length >= cap` (0 >= 0, true on the very first
+  // parsed line) allows, i.e. a one-term sequence with no visible error.
+  // Reject outright instead so the caller's mistake surfaces immediately.
+  if (!Number.isFinite(cap) || cap < 1) throw new Error(`parseBFile: cap must be >= 1, got ${cap}.`);
   const terms: bigint[] = [];
   let expectedIndex: bigint | null = null;
   for (const rawLine of text.split('\n')) {

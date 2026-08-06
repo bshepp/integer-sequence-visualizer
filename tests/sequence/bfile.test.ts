@@ -22,6 +22,19 @@ describe('parseBFile', () => {
   it('throws when there are no data lines', () => {
     expect(() => parseBFile('# nothing\n\n', 10)).toThrow(/no terms/i);
   });
+
+  it('rejects cap < 1 instead of silently returning a truncated (or one-term) sequence (task FR, M7)', () => {
+    // Number('') === 0 for a cleared UI field, and cap: 0 used to parse
+    // exactly one term (terms.length >= cap is true, 1 >= 0, on the very
+    // first data line) with no visible error.
+    expect(() => parseBFile(good, 0)).toThrow(/cap/i);
+    expect(() => parseBFile(good, -5)).toThrow(/cap/i);
+    expect(() => parseBFile(good, NaN)).toThrow(/cap/i);
+  });
+
+  it('still accepts cap: 1 as the smallest legal value', () => {
+    expect(parseBFile(good, 1)).toEqual([0n]);
+  });
 });
 
 describe('fetchBFile', () => {

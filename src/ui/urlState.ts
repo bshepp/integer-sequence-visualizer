@@ -14,6 +14,11 @@ export interface UrlState {
   mode: ComparisonMode;
   surrogate: SurrogateType;
   seed: number;
+  // Optional: absent entirely from links encoded before this field existed.
+  // decodeState does no per-field validation beyond vizId (see below), so an
+  // older/missing key simply decodes as undefined — callers that read it
+  // must treat that as "keep the current default", not throw or crash.
+  ensembleN?: number;
 }
 
 function b64urlEncode(s: string): string {

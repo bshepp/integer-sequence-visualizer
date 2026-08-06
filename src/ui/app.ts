@@ -3,7 +3,8 @@ import { SequenceView } from '../sequence/sequence';
 import { registerAll } from '../viz/all';
 import { allVisualizers, getVisualizer } from '../viz/registry';
 import { defaultParams, type Params } from '../viz/types';
-import { shouldUseLogScale } from '../viz/histogram';
+import { shouldUseLogScale, targetValues } from '../viz/histogram';
+import { minMax } from '../viz/mathUtils';
 import { buildParamControls } from './paramControls';
 import { buildSequencePanel } from './sequencePanel';
 import { initMessages, showError, showNotice } from './messages';
@@ -33,7 +34,10 @@ export function mountApp(root: HTMLElement): void {
   let ensembleCancel: { cancel(): void } | null = null;
   let ensembleBands: Record<string, Bands> | null = null;
   let ensembleKey = '';
-  let ensembleStatus: 'idle' | 'running' = 'idle';
+  // Set when the most recent ensemble job for `ensembleKey` failed, so
+  // drawScene can paint a distinct "failed" placeholder instead of
+  // re-showing "Computing…" forever (see onError below).
+  let ensembleFailed = false;
 
   root.replaceChildren();
 
@@ -164,9 +168,18 @@ export function mountApp(root: HTMLElement): void {
     if (!state.seq) { showNotice('Load a sequence first.'); return; }
     const numeric = getVisualizer(state.vizId).params.filter((p) => p.kind === 'number');
     if (numeric.length === 0) { showNotice('This visualizer has no numeric parameters to sweep.'); return; }
-    const paramId = numeric.length === 1
-      ? numeric[0]!.id
-      : window.prompt(`Sweep which parameter? (${numeric.map((p) => p.id).join(', ')})`, numeric[0]!.id) ?? numeric[0]!.id;
+    let paramId: string;
+    if (numeric.length === 1) {
+      paramId = numeric[0]!.id;
+    } else {
+      const answer = window.prompt(`Sweep which parameter? (${numeric.map((p) => p.id).join(', ')})`, numeric[0]!.id);
+      // window.prompt returns null on Cancel specifically (as opposed to ""
+      // for an OK'd-but-emptied field) — `?? default` treated both the same,
+      // so Cancel silently ran the sweep on the first parameter instead of
+      // aborting. Only a real cancellation returns early here.
+      if (answer === null) return;
+      paramId = answer;
+    }
     if (!numeric.some((p) => p.id === paramId)) { showError(`Unknown parameter "${paramId}".`); return; }
     const overlay = buildSweepView({
       seq: state.seq, viz: getVisualizer(state.vizId), baseParams: { ...state.params },
@@ -189,6 +202,7 @@ export function mountApp(root: HTMLElement): void {
       const hash = '#' + encodeState({
         seqRef: currentRef, vizId: state.vizId, params: state.params,
         mode: comparison.mode, surrogate: comparison.surrogate, seed: comparison.seed,
+        ensembleN: comparison.ensembleN,
       });
       lastHashWritten = hash;
       history.replaceState(null, '', hash);
@@ -271,6 +285,24 @@ export function mountApp(root: HTMLElement): void {
       // ignored by every other target/visualizer, so it's harmless to always
       // include it here.
       const paramsWithScale: Params = { ...state.params, logScaleOverride: shouldUseLogScale(view) };
+      if (state.vizId === 'histogram') {
+        // Same cross-draw-sync story as logScaleOverride above, for the bin
+        // *domain* rather than the scale: computeHistogram derives lo/hi
+        // from whichever values it's handed, so left alone, every surrogate
+        // draw bins into its own value range and percentileBands stacks
+        // bin i across draws as though it meant the same interval in each —
+        // it doesn't (task FR, C1: measured band 2..13 vs a fixed-domain
+        // band of 3..107 for the same real bin-0 count of 46, a false "far
+        // outside the null envelope" on the one claim this product exists
+        // to make). Computed once here from the real sequence's own target
+        // values and passed through unconditionally, the same way
+        // logScaleOverride is; histogramDomainLo/Hi are ignored by every
+        // other target/visualizer.
+        const vals = targetValues(view, String(state.params.target), paramsWithScale.logScaleOverride as boolean);
+        const { lo, hi } = minMax(vals);
+        paramsWithScale.histogramDomainLo = lo;
+        paramsWithScale.histogramDomainHi = hi;
+      }
       const job: EnsembleJob = {
         terms: state.seq.terms.map(String),
         surrogate: comparison.surrogate,
@@ -283,16 +315,32 @@ export function mountApp(root: HTMLElement): void {
       if (key !== ensembleKey) {
         ensembleKey = key;
         ensembleBands = null;
+        ensembleFailed = false;
         ensembleCancel?.cancel();
-        ensembleStatus = 'running';
         ensembleCancel = startEnsembleWorker(job, {
           onProgress: () => {},
-          onResult: (stats) => { ensembleBands = stats; ensembleStatus = 'idle'; redraw(); },
-          onError: (m) => { ensembleStatus = 'idle'; showError(`Ensemble failed: ${m}`); },
+          onResult: (stats) => { ensembleBands = stats; redraw(); },
+          onError: (m) => {
+            // Leaving ensembleKey pointed at this failed job's key would
+            // make every later redraw take the "already dispatched" branch
+            // above and keep repainting "Computing…" forever, even though
+            // nothing is actually running anymore — the error banner
+            // auto-dismisses after 6s, but that false "computing" text
+            // would not. Clearing it lets the next redraw (from any
+            // trigger — a param tweak, a resize, …) attempt the job again
+            // instead of being silently wedged.
+            ensembleKey = '';
+            ensembleFailed = true;
+            showError(`Ensemble failed: ${m}`);
+          },
         });
       }
       if (ensembleBands) {
         drawEnsembleChart(ctx, { width, height }, viz.statistics(view, paramsWithScale), ensembleBands);
+      } else if (ensembleFailed) {
+        ctx.fillStyle = '#f7768e';
+        ctx.font = '14px system-ui';
+        ctx.fillText('Ensemble computation failed — change a parameter to retry.', 24, 40);
       } else {
         ctx.fillStyle = '#9aa0aa';
         ctx.font = '14px system-ui';
@@ -328,6 +376,12 @@ export function mountApp(root: HTMLElement): void {
       if (MODES.includes(decoded.mode)) comparison.mode = decoded.mode;
       if (SURROGATES.includes(decoded.surrogate)) comparison.surrogate = decoded.surrogate;
       if (typeof decoded.seed === 'number') comparison.seed = decoded.seed;
+      // Absent on links encoded before this field existed (or any other
+      // malformed hash) — keep whatever ensembleN already is rather than
+      // clobbering it with undefined/NaN.
+      if (typeof decoded.ensembleN === 'number' && Number.isFinite(decoded.ensembleN)) {
+        comparison.ensembleN = decoded.ensembleN;
+      }
       bar.refresh();
       bar.update(Boolean(getVisualizer(state.vizId).statistics));
     }

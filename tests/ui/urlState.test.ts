@@ -34,4 +34,19 @@ describe('urlState', () => {
     expect(decodeState('not-base64!!!')).toBeNull();
     expect(decodeState('')).toBeNull();
   });
+
+  it('round-trips ensembleN (task FR, M8: previously absent, so shared ensemble links did not reproduce the band width)', () => {
+    const withN = { ...state, ensembleN: 350 };
+    expect(decodeState(encodeState(withN))).toEqual(withN);
+  });
+
+  it('decodes a hash encoded before ensembleN existed without throwing (backward compatibility)', () => {
+    // `state` itself has no ensembleN key, so encoding it already simulates
+    // a pre-M8 link — decoding must not throw or otherwise choke on the
+    // missing key.
+    const decoded = decodeState(encodeState(state));
+    expect(decoded).not.toBeNull();
+    expect(decoded!.ensembleN).toBeUndefined();
+    expect(decoded!.vizId).toBe(state.vizId); // the rest of the state still decodes correctly
+  });
 });
