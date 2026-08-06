@@ -1,6 +1,7 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { spiralCoord } from './gridUtils';
+import { minMax } from './mathUtils';
 
 function cellColor(seq: SequenceView, i: number, colorBy: string, modulus: number, maxLog: number): string {
   if (colorBy === 'parity') return seq.mod(i, 2) === 0 ? '#1d2026' : '#7aa2f7';
@@ -24,8 +25,10 @@ export const ulamViz: Visualizer = {
     const n = seq.length;
     const coords = Array.from({ length: n }, (_, i) => spiralCoord(i));
     const xs = coords.map((c) => c.x), ys = coords.map((c) => c.y);
-    const minX = Math.min(...xs), maxX = Math.max(...xs);
-    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    // See turtle.ts's strokePath for why a loop-based min/max, not a spread,
+    // is required once `n` (here, coords.length === seq.length) is large.
+    const { lo: minX, hi: maxX } = minMax(xs);
+    const { lo: minY, hi: maxY } = minMax(ys);
     const cols = maxX - minX + 1, rows = maxY - minY + 1;
     const cell = Math.max(1, Math.floor(Math.min(size.width / cols, size.height / rows)));
     const ox = (size.width - cols * cell) / 2;

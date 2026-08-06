@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { turtlePath, turtleViz } from '../../src/viz/turtle';
+import { turtlePath, turtleViz, strokePath } from '../../src/viz/turtle';
 import { digitWalkPath, digitWalkViz } from '../../src/viz/digitWalk';
 import { SequenceView, type Sequence } from '../../src/sequence/sequence';
 import { defaultParams } from '../../src/viz/types';
@@ -36,6 +36,16 @@ describe('digitWalkPath', () => {
   });
   it('pools multi-digit terms', () => {
     expect(digitWalkPath(mk([123n]), 10).length).toBe(4); // 3 digits + origin
+  });
+});
+
+describe('strokePath: no stack overflow on a large point set (task FR, C3)', () => {
+  it('draws 300,000 points without throwing (V8 spreads over ~250k args into RangeError)', () => {
+    const pts = Array.from({ length: 300_000 }, (_, i) => ({ x: Math.sin(i / 137), y: Math.cos(i / 251) }));
+    const { ctx, callLog } = fakeCtx();
+    expect(() => strokePath(pts, ctx, { width: 400, height: 400 })).not.toThrow();
+    // one moveTo + lineTo pair per segment (pts.length - 1 segments)
+    expect(callLog.filter((c) => c.name === 'lineTo').length).toBe(pts.length - 1);
   });
 });
 

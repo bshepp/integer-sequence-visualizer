@@ -22,6 +22,28 @@ describe('scatterViz.statistics', () => {
     expect(stats.value![0]).toBeCloseTo(0, 5);
     expect(stats.value![1]).toBeCloseTo(3, 5);
   });
+
+  it('log scale sign-folds negative terms, matching render exactly (task FR, I4)', () => {
+    // Measured before the fix: statistics gave 3,2,1,1,2,3 (unsigned) while
+    // render gave -3,-2,-1,1,2,3 (sign-folded) for the same input — an
+    // ensemble band computed on the wrong shape entirely (monotone real
+    // line compared against a V-shaped null band, or vice versa).
+    const terms = [-1000n, -100n, -10n, 10n, 100n, 1000n];
+    const seq = mk(terms);
+    const stats = scatterViz.statistics!(seq, { scale: 'log' });
+    expect(stats.value!.map((v) => Math.round(v))).toEqual([-3, -2, -1, 1, 2, 3]);
+
+    // And it must actually match render()'s own values, not just happen to
+    // produce the same numbers by coincidence.
+    const { ctx, callLog } = fakeCtx();
+    scatterViz.render(seq, { scale: 'log' }, ctx, SIZE);
+    const arcYs = callLog.filter((c) => c.name === 'arc').map((c) => c.args[1] as number);
+    // y is monotonically *decreasing* in value (canvas y grows downward), so
+    // if statistics and render agree on sign, arcYs should be monotonically
+    // decreasing left to right too (matching the sign-folded, monotonic
+    // -3..3 order) rather than V-shaped.
+    for (let i = 1; i < arcYs.length; i++) expect(arcYs[i]!).toBeLessThan(arcYs[i - 1]!);
+  });
 });
 
 describe('differencesViz.statistics', () => {

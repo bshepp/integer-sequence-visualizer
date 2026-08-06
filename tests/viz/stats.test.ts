@@ -5,6 +5,7 @@ import { autocorrelation, autocorrViz } from '../../src/viz/autocorrelation';
 import { defaultParams } from '../../src/viz/types';
 import { fakeCtx } from '../helpers/fakeCtx';
 import { makeSurrogate } from '../../src/nullmodel/surrogates';
+import { fibonacciTerms } from '../helpers/fixtures';
 
 const mk = (terms: bigint[]): SequenceView =>
   new SequenceView({ terms, name: 't', offset: 0, source: 'paste' } as Sequence);
@@ -61,6 +62,55 @@ describe('histogramViz adaptive terms target', () => {
     const seq = mk([10n ** 30n, 10n ** 31n, 1n, 2n]);
     const stats = histogramViz.statistics!(seq, { target: 'logmagnitude', bins: 5 });
     expect(stats.count!.reduce((a, b) => a + b, 0)).toBe(seq.length);
+  });
+});
+
+describe('computeHistogram: no stack overflow on a large input (task FR, C3)', () => {
+  it('bins 300,000 values without throwing (V8 spreads over ~250k args into RangeError)', () => {
+    const values = Array.from({ length: 300_000 }, (_, i) => i - 150_000);
+    expect(() => computeHistogram(values, 20)).not.toThrow();
+    const { counts } = computeHistogram(values, 20);
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(300_000);
+  });
+
+  it('an explicit domain still clamps out-of-range values into the first/last bin, not dropped', () => {
+    const { counts } = computeHistogram([-5, 0, 1, 2, 3, 100], 3, { lo: 0, hi: 3 });
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(6); // nothing silently dropped
+    expect(counts[0]).toBeGreaterThanOrEqual(2); // -5 clamped into the first bin alongside 0
+    expect(counts[2]).toBeGreaterThanOrEqual(2); // 100 clamped into the last bin alongside 3
+  });
+
+  it('an explicit domain pins the bin edges verbatim instead of re-deriving them from the values', () => {
+    const { edges } = computeHistogram([1, 2, 3], 2, { lo: 0, hi: 10 });
+    expect(edges).toEqual([0, 5, 10]);
+  });
+});
+
+describe('histogramViz target "gaps" on an overflowing sequence (task FR, C2)', () => {
+  it('Fibonacci(300) gaps no longer pile up in the last bin (regression: BV-2 fixed "terms" but not "gaps")', () => {
+    const fib300 = fibonacciTerms(300);
+    const seq = mk(fib300);
+    const stats = histogramViz.statistics!(seq, { target: 'gaps', bins: 20 });
+    const counts = stats.count!;
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(299);
+    // Measured before the fix: 220 of 299 gaps piled into the last bin
+    // (clampBig saturating every overflowing gap to the same
+    // MAX_SAFE_INTEGER). A handful of bins should now carry the mass.
+    expect(Math.max(...counts)).toBeLessThan(220);
+    expect(counts.filter((c) => c > 0).length).toBeGreaterThan(2);
+  });
+
+  it('a non-monotone sequence keeps negative gaps distinguishable from positive ones of the same magnitude (sign-preserving)', () => {
+    // Two overflowing terms (needed for shouldUseLogScale to fire — it
+    // requires 2+, not just 1, overflowing terms): gap 0 = +1e30 (positive),
+    // gap 1 = -1e30 (negative, same magnitude). An unsigned log transform
+    // would put both in the same bin; a 2-bin split at 0 should instead put
+    // one in each.
+    const seq = mk([10n ** 30n, 2n * 10n ** 30n, 10n ** 30n]);
+    expect(shouldUseLogScale(seq)).toBe(true); // sanity: confirms this test exercises the log path
+    const stats = histogramViz.statistics!(seq, { target: 'gaps', bins: 2 });
+    expect(stats.count![0]).toBe(1); // the negative gap
+    expect(stats.count![1]).toBe(1); // the positive gap
   });
 });
 

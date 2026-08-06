@@ -1,5 +1,6 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
+import { minMax } from './mathUtils';
 
 const MARGIN = 28;
 
@@ -20,17 +21,21 @@ export const scatterViz: Visualizer = {
     { kind: 'select', id: 'scale', label: 'Scale', default: 'linear', options: ['linear', 'log'] },
   ],
   statistics(seq: SequenceView, params: Params) {
-    // NOTE: statistics uses plain log-magnitude (no sign fold) so bands stay simple
-    const out: number[] = [];
-    for (let i = 0; i < seq.length; i++) {
-      out.push(params.scale === 'log' ? seq.logMagnitude(i) : seq.toNumber(i));
-    }
-    return { value: out };
+    // Must match render()'s values() exactly: render folds sign into log
+    // magnitude (so a negative term plots below zero on the log axis, same
+    // side as it does on linear); statistics used to skip that fold, so
+    // switching a signed sequence from 'off' to 'ensemble' silently swapped
+    // a monotone curve (render) for a V-shaped one (the old unsigned
+    // statistics) — comparing the real line against a null band computed on
+    // a different-shaped quantity than what's drawn. Reuse values() itself
+    // rather than re-deriving the same formula a second time.
+    return { value: values(seq, String(params.scale)) };
   },
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
     const vals = values(seq, String(params.scale));
-    const lo = Math.min(...vals, 0);
-    const hi = Math.max(...vals, 1);
+    const { lo: rawLo, hi: rawHi } = minMax(vals);
+    const lo = Math.min(rawLo, 0);
+    const hi = Math.max(rawHi, 1);
     const w = size.width - 2 * MARGIN;
     const h = size.height - 2 * MARGIN;
     const x = (i: number) => MARGIN + (i / Math.max(1, vals.length - 1)) * w;

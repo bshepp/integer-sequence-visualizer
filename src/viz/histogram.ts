@@ -1,19 +1,42 @@
 import type { SequenceView } from '../sequence/sequence';
+import { signedLogMagnitude } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
+import { minMax } from './mathUtils';
 
 const MARGIN = 28;
 const MAX_SAFE = BigInt(Number.MAX_SAFE_INTEGER);
 const clampBig = (t: bigint) =>
   t > MAX_SAFE ? Number.MAX_SAFE_INTEGER : t < -MAX_SAFE ? -Number.MAX_SAFE_INTEGER : Number(t);
 
-export function computeHistogram(values: number[], binCount: number): { edges: number[]; counts: number[] } {
-  const lo = Math.min(...values);
-  const hi = Math.max(...values);
+export function computeHistogram(
+  values: number[],
+  binCount: number,
+  domain?: { lo: number; hi: number },
+): { edges: number[]; counts: number[] } {
+  // `domain`, when supplied, pins the bin edges instead of deriving them from
+  // whichever values this particular call happens to receive. This matters
+  // for ensemble mode: percentileBands stacks column i across many
+  // independent statistics() calls (one per surrogate draw) as though bin i
+  // means the same value interval in every draw. Without a shared domain
+  // each draw computes its own lo/hi from its own values, so bin i is a
+  // *different* interval per draw — the stacked "band" is comparing
+  // incommensurate bins and can report the real sequence as wildly outside
+  // the null envelope when it is not (see task FR, C1: measured band 2..13
+  // vs a fixed-domain band of 3..107 for the same real count of 46). The
+  // caller (src/ui/app.ts) computes the domain once from the real sequence
+  // and threads it into both the real-line statistics() call and every
+  // EnsembleJob.params, the same way logScaleOverride already is. When
+  // absent, direct/unit-test callers keep today's per-call auto-derived
+  // behavior. Values outside the supplied domain are clamped into the
+  // first/last bin rather than dropped — dropping would silently change the
+  // total count, its own silent wrongness.
+  const { lo, hi } = domain ?? minMax(values);
   const span = hi - lo || 1;
   const edges = Array.from({ length: binCount + 1 }, (_, i) => lo + (span * i) / binCount);
   const counts = new Array<number>(binCount).fill(0);
   for (const v of values) {
-    const bin = Math.min(binCount - 1, Math.floor(((v - lo) / span) * binCount));
+    const raw = Math.floor(((v - lo) / span) * binCount);
+    const bin = Math.min(binCount - 1, Math.max(0, raw));
     counts[bin]!++;
   }
   return { edges, counts };
@@ -52,10 +75,26 @@ export function shouldUseLogScale(seq: SequenceView): boolean {
 // real-line statistics() call and every EnsembleJob.params dispatched to a
 // surrogate draw, so every draw agrees. When absent, callers (including
 // direct/unit-test use) keep today's per-sequence auto-detect behavior.
-function targetValues(seq: SequenceView, target: string, logScaleOverride?: boolean): number[] {
+export function targetValues(seq: SequenceView, target: string, logScaleOverride?: boolean): number[] {
   const out: number[] = [];
   if (target === 'gaps') {
-    for (let i = 0; i + 1 < seq.length; i++) out.push(clampBig(seq.term(i + 1) - seq.term(i)));
+    // The gap itself is computed as an exact BigInt subtraction (never
+    // clamped) regardless of scale. BV-2 fixed the 'terms' target's
+    // clamp-collapse but left 'gaps' on clampBig alone: for a monotone
+    // fast-growing sequence (e.g. Fibonacci) consecutive gaps overflow
+    // float64-safe range too, and clamping piles them all into the same
+    // MAX_SAFE_INTEGER value — measured: Fibonacci(300) gaps put 220 of 299
+    // values in histogram's last bin. Reuse the same overflow decision
+    // (shouldUseLogScale / logScaleOverride) 'terms' already uses, and when
+    // it fires, use a *signed* log-magnitude transform — unlike terms (mostly
+    // non-negative for real OEIS sequences), gaps routinely go negative for
+    // non-monotone sequences, and an unsigned transform would relabel a
+    // decrease as an increase of the same size.
+    const useLog = logScaleOverride ?? shouldUseLogScale(seq);
+    for (let i = 0; i + 1 < seq.length; i++) {
+      const gap = seq.term(i + 1) - seq.term(i);
+      out.push(useLog ? signedLogMagnitude(gap) : clampBig(gap));
+    }
   } else if (target === 'digits') {
     for (let i = 0; i < seq.length; i++) out.push(...seq.digits(i));
   } else if (target === 'leading') {
@@ -75,8 +114,23 @@ function targetValues(seq: SequenceView, target: string, logScaleOverride?: bool
   return out.length > 0 ? out : [0];
 }
 
-function overrideFromParams(params: Params): boolean | undefined {
+// Exported: differences.ts and autocorrelation.ts make the same kind of
+// per-sequence log/linear decision (for their own overflow-prone
+// computations) and need the same ensemble cross-draw sync story
+// logScaleOverride documents above — one shared params key/reader so every
+// site agrees on how the override is spelled, rather than three
+// near-identical readers drifting apart.
+export function overrideFromParams(params: Params): boolean | undefined {
   return typeof params.logScaleOverride === 'boolean' ? params.logScaleOverride : undefined;
+}
+
+// See computeHistogram's `domain` param doc above for why this exists.
+// Encoded as two numbers (not one {lo,hi} object) because ParamValue is
+// `number | string | boolean` — Params has no object variant.
+function domainFromParams(params: Params): { lo: number; hi: number } | undefined {
+  const lo = params.histogramDomainLo;
+  const hi = params.histogramDomainHi;
+  return typeof lo === 'number' && typeof hi === 'number' ? { lo, hi } : undefined;
 }
 
 export const histogramViz: Visualizer = {
@@ -92,6 +146,7 @@ export const histogramViz: Visualizer = {
     const { counts } = computeHistogram(
       targetValues(seq, String(params.target), overrideFromParams(params)),
       Number(params.bins),
+      domainFromParams(params),
     );
     return { count: counts };
   },
@@ -99,10 +154,11 @@ export const histogramViz: Visualizer = {
     const { counts } = computeHistogram(
       targetValues(seq, String(params.target), overrideFromParams(params)),
       Number(params.bins),
+      domainFromParams(params),
     );
     const w = size.width - 2 * MARGIN;
     const h = size.height - 2 * MARGIN;
-    const maxC = Math.max(...counts, 1);
+    const maxC = Math.max(minMax(counts).hi, 1);
     const bw = w / counts.length;
     ctx.fillStyle = '#7aa2f7';
     for (let i = 0; i < counts.length; i++) {
