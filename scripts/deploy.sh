@@ -21,7 +21,14 @@ echo "==> syncing dist/ to s3://$BUCKET/"
 # search. Uploading the gzipped bytes under the same key with
 # Content-Encoding: gzip cuts that to ~7 MB and browsers decompress it
 # transparently.
-aws s3 sync dist/ "s3://$BUCKET/" --delete --exclude "$INDEX_KEY" --only-show-errors
+#
+# No --delete: assets are content-hashed, so a deploy publishes new filenames
+# rather than overwriting old ones. Deleting the old ones immediately breaks
+# any browser mid-session — it is still holding the previous index.html and
+# will request the worker chunk that just vanished, which surfaces as an
+# ensemble that never finishes rather than a clean error. Stale hashed assets
+# cost almost nothing; prune them deliberately, not on every deploy.
+aws s3 sync dist/ "s3://$BUCKET/" --exclude "$INDEX_KEY" --only-show-errors
 
 echo "==> uploading pre-compressed search index"
 tmp=$(mktemp -t search-index.XXXXXX.gz)
