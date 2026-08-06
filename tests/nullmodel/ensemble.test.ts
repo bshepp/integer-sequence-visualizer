@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { runEnsemble, startEnsembleWorker, type EnsembleJob } from '../../src/nullmodel/ensemble';
 import { SequenceView, type Sequence } from '../../src/sequence/sequence';
-import { shouldUseLogScale } from '../../src/viz/histogram';
+import { shouldUseLogScale, computeHistogram } from '../../src/viz/histogram';
 
 const job = (over: Partial<EnsembleJob> = {}): EnsembleJob => ({
   terms: ['0', '1', '1', '2', '3', '5', '8', '13'],
@@ -82,6 +82,57 @@ describe('runEnsemble: histogram log-scale must be synchronized across surrogate
   it('with the override threaded through the draw, it no longer collapses', () => {
     const { stats } = runEnsemble(ensembleJob({ target: 'terms', bins: 10, logScaleOverride: override }));
     expect(Math.max(...stats.count!.hi)).toBeLessThanOrEqual(4);
+  });
+});
+
+describe('runEnsemble: histogram bin edges must be domain-synced across surrogate draws (task FR, C1)', () => {
+  // A non-monotone (Recamán-like) sequence: computeHistogram derives lo/hi
+  // from whichever values it's handed, and 'difference' surrogates do not
+  // preserve the real sequence's value range the way 'permutation' does, so
+  // each of the 300 draws bins into its own range — bin 0 does not mean the
+  // same interval in every draw, and percentileBands stacks them as if it
+  // did. Measured (this exact construction): 296/300 draws had a value
+  // range differing >10% from the real sequence's; real bin-0 count is 46;
+  // the per-draw-edges band for bin 0 is 2..13 (excludes 46 — reported as
+  // "far outside the null envelope", the opposite of the truth), while the
+  // fixed-domain band is 3..107 (comfortably contains 46).
+  function recaman(n: number): bigint[] {
+    const out: bigint[] = [0n];
+    const seen = new Set<string>(['0']);
+    for (let i = 1; i < n; i++) {
+      const prev = out[i - 1]!;
+      const back = prev - BigInt(i);
+      if (back > 0n && !seen.has(back.toString())) out.push(back);
+      else out.push(prev + BigInt(i));
+      seen.add(out[i]!.toString());
+    }
+    return out;
+  }
+
+  const REAL = recaman(120);
+  const view = new SequenceView({ terms: REAL, name: 'r', offset: 0, source: 'paste' } as Sequence);
+  const realValues = Array.from({ length: view.length }, (_, i) => view.toNumber(i));
+  const realLo = Math.min(...realValues), realHi = Math.max(...realValues);
+  const realBin0 = computeHistogram(realValues, 10).counts[0]!;
+
+  const terms = REAL.map(String);
+  const jobFor = (params: EnsembleJob['params']): EnsembleJob => ({
+    terms, surrogate: 'difference', count: 300, seed: 0, vizId: 'histogram', params,
+  });
+
+  it('sanity: the real sequence has 46 values in what would be bin 0 of a 10-bin histogram over its own range', () => {
+    expect(realBin0).toBe(46);
+  });
+
+  it('without a domain override, the band for bin 0 excludes the true count (a false "far outside the null envelope")', () => {
+    const { stats } = runEnsemble(jobFor({ target: 'terms', bins: 10 }));
+    expect(stats.count!.hi[0]!).toBeLessThan(realBin0); // 13 < 46, per-draw-edges band
+  });
+
+  it('with an explicit domain override (histogramDomainLo/Hi), the band for bin 0 correctly contains the true count', () => {
+    const { stats } = runEnsemble(jobFor({ target: 'terms', bins: 10, histogramDomainLo: realLo, histogramDomainHi: realHi }));
+    expect(stats.count!.lo[0]!).toBeLessThanOrEqual(realBin0);
+    expect(stats.count!.hi[0]!).toBeGreaterThanOrEqual(realBin0); // 107 >= 46, fixed-domain band
   });
 });
 

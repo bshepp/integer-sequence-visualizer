@@ -3,6 +3,7 @@ import { withTerms } from '../sequence/oeisClient';
 import { makeSurrogate, type SurrogateType } from '../nullmodel/surrogates';
 import type { Bands } from '../nullmodel/bands';
 import type { Size } from '../viz/types';
+import { minMax } from '../viz/mathUtils';
 
 export type ComparisonMode = 'off' | 'side' | 'flip' | 'ensemble';
 
@@ -51,7 +52,10 @@ export function drawEnsembleChart(
     const w = size.width - 2 * MARGIN;
     const h = panelH - 2 * MARGIN;
     const all = [...band.lo, ...band.hi, ...realVals];
-    const lo = Math.min(...all), hi = Math.max(...all);
+    // Loop-based min/max, not a spread — see turtle.ts's strokePath — since
+    // `all` scales with the sequence length for per-index statistics (e.g.
+    // scatter's 'value').
+    const { lo, hi } = minMax(all);
     const n = band.median.length;
     const x = (i: number) => MARGIN + (i / Math.max(1, n - 1)) * w;
     const y = (v: number) => top + MARGIN + h - ((v - lo) / (hi - lo || 1)) * h;
