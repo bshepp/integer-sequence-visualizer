@@ -1,5 +1,5 @@
 import { mulberry32, shuffleInPlace } from './rng';
-import { bigMagnitude } from '../sequence/sequence';
+import { signedLogMagnitude } from '../sequence/sequence';
 import { minMax } from '../viz/mathUtils';
 
 export type SurrogateType = 'permutation' | 'difference' | 'matched';
@@ -45,13 +45,13 @@ function gaussian(rand: () => number): number {
   return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
 }
 
-// Inverse of bigMagnitude: reconstruct a same-order-of-magnitude BigInt from
-// a base-10 log value, preserving ~15 significant digits (float64's own
-// precision budget — the same 15 digits bigMagnitude reads off the decimal
-// string). Never routes the full-precision integer through `Number` (which
-// is exactly the bug this exists to avoid: `Math.round(10 ** log)` silently
-// loses precision past ~1e15 and overflows to Infinity well before a
-// realistic OEIS magnitude).
+// Inverse of the (unsigned) magnitude half of signedLogMagnitude: reconstruct
+// a same-order-of-magnitude BigInt from a base-10 log value, preserving ~15
+// significant digits (float64's own precision budget — the same 15 digits
+// bigMagnitude reads off the decimal string). Never routes the
+// full-precision integer through `Number` (which is exactly the bug this
+// exists to avoid: `Math.round(10 ** log)` silently loses precision past
+// ~1e15 and overflows to Infinity well before a realistic OEIS magnitude).
 function fromLogMagnitude(log: number): bigint {
   if (!Number.isFinite(log) || log < 0) return 0n;
   const intPart = Math.floor(log);
@@ -61,6 +61,20 @@ function fromLogMagnitude(log: number): bigint {
   let zeros = intPart + 1 - sigDigits;
   if (mantissaInt >= 10 ** sigDigits) { mantissaInt /= 10; zeros += 1; } // rounding carried a digit
   return BigInt(mantissaInt) * 10n ** BigInt(zeros);
+}
+
+// Inverse of signedLogMagnitude: same reconstruction as fromLogMagnitude,
+// with the sign folded back in from which side of zero `v` fell on. This is
+// what makes the log-space surrogate path (below) sound for sign-mixed
+// overflowing sequences, not just non-negative ones: signedLogMagnitude is
+// continuous and monotonic in the underlying value (large negative -> very
+// negative, through ~0 near +-1, to large positive -> very positive), so
+// fitting a line to it and inverting through this function round-trips sign
+// the same way magnitude already round-tripped.
+function fromSignedLogMagnitude(v: number): bigint {
+  if (!Number.isFinite(v)) return 0n;
+  const mag = fromLogMagnitude(Math.abs(v));
+  return v < 0 ? -mag : mag;
 }
 
 function bigintMinMax(terms: bigint[]): { lo: bigint; hi: bigint } {
@@ -78,15 +92,19 @@ function clampBigint(v: bigint, lo: bigint, hi: bigint): bigint {
 }
 
 // Overflow-safe path for matchedRandomSurrogate: fits and generates entirely
-// in exact log-magnitude space, only converting to BigInt at the very end.
-// See matchedRandomSurrogate's doc for why the plain numeric path below
-// cannot be used once terms exceed float64-safe range.
+// in exact *signed* log-magnitude space, only converting to BigInt at the
+// very end. Using signedLogMagnitude (not the unsigned bigMagnitude) rather
+// than requiring non-negative input is what makes this sound for sign-mixed
+// overflowing sequences too — e.g. alternating huge positive/negative
+// terms, reachable today via the paste tab (pasteParser.ts has no magnitude
+// or sign restriction). See matchedRandomSurrogate's doc for why the plain
+// numeric path below cannot be used once terms exceed float64-safe range.
 function matchedLogSpaceSurrogate(terms: bigint[], rand: () => number): bigint[] {
-  const logs = terms.map(bigMagnitude);
+  const logs = terms.map(signedLogMagnitude);
   const { a, b, mse } = fitLine(logs);
   const sd = Math.sqrt(mse);
   const { lo, hi } = bigintMinMax(terms);
-  return logs.map((_, i) => clampBigint(fromLogMagnitude(a * i + b + gaussian(rand) * sd), lo, hi));
+  return logs.map((_, i) => clampBigint(fromSignedLogMagnitude(a * i + b + gaussian(rand) * sd), lo, hi));
 }
 
 export function matchedRandomSurrogate(terms: bigint[], seed: number): bigint[] {
@@ -98,23 +116,21 @@ export function matchedRandomSurrogate(terms: bigint[], seed: number): bigint[] 
   // genuinely varying tail into a constant and models THAT clamping
   // artifact instead of the sequence (measured: a 2001-term Fibonacci
   // b-file's matched surrogate has 1057 distinct values out of 2001, 945 of
-  // them pinned at MAX_SAFE — task FR, I1). Route overflowing non-negative
-  // sequences through an exact log-magnitude fit instead — the same escape
-  // hatch histogram.ts's shouldUseLogScale/targetValues use for the same
-  // reason. "Non-negative", not "strictly positive": bigMagnitude(0n) is a
-  // defined sentinel (0), so this path tolerates a leading/embedded zero —
-  // which matters, because OEIS sequences conventionally offset from 0
-  // (Fibonacci's own a(0) = 0, the exact fixture this bug was measured on).
-  // The plain numeric exp-fit branch below cannot do the same: it computes
-  // Math.log10(v) directly, which is -Infinity at v=0, so it still requires
-  // strict positivity. A sign-mixed sequence that is both huge and
-  // reachable this way is not a pattern any sequence reachable from this
-  // app's UI produces (reaching MAX_SAFE via this module's linear model
-  // needs a slope on the order of 1e12+ within any b-file's term count), so
-  // the plain (clamped) path below, while imprecise there in principle, is
-  // never exercised by it in practice.
+  // them pinned at MAX_SAFE — task FR, I1). Route every overflowing
+  // sequence — sign-mixed included — through an exact signed-log-magnitude
+  // fit instead: the plain numeric exp-fit branch below cannot do the same
+  // (it requires strict positivity, since Math.log10(v) is -Infinity at
+  // v <= 0), but signedLogMagnitude is defined and continuous for zero and
+  // negative terms too (see sequence.ts), so there is no sign restriction
+  // needed here. This matters because pasteParser.ts places no cap on
+  // magnitude or sign, so a user can paste e.g. alternating +-1e20-scale
+  // terms and pick 'matched' directly — an earlier version of this fix
+  // gated on `terms.every(t => t >= 0n)` on the mistaken assumption that a
+  // sign-mixed *overflowing* sequence could only arise from this module's
+  // own (slope-bounded) linear model reaching that far, rather than simply
+  // being handed one as input; that gate is gone.
   const overflow = terms.some((t) => t > MAX_SAFE || t < -MAX_SAFE);
-  if (overflow && terms.every((t) => t >= 0n)) {
+  if (overflow) {
     return matchedLogSpaceSurrogate(terms, rand);
   }
 

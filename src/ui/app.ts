@@ -340,7 +340,10 @@ export function mountApp(root: HTMLElement): void {
       } else if (ensembleFailed) {
         ctx.fillStyle = '#f7768e';
         ctx.font = '14px system-ui';
-        ctx.fillText('Ensemble computation failed — change a parameter to retry.', 24, 40);
+        // "the next redraw retries" is literal — a window resize retries
+        // too, not just a parameter change — so this says "will retry"
+        // rather than naming one specific trigger.
+        ctx.fillText('Ensemble computation failed — will retry automatically.', 24, 40);
       } else {
         ctx.fillStyle = '#9aa0aa';
         ctx.font = '14px system-ui';

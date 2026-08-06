@@ -188,10 +188,13 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
       btn.textContent = 'Load all terms (b-file)';
       btn.addEventListener('click', () => {
         btn.disabled = true;
-        // Number('') === 0 for a cleared field, and parseBFile(text, 0)
-        // used to silently return a one-term sequence instead of erroring —
-        // guard here too so the common "cleared the input, clicked load"
-        // slip doesn't even reach that path.
+        // Number('') === 0 for a cleared field, and parseBFile(text, 0) used
+        // to silently return a one-term sequence instead of erroring — guard
+        // here too so the common "cleared the input, clicked load" slip
+        // doesn't even reach that path. Math.max(1, …) only catches that
+        // specific case: non-numeric garbage still coerces to NaN (Math.max
+        // with NaN is NaN), which parseBFile's own `Number.isFinite` guard
+        // then rejects with a banner instead of a silent 1-term result.
         fetchBFile(seq.aNumber!, Math.max(1, Number(cap.value)))
           .then((terms) => handlers.onSequence(withTerms(seq, terms)))
           .catch((e) => handlers.onError(e instanceof Error ? e.message : String(e)))

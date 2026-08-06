@@ -96,6 +96,51 @@ describe('matchedRandomSurrogate on an overflowing sequence (task FR, I1)', () =
   });
 });
 
+describe('matchedRandomSurrogate on a sign-mixed overflowing sequence (task FR, I1 follow-up)', () => {
+  // pasteParser.ts places no cap on magnitude or sign, so this is reachable
+  // today via the app's own "Custom" paste tab, not a synthetic-only case:
+  // a user pastes alternating huge positive/negative terms and picks the
+  // 'matched' null model. An earlier version of the I1 fix only routed
+  // non-negative overflowing sequences through the log-space path
+  // (`terms.every(t => t >= 0n)`), so this exact shape fell through to the
+  // plain clamped path and reproduced the original defect (clamping every
+  // overflowing term — regardless of sign — to the same
+  // +/-MAX_SAFE_INTEGER, modelling the clamp artifact instead of the data).
+  const terms: bigint[] = [];
+  for (let i = 0; i < 40; i++) terms.push(i % 2 === 0 ? 10n ** 20n : -(10n ** 20n));
+
+  it('does not clamp every overflowing term to the same +/-MAX_SAFE_INTEGER value', () => {
+    const s = matchedRandomSurrogate(terms, 1);
+    expect(s.length).toBe(terms.length);
+    const clampedCount = s.filter(
+      (v) => v === BigInt(Number.MAX_SAFE_INTEGER) || v === -BigInt(Number.MAX_SAFE_INTEGER),
+    ).length;
+    expect(clampedCount).toBe(0);
+    const distinct = new Set(s.map(String)).size;
+    expect(distinct).toBeGreaterThan(terms.length / 2);
+  });
+
+  it('generates both positive and negative values (sign is not collapsed by the log-space fit)', () => {
+    const s = matchedRandomSurrogate(terms, 1);
+    expect(s.some((v) => v > 0n)).toBe(true);
+    expect(s.some((v) => v < 0n)).toBe(true);
+  });
+
+  it('stays within the true (unclamped) signed value envelope of the original terms', () => {
+    const s = matchedRandomSurrogate(terms, 1);
+    let trueMin = terms[0]!, trueMax = terms[0]!;
+    for (const t of terms) { if (t < trueMin) trueMin = t; if (t > trueMax) trueMax = t; }
+    for (const v of s) expect(v >= trueMin && v <= trueMax).toBe(true);
+  });
+
+  it('is still deterministic under a seed, and different seeds diverge', () => {
+    const s1 = matchedRandomSurrogate(terms, 1);
+    const s2 = matchedRandomSurrogate(terms, 1);
+    expect(s1).toEqual(s2);
+    expect(matchedRandomSurrogate(terms, 2)).not.toEqual(s1);
+  });
+});
+
 describe('matchedRandomSurrogate noise is Gaussian at the residual sd, not uniform on the max envelope (task FR, I2)', () => {
   // Starts with 0 (like this file's `fib` fixture above) so allPositive is
   // false and the plain linear branch is exercised deterministically,
