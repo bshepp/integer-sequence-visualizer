@@ -36,6 +36,10 @@ follow:
 - A social preview card, so a deliberately shared link previews as something
   other than a bare URL.
 - Fix the two controls that are currently inert.
+- A legend for the ensemble chart, which currently has none, and nested
+  percentile levels in place of the single flat band.
+- A cursor readout identifying what is under the pointer, with linked markers
+  across the real/null comparison.
 - All **new** markup written to 508 standard as authored.
 
 ## Non-goals (this round)
@@ -241,6 +245,106 @@ Scoped to markup authored in this round. The existing engine's audit is round 2.
 - `prefers-reduced-motion` is honored; nothing on the landing auto-animates.
 - Text contrast ≥ 4.5:1.
 
+### 8. Band legend and nested percentile levels
+
+`drawEnsembleChart` (`src/ui/comparison.ts:64`) currently paints a translucent
+blue fill, a dashed grey median, and a pink real line, and writes only the
+statistic's name. **There is no legend.** Add one.
+
+Additionally, replace the single 5–95% band with **nested levels at 50 / 90 /
+99%**. This is close to free: `percentileBands` (`src/nullmodel/bands.ts:18`)
+sorts each index's column across the ensemble, and that sort is the entire
+cost. Additional quantiles off an already-sorted array are O(1) apiece, so the
+overhead is a few array reads per index against an O(N log N) sort already
+being paid. No extra work in the worker, and no network cost at all — the
+ensemble runs client-side over terms already in memory.
+
+The payoff is that an outlier becomes *graded* rather than binary. Kolakoski's
+0.000332 currently reads as "outside the band"; against nested levels it reads
+as "outside the 99% contour", which is a stronger and more honest claim and is
+legible without reading the numbers.
+
+**Type change:** `Bands` becomes
+`{ median: number[]; levels: Array<{ pct: number; lo: number[]; hi: number[] }> }`,
+touching `bands.ts`, `ensemble.ts`, `comparison.ts`, and `app.ts`.
+
+### 9. Cursor readout and linked markers
+
+Add two **optional** methods to the `Visualizer` contract, inverse to each
+other:
+
+```ts
+locate?(seq: SequenceView, params: Params, size: Size, x: number, y: number): Hit | null;
+position?(seq: SequenceView, params: Params, size: Size, index: number): { x: number; y: number } | null;
+```
+
+Both derive from the mapping each visualizer already computes internally and
+then discards — `strokePath` (`src/viz/turtle.ts:30`) calculates the exact
+sequence-space→screen affine transform (`scale`, `ox`, `oy`) to draw with, and
+throws it away. Retaining it makes a screen coordinate invert in three
+arithmetic operations.
+
+Optional is deliberate: not every view has a term under the cursor. A histogram
+bar identifies a *set*, autocorrelation identifies a *lag*. Forcing a uniform
+return would make those two answer falsely.
+
+| View | `Hit` reports |
+| --- | --- |
+| scatter, mod grid, Ulam spiral | exact index — `n=42, a(42)=1` |
+| turtle, polyarc | nearest path point → index (polyarc: 8 segments per term, `⌊ptIdx/8⌋`) |
+| 2D digit walk | term *and* digit position |
+| histogram | a bin — "47 terms in [12, 18)" |
+| autocorrelation | a lag — "lag 7" |
+
+**Rejected alternative:** a color-picking buffer (offscreen render with each
+term colored by index, `getImageData` on click). Uniform and exact, but it
+requires every visualizer to support a picking palette regardless, doubles
+render cost, and cannot be tested without a canvas. `locate`/`position` are
+assertable in pure JS — which matters here, given that 141 green tests once
+missed three Critical defects because nothing executed the code at realistic
+scale.
+
+**Performance:** a click is trivial. Hover is an O(n) nearest-point scan,
+acceptable to roughly 50k points on rAF-throttled `mousemove`. The 2D digit
+walk's measured 418,487-point case gets a uniform bucket grid built once per
+render *only if* it actually feels sluggish — not preemptively.
+
+#### Linked markers across the comparison
+
+Clicking a point on the real sequence marks the corresponding point in the
+null. "Corresponding" is surrogate-dependent, and the asymmetry is pedagogical
+rather than incidental:
+
+- **Permutation** — same multiset, shuffled. Two honest correspondences: same
+  *index*, or same *value*. Value-tracing is the valuable one: it shows the
+  term survived intact and only its **position** changed, which is what was
+  carrying the structure. Requires `makeSurrogate` to also return the
+  permutation array (deterministic from the existing seed; one extra array).
+- **Difference** — differences shuffled and re-integrated, so values do not
+  survive. Index-to-index only.
+- **Matched-random** — no term-level relationship. Index-to-index only.
+
+That value-tracing works for exactly one of the three is worth surfacing in the
+UI, not hiding: discovering you can follow a term through a permutation but not
+through a matched-random teaches the difference between those null models by
+interaction rather than by prose.
+
+Per comparison mode:
+
+- **`side`** — paired markers, one per panel.
+- **`flip`** — the marker persists across the flip, anchoring the eye on one
+  term while the substrate swaps beneath it.
+- **`ensemble`** — no single surrogate exists, so clicking the real line
+  highlights that index's **column of the null distribution** instead, reading
+  out the nested levels at that index against the real value.
+
+Design note: in grid and spiral views the layout is index-driven, so index *i*
+occupies the same cell in both panels and only the colour differs. In
+trajectory views the path is cumulative, so index *i* lands somewhere entirely
+different in the null. The feature is most valuable precisely where the view is
+cumulative — which is also where "is this structure real?" is hardest to judge
+by eye.
+
 ## Data flow
 
 ```
@@ -280,6 +384,16 @@ page load
   disagreement. Every entry with verdict `real` carries `evidence`.
 - `Compare: off` leaves the surrogate dropdown disabled; selecting `flip`
   exposes and focuses the flip button.
+- `percentileBands` returns nested levels whose bounds are monotonically
+  ordered (99% band contains 90% contains 50%) for a known fixture.
+- For every visualizer implementing them, `locate` and `position` round-trip:
+  `locate(position(i)) === i` for a sample of indices at a realistic sequence
+  length, not a toy one.
+- Visualizers without a term-level answer (histogram, autocorrelation) either
+  omit `locate` or return a non-index `Hit` kind — asserted, so a future
+  contributor cannot quietly make them lie.
+- Permutation surrogates expose an index map for which
+  `surrogate[map[i]] === real[i]` holds across the sequence.
 - The existing 182 tests remain green.
 
 ## Decisions to revisit
