@@ -118,3 +118,42 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
   overflow-wrap: anywhere;
 }
 .readout--empty { display: none; }
+
+.landing {
+  position: fixed; inset: 0; z-index: 20; overflow-y: auto;
+  background: var(--bg); padding: 32px 24px 48px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.landing-title { margin: 0; font-size: clamp(24px, 4vw, 38px); text-align: center; }
+.landing-lede { margin: 0; max-width: 62ch; text-align: center; color: var(--muted); font-size: 15px; }
+.landing-hero { margin: 8px 0 0; display: flex; flex-direction: column; gap: 8px; align-items: center; max-width: 100%; }
+.landing-hero canvas { max-width: 100%; border: 1px solid #3a3d44; border-radius: 6px; }
+.landing-hero-caption { color: var(--text); font-size: 14px; text-align: center; max-width: 62ch; }
+.landing-hero-body { margin: 0; max-width: 62ch; text-align: center; color: var(--muted); font-size: 13px; }
+.landing-open {
+  background: var(--accent); color: #14161a; border: none; border-radius: 6px;
+  padding: 10px 22px; font: 600 15px system-ui; cursor: pointer; margin-top: 4px;
+}
+.landing-strip-label { margin: 20px 0 0; font-size: 13px; font-weight: 400; color: var(--muted); }
+.gallery-strip { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; max-width: 1100px; }
+.gallery-thumb {
+  background: var(--panel); border: 1px solid #3a3d44; border-radius: 6px;
+  padding: 8px; cursor: pointer; color: var(--text);
+  display: flex; flex-direction: column; gap: 6px; width: 238px; text-align: left;
+}
+.gallery-thumb:hover { border-color: var(--accent); }
+.gallery-thumb canvas { border-radius: 4px; max-width: 100%; }
+.gallery-thumb-label { font-size: 12px; line-height: 1.4; }
+.verdict {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 1px 5px; border-radius: 3px; white-space: nowrap;
+}
+.verdict--real { background: #1f3b2b; color: #7ee0a8; }
+.verdict--artifact { background: #3b2430; color: #f7a1b4; }
+.verdict--open { background: #2a2d35; color: var(--muted); }
+.landing-attribution { margin: 18px 0 0; font-size: 12px; color: var(--muted); text-align: center; }
+.landing-attribution a { color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

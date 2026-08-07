@@ -20,6 +20,7 @@ import { SURROGATE_EXPLAIN } from '../nullmodel/surrogates';
 import { buildReadout, describeHit, drawMarker, correspondingIndex } from './readout';
 import { hitIndex } from '../viz/hit';
 import type { Size } from '../viz/types';
+import { buildLanding, shouldShowLanding } from './landing';
 
 const MODES = ['off', 'side', 'flip', 'ensemble'];
 const SURROGATES = ['permutation', 'difference', 'matched'];
@@ -498,6 +499,8 @@ export function mountApp(root: HTMLElement): void {
   // fall back if unrecognized, and decodeState itself returns null for
   // anything that isn't valid encoded JSON (leaving current state untouched).
   function applyHash(hash: string): void {
+    // Navigating to a real engine state closes the landing if it is still up.
+    if (!shouldShowLanding(hash)) dismissLanding(false);
     const decoded = decodeState(hash);
     if (decoded) {
       // Seed currentRef immediately: the redraw() below runs syncUrl before
@@ -538,6 +541,33 @@ export function mountApp(root: HTMLElement): void {
     }
   }
 
+  let landingEl: HTMLElement | null = null;
+  // Once dismissed, stays dismissed for the session: re-mounting the landing
+  // after a parameter tweak would read as a bug, not a feature.
+  let landingDismissed = false;
+
+  function dismissLanding(focusEngine = true): void {
+    landingDismissed = true;
+    landingEl?.remove();
+    landingEl = null;
+    if (focusEngine) picker.focus();
+  }
+
+  function showLanding(): void {
+    if (landingDismissed || landingEl) return;
+    landingEl = buildLanding({
+      onOpen: () => dismissLanding(),
+      onPick: (entry) => {
+        dismissLanding(false);
+        const hash = '#' + encodeState(entry.state);
+        lastHashWritten = hash;
+        try { history.replaceState(null, '', hash); } catch { /* sandboxed */ }
+        applyHash(hash);
+      },
+    });
+    root.appendChild(landingEl);
+  }
+
   window.addEventListener('resize', redraw);
   window.addEventListener('hashchange', () => {
     // Ignore echoes of our own syncUrl writes. Per spec, history.replaceState
@@ -547,5 +577,12 @@ export function mountApp(root: HTMLElement): void {
     if (location.hash === lastHashWritten) return;
     applyHash(location.hash);
   });
-  applyHash(location.hash);
+  if (shouldShowLanding(location.hash)) {
+    // Draw the engine underneath first so dismissing reveals a live view
+    // rather than an empty canvas, then mount the landing over it.
+    redraw();
+    showLanding();
+  } else {
+    applyHash(location.hash);
+  }
 }
