@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   defaultComparison, surrogateSequence, drawEnsembleChart, buildComparisonBar, isDegenerateBand,
 } from '../../src/ui/comparison';
-import type { Bands } from '../../src/nullmodel/bands';
+import { percentileBands, type Bands } from '../../src/nullmodel/bands';
 import { fakeCtx } from '../helpers/fakeCtx';
 
 // Builds the nested-level shape from a single flat lo/median/hi triple, so
@@ -86,5 +86,19 @@ describe('buildComparisonBar', () => {
     expect(opt.disabled).toBe(true);
     update(true);
     expect(opt.disabled).toBe(false);
+  });
+});
+
+describe('ensemble chart legend', () => {
+  it('labels the real line, the median, and every band level', () => {
+    const bands = { r: percentileBands(Array.from({ length: 50 }, (_, k) => [k, k + 1])) };
+    const { ctx, callLog } = fakeCtx();
+    drawEnsembleChart(ctx, { width: 600, height: 400 }, { r: [1, 2] }, bands);
+
+    const texts = callLog.filter((c) => c.name === 'fillText').map((c) => String(c.args[0]));
+    expect(texts.some((t) => /real sequence/i.test(t))).toBe(true);
+    expect(texts.some((t) => /median/i.test(t))).toBe(true);
+    expect(texts.some((t) => /99%/.test(t))).toBe(true);
+    expect(texts.some((t) => /50%/.test(t))).toBe(true);
   });
 });

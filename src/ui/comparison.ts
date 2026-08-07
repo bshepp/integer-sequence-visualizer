@@ -37,6 +37,41 @@ export function isDegenerateBand(band: Bands, epsilon = 1e-9): boolean {
   return widest.lo.every((lo, i) => (widest.hi[i]! - lo) < epsilon);
 }
 
+// Drawn once per statistic panel. Without this the chart is a blue smear, a
+// dashed grey line and a pink line with nothing on screen saying which is
+// which — the single most important graphic in the app was unlabelled.
+function drawLegend(ctx: CanvasRenderingContext2D, band: Bands, left: number, top: number): void {
+  const items: Array<{ swatch: string; dashed?: boolean; label: string }> = [
+    { swatch: '#f7768e', label: 'real sequence' },
+    { swatch: '#9aa0aa', dashed: true, label: 'null median' },
+    ...band.levels.map((l, i) => ({
+      swatch: `rgba(122,162,247,${0.10 + i * 0.07})`,
+      label: `${l.pct}% of nulls`,
+    })),
+  ];
+  ctx.font = '11px system-ui';
+  ctx.textBaseline = 'middle';
+  let y = top;
+  for (const item of items) {
+    if (item.dashed) {
+      ctx.strokeStyle = item.swatch;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(left, y);
+      ctx.lineTo(left + 14, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      ctx.fillStyle = item.swatch;
+      ctx.fillRect(left, y - 4, 14, 8);
+    }
+    ctx.fillStyle = '#9aa0aa';
+    ctx.fillText(item.label, left + 20, y);
+    y += 14;
+  }
+  ctx.textBaseline = 'alphabetic';
+}
+
 export function drawEnsembleChart(
   ctx: CanvasRenderingContext2D,
   size: Size,
@@ -96,6 +131,8 @@ export function drawEnsembleChart(
     ctx.fillStyle = '#e6e6e6';
     ctx.font = '12px system-ui';
     ctx.fillText(key, MARGIN, top + 16);
+
+    drawLegend(ctx, band, size.width - MARGIN - 110, top + MARGIN);
 
     if (isDegenerateBand(band)) {
       ctx.fillStyle = '#9aa0aa';
