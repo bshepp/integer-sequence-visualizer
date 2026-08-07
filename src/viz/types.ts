@@ -1,4 +1,5 @@
 import type { SequenceView } from '../sequence/sequence';
+import type { Hit } from './hit';
 
 export interface Size { width: number; height: number; }
 export type ParamValue = number | string | boolean;
@@ -31,6 +32,16 @@ export interface Visualizer {
   explain: Explain;
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size): void;
   statistics?(seq: SequenceView, params: Params): Record<string, number[]>;
+  /**
+   * What is under the screen coordinate (x, y), or null.
+   *
+   * Optional: a view with no term-level answer (histogram, autocorrelation)
+   * returns a non-term Hit kind, and a view with no answer at all may omit
+   * this entirely.
+   */
+  locate?(seq: SequenceView, params: Params, size: Size, x: number, y: number): Hit | null;
+  /** Inverse of locate for a term index — where that term is drawn. */
+  position?(seq: SequenceView, params: Params, size: Size, index: number): { x: number; y: number } | null;
 }
 
 export function defaultParams(specs: ParamSpec[]): Params {
