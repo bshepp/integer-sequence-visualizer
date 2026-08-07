@@ -5,6 +5,7 @@ import { fakeCtx } from '../helpers/fakeCtx';
 
 const mkViz = (id: string): Visualizer => ({
   id, name: id, family: 'basic', params: [], minTerms: 1,
+  explain: { short: `${id} test stub`, long: `${id} test stub` },
   render: (_seq, _params, ctx) => { ctx.beginPath(); },
 });
 

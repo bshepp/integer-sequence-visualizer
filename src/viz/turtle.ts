@@ -49,6 +49,10 @@ export const turtleViz: Visualizer = {
   name: 'Turtle walk',
   family: 'trajectory',
   minTerms: 4,
+  explain: {
+    short: 'A path that turns by an angle set by each term, mod k.',
+    long: 'Starts at the origin and, for each term, turns by (angle x term mod k) degrees and steps forward one unit. The path is cumulative, so every term displaces everything drawn after it -- which makes this view extremely sensitive to ordering and a good place to see a null model bite hard. A permutation surrogate of the same sequence typically wanders somewhere completely different.',
+  },
   params: [
     { kind: 'number', id: 'angle', label: 'Angle °', default: 90, min: 1, max: 180, step: 1 },
     { kind: 'number', id: 'k', label: 'Mod k', default: 4, min: 2, max: 24, step: 1 },

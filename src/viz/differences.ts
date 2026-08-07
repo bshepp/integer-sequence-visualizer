@@ -51,6 +51,10 @@ export const differencesViz: Visualizer = {
   name: 'Differences & ratios',
   family: 'basic',
   minTerms: 3,
+  explain: {
+    short: 'Successive differences a(n+1) - a(n), or successive ratios.',
+    long: 'Differences expose additive structure and ratios expose multiplicative structure -- a linear sequence has constant differences, a geometric one has constant ratios. Ratios are computed in log space, so Fibonacci converges visibly on the golden ratio instead of saturating. A difference surrogate reshuffles exactly this quantity, so comparing against it asks whether the order of the steps matters or only their multiset.',
+  },
   params: [
     { kind: 'select', id: 'mode', label: 'Mode', default: 'differences', options: ['differences', 'ratios'] },
   ],

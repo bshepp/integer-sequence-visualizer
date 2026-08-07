@@ -175,3 +175,23 @@ export function makeSurrogate(terms: bigint[], type: SurrogateType, seed: number
     case 'matched': return matchedRandomSurrogate(terms, seed);
   }
 }
+
+// Type-only import: erased at build time, so this adds no runtime edge from
+// the null-model layer to the visualizer layer (ensembleWorker imports this
+// module).
+import type { Explain } from '../viz/types';
+
+export const SURROGATE_EXPLAIN: Record<SurrogateType, Explain> = {
+  permutation: {
+    short: 'The same terms in a random order.',
+    long: 'Keeps the exact multiset of terms and shuffles their positions. Anything the real sequence shows that this null does not must come from the ordering, because nothing else differs. Conversely, any feature this null reproduces is a property of the values alone. This is the only surrogate in which an individual term can be traced from the real sequence to its new position, because it is the only one where the same terms are still present.',
+  },
+  difference: {
+    short: 'The same steps between terms, taken in a random order.',
+    long: 'Takes the successive differences, shuffles them, and re-integrates from the same starting term. Growth rate and step-size distribution survive; the arrangement of steps does not. Use this when the raw values are less interesting than how the sequence moves -- it is a much tighter null than a permutation for anything monotone, because it will not destroy the overall trend.',
+  },
+  matched: {
+    short: 'Fresh random numbers fitted to the same trend and spread.',
+    long: 'Fits a linear or exponential trend to the sequence and generates new terms from that fit plus Gaussian noise scaled to the residual spread. The terms are entirely new, so nothing arithmetic about the original survives -- only its scale and growth. This is the loosest null of the three and the strongest test to pass: structure that survives it is not explained by trend alone.',
+  },
+};

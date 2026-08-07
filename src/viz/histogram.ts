@@ -138,6 +138,10 @@ export const histogramViz: Visualizer = {
   name: 'Histogram',
   family: 'stats',
   minTerms: 4,
+  explain: {
+    short: 'How often each value, gap, or digit occurs across the sequence.',
+    long: 'Bins the chosen quantity and counts occurrences, discarding order entirely. Because order is discarded, a permutation null produces exactly the same histogram as the real sequence -- which is itself informative: it proves the histogram can only ever tell you about the value distribution, never about arrangement. Difference and matched-random nulls do move it.',
+  },
   params: [
     { kind: 'select', id: 'target', label: 'Of', default: 'terms', options: ['terms', 'logmagnitude', 'gaps', 'digits', 'leading'] },
     { kind: 'number', id: 'bins', label: 'Bins', default: 20, min: 4, max: 60, step: 1 },

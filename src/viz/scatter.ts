@@ -17,6 +17,10 @@ export const scatterViz: Visualizer = {
   name: 'Term vs index',
   family: 'basic',
   minTerms: 2,
+  explain: {
+    short: 'Each term plotted against its position in the sequence.',
+    long: 'The plainest possible view: term value on the vertical axis, index along the horizontal. Growth rate, sign changes, and outliers are all visible here before any other technique is applied. Under a permutation null the same values reappear in scrambled order, so anything that survives the shuffle is a property of the value distribution rather than of the ordering.',
+  },
   params: [
     { kind: 'select', id: 'scale', label: 'Scale', default: 'linear', options: ['linear', 'log'] },
   ],

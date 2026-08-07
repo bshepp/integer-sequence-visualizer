@@ -6,6 +6,10 @@ export const modGridViz: Visualizer = {
   name: 'Mod-N grid',
   family: 'grid',
   minTerms: 4,
+  explain: {
+    short: 'Terms in reading order, coloured by their remainder mod N.',
+    long: 'A simple row-major grid, each cell coloured by the term remainder modulo N. Vertical stripes appear when the sequence has period dividing the column count, diagonal stripes when the period and column count are close but unequal. Because the layout is index-driven, a permutation null occupies the same cells with different colours -- so any surviving stripe is a real periodicity, not a grid artifact.',
+  },
   params: [
     { kind: 'number', id: 'modulus', label: 'Modulus', default: 10, min: 2, max: 64, step: 1 },
     { kind: 'number', id: 'columns', label: 'Columns', default: 20, min: 4, max: 100, step: 1 },

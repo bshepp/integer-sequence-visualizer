@@ -29,6 +29,10 @@ export const polyarcViz: Visualizer = {
   name: 'Polyarc curve',
   family: 'trajectory',
   minTerms: 4,
+  explain: {
+    short: 'An NCurve-style smooth curve, bending by each term mod N.',
+    long: 'The technique from the SeqFan thread that prompted this project: each term bends the path by an angle set by its residue mod N, drawn as a smooth arc rather than a hard corner, optionally centring residues so they bend both ways. It produces strikingly organic shapes. Whether those shapes mean anything is exactly the open question here -- compare against a null and see which features survive.',
+  },
   params: [
     { kind: 'number', id: 'angle', label: 'Angle °', default: 30, min: 1, max: 120, step: 1 },
     { kind: 'number', id: 'modulus', label: 'Modulus', default: 7, min: 2, max: 32, step: 1 },

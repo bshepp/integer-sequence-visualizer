@@ -43,6 +43,10 @@ export const autocorrViz: Visualizer = {
   name: 'Autocorrelation',
   family: 'stats',
   minTerms: 8,
+  explain: {
+    short: 'How strongly the sequence resembles itself shifted by k places.',
+    long: 'For each lag k, correlates the sequence against a copy of itself displaced by k. Peaks indicate periodicity or near-periodicity at that spacing. This is a pure ordering statistic, so a permutation null destroys it completely -- a real sequence whose autocorrelation stays outside the null band at some lag has genuine repeating structure at that spacing.',
+  },
   params: [
     { kind: 'number', id: 'maxLag', label: 'Max lag', default: 32, min: 4, max: 200, step: 1 },
   ],

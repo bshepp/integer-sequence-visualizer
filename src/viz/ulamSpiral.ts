@@ -17,6 +17,10 @@ export const ulamViz: Visualizer = {
   name: 'Ulam-style spiral',
   family: 'grid',
   minTerms: 4,
+  explain: {
+    short: 'Terms laid out along a square spiral, coloured by value.',
+    long: 'Walks outward in a square spiral, one cell per term, colouring each cell from the term value. Ulam discovered that primes plotted this way fall on visible diagonals. Be careful here: the spiral path itself imposes strong geometry, so smooth or near-linear sequences produce beautiful rings and diagonals that say nothing about the sequence. Comparing against a permutation null is the check -- if the pattern survives shuffling, the layout drew it, not the numbers.',
+  },
   params: [
     { kind: 'select', id: 'colorBy', label: 'Color by', default: 'mod', options: ['mod', 'parity', 'magnitude'] },
     { kind: 'number', id: 'modulus', label: 'Modulus', default: 6, min: 2, max: 32, step: 1 },
