@@ -17,6 +17,9 @@ import { lookupById } from '../sequence/oeisClient';
 import { sequenceFromFormula } from '../sequence/formula';
 import { buildExplainPanel } from './explainPanel';
 import { SURROGATE_EXPLAIN } from '../nullmodel/surrogates';
+import { buildReadout, describeHit, drawMarker, correspondingIndex } from './readout';
+import { hitIndex } from '../viz/hit';
+import type { Size } from '../viz/types';
 
 const MODES = ['off', 'side', 'flip', 'ensemble'];
 const SURROGATES = ['permutation', 'difference', 'matched'];
@@ -180,8 +183,65 @@ export function mountApp(root: HTMLElement): void {
   canvasWrap.className = 'canvas-wrap';
   main.appendChild(canvasWrap);
   const canvas = document.createElement('canvas');
+  canvas.setAttribute('role', 'img');
   canvasWrap.appendChild(canvas);
   main.appendChild(explain.el);
+
+  const readout = buildReadout();
+  canvasWrap.appendChild(readout.el);
+
+  // The term the user pinned by clicking, or null. Survives redraws (a flip
+  // included) so the marker anchors the eye while the substrate changes.
+  let pinnedIndex: number | null = null;
+
+  // Panel geometry for hit-testing: in side-by-side the left half is the real
+  // sequence, and the pointer must not report real-sequence indices for
+  // surrogate pixels.
+  function hitGeometry(): { size: Size; panelW: number } {
+    const rect = canvasWrap.getBoundingClientRect();
+    const size = { width: Math.max(200, rect.width), height: Math.max(200, rect.height) };
+    return { size, panelW: comparison.mode === 'side' ? size.width / 2 - 1 : size.width };
+  }
+
+  // Pointer position in CSS pixels relative to the canvas — the coordinate
+  // space every visualizer's locate() works in, since drawScene sets the 2D
+  // transform to dpr.
+  function canvasPoint(e: { clientX: number; clientY: number }): { x: number; y: number } {
+    const r = canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  function hitAt(pt: { x: number; y: number }) {
+    const viz = getVisualizer(state.vizId);
+    if (!state.seq || !viz.locate) return null;
+    const { size, panelW } = hitGeometry();
+    if (comparison.mode === 'side' && pt.x > size.width / 2) return null;
+    return viz.locate(new SequenceView(state.seq), state.params, { width: panelW, height: size.height }, pt.x, pt.y);
+  }
+
+  let hoverPending = false;
+  canvas.addEventListener('pointermove', (e) => {
+    // Throttle to one hit-test per animation frame: locate() is an O(n) scan
+    // for path visualizers and pointermove fires far faster than 60Hz.
+    if (hoverPending) return;
+    hoverPending = true;
+    const pt = canvasPoint(e);
+    requestAnimationFrame(() => {
+      hoverPending = false;
+      if (!state.seq) { readout.set(null); return; }
+      const hit = hitAt(pt);
+      readout.set(hit ? describeHit(hit, new SequenceView(state.seq)) : null);
+    });
+  });
+  canvas.addEventListener('pointerleave', () => readout.set(null));
+
+  canvas.addEventListener('click', (e) => {
+    if (!state.seq) return;
+    const idx = hitIndex(hitAt(canvasPoint(e)));
+    // Clicking the same term again clears the pin.
+    pinnedIndex = idx !== null && idx === pinnedIndex ? null : idx;
+    redraw();
+  });
 
   const bar = buildComparisonBar(comparison, redraw);
   main.insertBefore(bar.el, canvasWrap);
@@ -265,6 +325,9 @@ export function mountApp(root: HTMLElement): void {
     }
     const viz = getVisualizer(state.vizId);
     const view = new SequenceView(state.seq);
+    // The canvas is the product; without this it is an unlabelled graphic to
+    // any assistive technology.
+    canvas.setAttribute('aria-label', `${viz.name} of ${state.seq.name}. ${viz.explain.long}`);
     if (view.length < viz.minTerms) {
       showNotice(`${viz.name} works best with at least ${viz.minTerms} terms (loaded: ${view.length}).`);
     }
@@ -291,11 +354,40 @@ export function mountApp(root: HTMLElement): void {
       ctx.strokeStyle = '#333';
       ctx.beginPath(); ctx.moveTo(width / 2, 0); ctx.lineTo(width / 2, height); ctx.stroke();
       draw(surr, width / 2 - 1, height, width / 2 + 1, `${comparison.surrogate} surrogate`);
+
+      if (pinnedIndex !== null && viz.position) {
+        const panel = { width: width / 2 - 1, height };
+        const real = viz.position(view, state.params, panel, pinnedIndex);
+        if (real) drawMarker(ctx, real, '#f7768e');
+        const corr = correspondingIndex(pinnedIndex, comparison.surrogate, state.seq.terms, comparison.seed);
+        const sp = viz.position(new SequenceView(surr), state.params, panel, corr.index);
+        // Pink when the same term was genuinely followed; grey when this null
+        // has no such term and we are only lining up indices.
+        if (sp) drawMarker(ctx, { x: sp.x + width / 2 + 1, y: sp.y }, corr.traced ? '#f7768e' : '#9aa0aa');
+        ctx.fillStyle = '#9aa0aa';
+        ctx.font = '11px system-ui';
+        ctx.fillText(
+          corr.traced
+            ? `same term, moved to n = ${corr.index}`
+            : 'index-for-index (this null does not preserve terms)',
+          width / 2 + 11, height - 26,
+        );
+      }
     } else if (comparison.mode === 'flip') {
       const shown = comparison.showSurrogate
         ? surrogateSequence(state.seq, comparison.surrogate, comparison.seed)
         : state.seq;
       draw(shown, width, height, 0, comparison.showSurrogate ? `${comparison.surrogate} surrogate` : 'real');
+
+      // The marker persists across the flip, anchoring the eye on one term
+      // while the substrate swaps underneath it.
+      if (pinnedIndex !== null && viz.position) {
+        const idx = comparison.showSurrogate
+          ? correspondingIndex(pinnedIndex, comparison.surrogate, state.seq.terms, comparison.seed).index
+          : pinnedIndex;
+        const p = viz.position(new SequenceView(shown), state.params, { width, height }, idx);
+        if (p) drawMarker(ctx, p, '#f7768e');
+      }
     } else if (comparison.mode === 'ensemble' && viz.statistics) {
       // The adaptive log/linear scale decision (histogram's 'terms' target,
       // see shouldUseLogScale in viz/histogram.ts) must be made ONCE from the
@@ -362,6 +454,20 @@ export function mountApp(root: HTMLElement): void {
       }
       if (ensembleBands) {
         drawEnsembleChart(ctx, { width, height }, viz.statistics(view, paramsWithScale), ensembleBands);
+        // No single surrogate exists here, so there is nothing to mark. The
+        // meaningful answer for a pinned index is that index's slice of the
+        // null distribution, which is what the band is made of.
+        if (pinnedIndex !== null) {
+          const key = Object.keys(ensembleBands)[0];
+          const band = key ? ensembleBands[key] : undefined;
+          const widest = band?.levels[0];
+          if (band && widest && pinnedIndex < band.median.length) {
+            readout.set(
+              `n = ${pinnedIndex}: null ${widest.pct}% spans ` +
+              `${widest.lo[pinnedIndex]!.toPrecision(4)} to ${widest.hi[pinnedIndex]!.toPrecision(4)}`,
+            );
+          }
+        }
       } else if (ensembleFailed) {
         ctx.fillStyle = '#f7768e';
         ctx.font = '14px system-ui';
@@ -376,6 +482,10 @@ export function mountApp(root: HTMLElement): void {
       }
     } else {
       draw(state.seq, width, height, 0, '');
+      if (pinnedIndex !== null && viz.position) {
+        const p = viz.position(view, state.params, { width, height }, pinnedIndex);
+        if (p) drawMarker(ctx, p, '#f7768e');
+      }
     }
   }
 
