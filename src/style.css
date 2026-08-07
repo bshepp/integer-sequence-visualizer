@@ -162,3 +162,4 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
   padding: 0; cursor: pointer; line-height: 0; max-width: 100%;
 }
 .landing-hero-button:hover { border-color: var(--accent); }
+.bar-field { display: inline-flex; align-items: center; gap: 6px; }

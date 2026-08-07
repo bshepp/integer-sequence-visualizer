@@ -53,7 +53,9 @@ export function mountApp(root: HTMLElement): void {
   header.className = 'app-header';
   const wordmark = document.createElement('div');
   wordmark.className = 'app-wordmark';
-  const title = document.createElement('span');
+  // A real heading, not a styled span: the page had no h1 at all, so
+  // assistive technology had nothing to anchor the document outline to.
+  const title = document.createElement('h1');
   title.className = 'app-title';
   title.textContent = 'Ulam';
   const subtitle = document.createElement('span');
@@ -560,10 +562,19 @@ export function mountApp(root: HTMLElement): void {
   // after a parameter tweak would read as a bug, not a feature.
   let landingDismissed = false;
 
+  // While the landing covers the viewport the engine behind it must not be
+  // reachable by Tab and must not be announced — otherwise a keyboard user
+  // tabs straight off the landing into controls they cannot see. `inert`
+  // handles focus and the accessibility tree together.
+  function setEngineInert(inert: boolean): void {
+    for (const el of [header, layout, footer]) el.toggleAttribute('inert', inert);
+  }
+
   function dismissLanding(focusEngine = true): void {
     landingDismissed = true;
     landingEl?.remove();
     landingEl = null;
+    setEngineInert(false);
     if (focusEngine) picker.focus();
   }
 
@@ -584,6 +595,7 @@ export function mountApp(root: HTMLElement): void {
       onOpen: () => { openEntry(heroEntry()); picker.focus(); },
       onPick: openEntry,
     });
+    setEngineInert(true);
     root.appendChild(landingEl);
   }
 

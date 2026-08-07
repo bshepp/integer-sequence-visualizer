@@ -431,3 +431,51 @@ describe('mountApp — ensemble failure does not stay permanently stuck on "Comp
     expect(FakeWorker.instances[1]!.terminated).toBe(false);
   });
 });
+
+describe('accessibility of the app chrome', () => {
+  it('the engine chrome carries exactly one h1', () => {
+    // Scoped to the engine header: the landing overlay is a separate screen
+    // with its own h1, and while it is up the engine behind it is inert.
+    const root = document.createElement('div');
+    mountApp(root);
+    expect(root.querySelectorAll('.app-header h1')).toHaveLength(1);
+  });
+
+  it('marks the engine inert while the landing covers it', () => {
+    const root = document.createElement('div');
+    mountApp(root);
+    // Bare hash -> landing is mounted, so the engine must be unreachable.
+    expect(root.querySelector('.landing')).not.toBeNull();
+    expect(root.querySelector('.layout')!.hasAttribute('inert')).toBe(true);
+
+    root.querySelector<HTMLButtonElement>('.landing-open')!.click();
+    expect(root.querySelector('.landing')).toBeNull();
+    expect(root.querySelector('.layout')!.hasAttribute('inert')).toBe(false);
+  });
+
+  it('every comparison-bar control has an accessible name', () => {
+    const root = document.createElement('div');
+    mountApp(root);
+    const controls = root.querySelectorAll<HTMLElement>('.comparison-bar select, .comparison-bar input');
+    expect(controls.length).toBeGreaterThan(0);
+    for (const control of controls) {
+      const labelled =
+        control.getAttribute('aria-label') ||
+        (control.id && root.querySelector(`label[for="${control.id}"]`)) ||
+        control.closest('label');
+      expect(labelled, `${control.className} has no accessible name`).toBeTruthy();
+    }
+  });
+
+  it('the canvas is exposed as an image', () => {
+    const root = document.createElement('div');
+    mountApp(root);
+    expect(root.querySelector('canvas')!.getAttribute('role')).toBe('img');
+  });
+
+  it('the visualizer picker has an accessible name', () => {
+    const root = document.createElement('div');
+    mountApp(root);
+    expect(root.querySelector<HTMLSelectElement>('.viz-picker')!.getAttribute('aria-label')).toBeTruthy();
+  });
+});

@@ -221,13 +221,29 @@ export function buildComparisonBar(
   flipBtn.hidden = state.mode !== 'flip';
   flipBtn.addEventListener('click', () => { state.showSurrogate = !state.showSurrogate; onChange(); });
 
-  const label = (t: string) => {
-    const s = document.createElement('span');
-    s.className = 'bar-label';
-    s.textContent = t;
-    return s;
+  // Real <label for> elements, not sibling <span>s: the bar previously
+  // presented four unlabelled comboboxes to a screen reader.
+  let uid = 0;
+  const field = (text: string, control: HTMLElement): HTMLElement => {
+    const wrap = document.createElement('label');
+    wrap.className = 'bar-field';
+    const id = `cmp-${++uid}`;
+    control.id = id;
+    wrap.htmlFor = id;
+    const span = document.createElement('span');
+    span.className = 'bar-label';
+    span.textContent = text;
+    wrap.append(span, control);
+    return wrap;
   };
-  el.append(label('Compare:'), modeSel, label('null:'), surrSel, label('seed'), seedInput, label('N'), nInput, flipBtn);
+
+  el.append(
+    field('Compare:', modeSel),
+    field('null:', surrSel),
+    field('seed', seedInput),
+    field('N', nInput),
+    flipBtn,
+  );
 
   syncMode();
 
