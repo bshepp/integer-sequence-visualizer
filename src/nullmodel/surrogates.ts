@@ -4,8 +4,33 @@ import { minMax } from '../viz/mathUtils';
 
 export type SurrogateType = 'permutation' | 'difference' | 'matched';
 
+/**
+ * A permutation surrogate that also reports where every term went.
+ *
+ * Permutation is the only surrogate under which an individual term still
+ * exists in the null -- the multiset is preserved -- so it is the only one
+ * where "follow this term into the null model" is a meaningful request.
+ * Difference and matched-random surrogates contain entirely new values, so
+ * index-to-index is the only honest correspondence there.
+ *
+ * Shuffles an index array rather than the terms, then inverts it, so
+ * `map[i]` is the slot the term at real index i landed in:
+ * `result.terms[result.map[i]] === terms[i]`.
+ */
+export function permutationWithMap(terms: bigint[], seed: number): { terms: bigint[]; map: number[] } {
+  const order = terms.map((_, i) => i);
+  shuffleInPlace(order, mulberry32(seed));
+  const out = order.map((src) => terms[src]!);
+  // order[j] = which real index supplies slot j; invert to get map[i] = slot.
+  const map = new Array<number>(terms.length);
+  for (let j = 0; j < order.length; j++) map[order[j]!] = j;
+  return { terms: out, map };
+}
+
+// Delegates so there is exactly one shuffle implementation and the two can
+// never drift into consuming the seeded stream differently.
 export function permutationSurrogate(terms: bigint[], seed: number): bigint[] {
-  return shuffleInPlace([...terms], mulberry32(seed));
+  return permutationWithMap(terms, seed).terms;
 }
 
 export function differenceSurrogate(terms: bigint[], seed: number): bigint[] {

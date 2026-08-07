@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { mulberry32, shuffleInPlace } from '../../src/nullmodel/rng';
 import {
-  permutationSurrogate, differenceSurrogate, matchedRandomSurrogate, makeSurrogate,
+  permutationSurrogate, differenceSurrogate, matchedRandomSurrogate, makeSurrogate, permutationWithMap,
 } from '../../src/nullmodel/surrogates';
 import { FIB_2000 } from '../helpers/fixtures';
 
@@ -206,5 +206,29 @@ describe('makeSurrogate', () => {
     expect(makeSurrogate(fib, 'permutation', 3)).toEqual(permutationSurrogate(fib, 3));
     expect(makeSurrogate(fib, 'difference', 3)).toEqual(differenceSurrogate(fib, 3));
     expect(makeSurrogate(fib, 'matched', 3)).toEqual(matchedRandomSurrogate(fib, 3));
+  });
+});
+
+describe('permutationWithMap', () => {
+  const terms = Array.from({ length: 200 }, (_, i) => BigInt(i));
+
+  it('map sends each real index to where that term landed', () => {
+    const { terms: shuffled, map } = permutationWithMap(terms, 7);
+    for (let i = 0; i < terms.length; i++) {
+      expect(shuffled[map[i]!]).toBe(terms[i]);
+    }
+  });
+
+  it('map is a genuine permutation of the indices', () => {
+    const { map } = permutationWithMap(terms, 7);
+    expect([...map].sort((a, b) => a - b)).toEqual(terms.map((_, i) => i));
+  });
+
+  it('produces the same terms as permutationSurrogate for the same seed', () => {
+    expect(permutationWithMap(terms, 3).terms).toEqual(permutationSurrogate(terms, 3));
+  });
+
+  it('handles an empty sequence', () => {
+    expect(permutationWithMap([], 1)).toEqual({ terms: [], map: [] });
   });
 });
