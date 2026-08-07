@@ -102,3 +102,51 @@ describe('ensemble chart legend', () => {
     expect(texts.some((t) => /50%/.test(t))).toBe(true);
   });
 });
+
+describe('inert control fixes', () => {
+  it('disables the surrogate select while comparison is off', () => {
+    const state = defaultComparison();
+    const bar = buildComparisonBar(state, () => {});
+    const surr = bar.el.querySelector<HTMLSelectElement>('.surrogate-select')!;
+    expect(state.mode).toBe('off');
+    expect(surr.disabled).toBe(true);
+    expect(surr.title).toMatch(/comparison/i);
+  });
+
+  it('enables the surrogate select once a comparison mode is chosen', () => {
+    const state = defaultComparison();
+    const bar = buildComparisonBar(state, () => {});
+    const mode = bar.el.querySelector<HTMLSelectElement>('.mode-select')!;
+    mode.value = 'side';
+    mode.dispatchEvent(new Event('change'));
+    expect(bar.el.querySelector<HTMLSelectElement>('.surrogate-select')!.disabled).toBe(false);
+  });
+
+  it('reveals and emphasises the flip button when flip is selected', () => {
+    const state = defaultComparison();
+    const bar = buildComparisonBar(state, () => {});
+    const mode = bar.el.querySelector<HTMLSelectElement>('.mode-select')!;
+    mode.value = 'flip';
+    mode.dispatchEvent(new Event('change'));
+    const flip = bar.el.querySelector<HTMLButtonElement>('.flip-button')!;
+    expect(flip.hidden).toBe(false);
+    expect(flip.classList.contains('flip-button--active')).toBe(true);
+  });
+
+  it('refresh() re-syncs disabled state from external mutation', () => {
+    const state = defaultComparison();
+    const bar = buildComparisonBar(state, () => {});
+    state.mode = 'ensemble';
+    bar.refresh();
+    expect(bar.el.querySelector<HTMLSelectElement>('.surrogate-select')!.disabled).toBe(false);
+  });
+
+  it('update(false) forcing off also re-inerts the null controls', () => {
+    const state = defaultComparison();
+    state.mode = 'ensemble';
+    const bar = buildComparisonBar(state, () => {});
+    bar.update(false);
+    expect(state.mode).toBe('off');
+    expect(bar.el.querySelector<HTMLSelectElement>('.surrogate-select')!.disabled).toBe(true);
+  });
+});

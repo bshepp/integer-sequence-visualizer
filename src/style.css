@@ -103,3 +103,9 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
   color: var(--muted); font-size: 18px; cursor: pointer; line-height: 1;
 }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.flip-button--active {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.comparison-bar select:disabled, .comparison-bar input:disabled { opacity: 0.45; cursor: not-allowed; }

@@ -180,8 +180,36 @@ export function buildComparisonBar(
     return input;
   };
 
+  // The surrogate select and the seed both feed the null model, and N feeds
+  // the ensemble — none of which is consulted while mode is 'off'. Leaving
+  // them live meant a user could cycle the null dropdown indefinitely with
+  // nothing redrawing, which reads as a broken control rather than an unused
+  // one. Considered and rejected: auto-switching mode to 'side' when the
+  // surrogate changes — a control that silently changes a *different* control
+  // is worse than one that is honestly unavailable.
+  //
+  // Declared as a hoisted function so the change handlers below can call it
+  // even though surrSel/seedInput/nInput/flipBtn are declared after modeSel;
+  // it is only ever *invoked* after all of them exist.
+  function syncMode(): void {
+    const off = state.mode === 'off';
+    surrSel.disabled = off;
+    seedInput.disabled = off;
+    nInput.disabled = state.mode !== 'ensemble';
+    surrSel.title = off ? 'Choose a comparison mode to use a null model' : '';
+    flipBtn.hidden = state.mode !== 'flip';
+    // 'flip' renders the real sequence first, so without this the mode looks
+    // identical to 'off' until the button is found. Emphasising and focusing
+    // it makes selecting the mode visibly do something.
+    flipBtn.classList.toggle('flip-button--active', state.mode === 'flip');
+  }
+
   const modeSel = mkSelect('mode-select', ['off', 'side', 'flip', 'ensemble'], state.mode,
-    (v) => { state.mode = v as ComparisonMode; flipBtn.hidden = v !== 'flip'; });
+    (v) => {
+      state.mode = v as ComparisonMode;
+      syncMode();
+      if (state.mode === 'flip') flipBtn.focus();
+    });
   const surrSel = mkSelect('surrogate-select', ['permutation', 'difference', 'matched'], state.surrogate,
     (v) => { state.surrogate = v as SurrogateType; });
   const seedInput = mkNumber('seed-input', state.seed, 0, 2 ** 31, (v) => { state.seed = v; });
@@ -201,12 +229,19 @@ export function buildComparisonBar(
   };
   el.append(label('Compare:'), modeSel, label('null:'), surrSel, label('seed'), seedInput, label('N'), nInput, flipBtn);
 
+  syncMode();
+
   return {
     el,
     update(vizHasStats: boolean) {
       const opt = modeSel.querySelector<HTMLOptionElement>('option[value="ensemble"]')!;
       opt.disabled = !vizHasStats;
-      if (!vizHasStats && state.mode === 'ensemble') { state.mode = 'off'; modeSel.value = 'off'; }
+      if (!vizHasStats && state.mode === 'ensemble') {
+        // Forced back to 'off', so the null-model controls must go inert too.
+        state.mode = 'off';
+        modeSel.value = 'off';
+        syncMode();
+      }
     },
     // Reflects `state` (mutated externally, e.g. by decoding a shared URL)
     // back onto the controls. Needed because the selects/inputs only push
@@ -216,7 +251,7 @@ export function buildComparisonBar(
       surrSel.value = state.surrogate;
       seedInput.value = String(state.seed);
       nInput.value = String(state.ensembleN);
-      flipBtn.hidden = state.mode !== 'flip';
+      syncMode();
     },
   };
 }
