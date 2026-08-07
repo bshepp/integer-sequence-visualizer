@@ -15,6 +15,8 @@ import { buildSweepView } from './sweep';
 import { encodeState, decodeState, type SeqRef } from './urlState';
 import { lookupById } from '../sequence/oeisClient';
 import { sequenceFromFormula } from '../sequence/formula';
+import { buildExplainPanel } from './explainPanel';
+import { SURROGATE_EXPLAIN } from '../nullmodel/surrogates';
 
 const MODES = ['off', 'side', 'flip', 'ensemble'];
 const SURROGATES = ['permutation', 'difference', 'matched'];
@@ -138,11 +140,33 @@ export function mountApp(root: HTMLElement): void {
     bar.update(Boolean(getVisualizer(state.vizId).statistics));
     redraw();
   });
+  picker.setAttribute('aria-label', 'Visualization technique');
   topbar.appendChild(picker);
+
+  const explain = buildExplainPanel();
+  const explainBtn = document.createElement('button');
+  explainBtn.className = 'explain-button';
+  explainBtn.type = 'button';
+  explainBtn.textContent = 'i';
+  explainBtn.addEventListener('click', () => {
+    const viz = getVisualizer(state.vizId);
+    explain.show(
+      viz.name,
+      `${viz.explain.long}\n\nNull model — ${comparison.surrogate}: ${SURROGATE_EXPLAIN[comparison.surrogate].long}`,
+    );
+  });
+  topbar.appendChild(explainBtn);
+
+  const vizShort = document.createElement('p');
+  vizShort.className = 'viz-short';
+  topbar.appendChild(vizShort);
 
   const paramsHost = document.createElement('div');
   topbar.appendChild(paramsHost);
   function rebuildParams(): void {
+    const current = getVisualizer(state.vizId);
+    vizShort.textContent = current.explain.short;
+    explainBtn.setAttribute('aria-label', `What is the ${current.name} view?`);
     paramsHost.replaceChildren(
       buildParamControls(getVisualizer(state.vizId).params, state.params, (id, value) => {
         state.params[id] = value;
@@ -157,6 +181,7 @@ export function mountApp(root: HTMLElement): void {
   main.appendChild(canvasWrap);
   const canvas = document.createElement('canvas');
   canvasWrap.appendChild(canvas);
+  main.appendChild(explain.el);
 
   const bar = buildComparisonBar(comparison, redraw);
   main.insertBefore(bar.el, canvasWrap);

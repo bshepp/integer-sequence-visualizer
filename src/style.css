@@ -82,3 +82,24 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 }
 .attribution a { color: var(--muted); text-decoration: underline; }
 .attribution a:hover, .attribution a:focus-visible { color: var(--accent); }
+
+.explain-button {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #24262c; color: var(--accent);
+  border: 1px solid #3a3d44; cursor: pointer;
+  font: 600 13px/1 system-ui; flex: none;
+}
+.viz-short { margin: 0; color: var(--muted); font-size: 12px; flex-basis: 100%; }
+.explain-panel {
+  position: absolute; z-index: 5; top: 12px; right: 12px; max-width: 380px;
+  background: var(--panel); border: 1px solid #3a3d44; border-radius: 8px;
+  padding: 14px 16px; box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+}
+.explain-panel[hidden] { display: none; }
+.explain-title { margin: 0 0 6px; font-size: 15px; }
+.explain-body { margin: 0; color: var(--muted); font-size: 13px; white-space: pre-wrap; }
+.explain-close {
+  position: absolute; top: 6px; right: 8px; background: none; border: none;
+  color: var(--muted); font-size: 18px; cursor: pointer; line-height: 1;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
