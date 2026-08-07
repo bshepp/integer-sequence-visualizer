@@ -154,6 +154,26 @@ export const histogramViz: Visualizer = {
     );
     return { count: counts };
   },
+  // No position(): a bin has no single term, so there is no screen point that
+  // means "term i" in this view. Omitting it is the honest answer.
+  locate(seq: SequenceView, params: Params, size: Size, x: number, y: number) {
+    const { edges, counts } = computeHistogram(
+      targetValues(seq, String(params.target), overrideFromParams(params)),
+      Number(params.bins),
+      domainFromParams(params),
+    );
+    const w = size.width - 2 * MARGIN, h = size.height - 2 * MARGIN;
+    if (x < MARGIN || x > MARGIN + w || y < MARGIN || y > MARGIN + h) return null;
+    const binIndex = Math.min(counts.length - 1, Math.floor(((x - MARGIN) / w) * counts.length));
+    if (binIndex < 0) return null;
+    return {
+      kind: 'bin' as const,
+      binIndex,
+      lo: edges[binIndex]!,
+      hi: edges[binIndex + 1]!,
+      count: counts[binIndex]!,
+    };
+  },
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
     const { counts } = computeHistogram(
       targetValues(seq, String(params.target), overrideFromParams(params)),

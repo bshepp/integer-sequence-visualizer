@@ -1,6 +1,20 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { strokePath } from './turtle';
+import { pathTransform, toScreen, nearestIndex } from './pathTransform';
+
+/**
+ * For each path point after the origin, which term and which digit made it.
+ * digitWalkPath pushes exactly one point per digit, so this is its index map.
+ */
+export function digitWalkOwners(seq: SequenceView, base: number): Array<{ index: number; digitPos: number }> {
+  const owners: Array<{ index: number; digitPos: number }> = [];
+  for (let i = 0; i < seq.length; i++) {
+    const ds = seq.digits(i, base);
+    for (let d = 0; d < ds.length; d++) owners.push({ index: i, digitPos: d });
+  }
+  return owners;
+}
 
 export function digitWalkPath(seq: SequenceView, base: number): Array<{ x: number; y: number }> {
   const pts = [{ x: 0, y: 0 }];
@@ -30,5 +44,22 @@ export const digitWalkViz: Visualizer = {
   ],
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
     strokePath(digitWalkPath(seq, Number(params.base)), ctx, size);
+  },
+  position(seq: SequenceView, params: Params, size: Size, index: number) {
+    if (index < 0 || index >= seq.length) return null;
+    const base = Number(params.base);
+    const owners = digitWalkOwners(seq, base);
+    const at = owners.findIndex((o) => o.index === index);
+    if (at === -1) return null;
+    const pts = digitWalkPath(seq, base);
+    return toScreen(pathTransform(pts, size), pts[at + 1]!);
+  },
+  locate(seq: SequenceView, params: Params, size: Size, x: number, y: number) {
+    const base = Number(params.base);
+    const pts = digitWalkPath(seq, base);
+    const p = nearestIndex(pts, pathTransform(pts, size), x, y);
+    if (p === null || p === 0) return null;
+    const owner = digitWalkOwners(seq, base)[p - 1];
+    return owner ? { kind: 'digit' as const, index: owner.index, digitPos: owner.digitPos } : null;
   },
 };

@@ -35,6 +35,26 @@ export const scatterViz: Visualizer = {
     // rather than re-deriving the same formula a second time.
     return { value: values(seq, String(params.scale)) };
   },
+  position(seq: SequenceView, params: Params, size: Size, index: number) {
+    const vals = values(seq, String(params.scale));
+    if (index < 0 || index >= vals.length) return null;
+    const { lo: rawLo, hi: rawHi } = minMax(vals);
+    const lo = Math.min(rawLo, 0), hi = Math.max(rawHi, 1);
+    const w = size.width - 2 * MARGIN, h = size.height - 2 * MARGIN;
+    return {
+      x: MARGIN + (index / Math.max(1, vals.length - 1)) * w,
+      y: MARGIN + h - ((vals[index]! - lo) / (hi - lo || 1)) * h,
+    };
+  },
+  locate(seq: SequenceView, params: Params, size: Size, x: number, _y: number) {
+    // Index is a pure function of x here, so vertical position is ignored —
+    // the user is pointing at a column of the plot, not hunting a dot.
+    const n = values(seq, String(params.scale)).length;
+    const w = size.width - 2 * MARGIN;
+    if (x < MARGIN || x > MARGIN + w || n === 0) return null;
+    const index = Math.round(((x - MARGIN) / w) * Math.max(1, n - 1));
+    return index >= 0 && index < n ? { kind: 'term' as const, index } : null;
+  },
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
     const vals = values(seq, String(params.scale));
     const { lo: rawLo, hi: rawHi } = minMax(vals);

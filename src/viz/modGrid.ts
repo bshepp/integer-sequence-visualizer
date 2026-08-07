@@ -1,6 +1,18 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 
+/** The one layout render(), position() and locate() all agree on. */
+function layout(n: number, params: Params, size: Size) {
+  const cols = Number(params.columns);
+  const rows = Math.ceil(n / cols);
+  const cell = Math.max(1, Math.floor(Math.min(size.width / cols, size.height / rows)));
+  return {
+    cols, rows, cell,
+    ox: (size.width - cols * cell) / 2,
+    oy: (size.height - rows * cell) / 2,
+  };
+}
+
 export const modGridViz: Visualizer = {
   id: 'modgrid',
   name: 'Mod-N grid',
@@ -16,15 +28,27 @@ export const modGridViz: Visualizer = {
   ],
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
     const m = Number(params.modulus);
-    const cols = Number(params.columns);
-    const rows = Math.ceil(seq.length / cols);
-    const cell = Math.max(1, Math.floor(Math.min(size.width / cols, size.height / rows)));
-    const ox = (size.width - cols * cell) / 2;
-    const oy = (size.height - rows * cell) / 2;
+    const L = layout(seq.length, params, size);
     for (let i = 0; i < seq.length; i++) {
       const r = seq.mod(i, m);
       ctx.fillStyle = `hsl(${(r / m) * 360}, 65%, ${25 + (r / m) * 45}%)`;
-      ctx.fillRect(ox + (i % cols) * cell, oy + Math.floor(i / cols) * cell, cell, cell);
+      ctx.fillRect(L.ox + (i % L.cols) * L.cell, L.oy + Math.floor(i / L.cols) * L.cell, L.cell, L.cell);
     }
+  },
+  position(seq: SequenceView, params: Params, size: Size, index: number) {
+    if (index < 0 || index >= seq.length) return null;
+    const L = layout(seq.length, params, size);
+    return {
+      x: L.ox + (index % L.cols) * L.cell + L.cell / 2,
+      y: L.oy + Math.floor(index / L.cols) * L.cell + L.cell / 2,
+    };
+  },
+  locate(seq: SequenceView, params: Params, size: Size, x: number, y: number) {
+    const L = layout(seq.length, params, size);
+    const col = Math.floor((x - L.ox) / L.cell);
+    const row = Math.floor((y - L.oy) / L.cell);
+    if (col < 0 || row < 0 || col >= L.cols || row >= L.rows) return null;
+    const index = row * L.cols + col;
+    return index < seq.length ? { kind: 'term' as const, index } : null;
   },
 };

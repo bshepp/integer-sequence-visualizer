@@ -52,4 +52,17 @@ export const turtleViz: Visualizer = {
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
     strokePath(turtlePath(seq, Number(params.angle), Number(params.k)), ctx, size);
   },
+  position(seq: SequenceView, params: Params, size: Size, index: number) {
+    if (index < 0 || index >= seq.length) return null;
+    const pts = turtlePath(seq, Number(params.angle), Number(params.k));
+    // turtlePath pushes the origin first, so path point i+1 is term i.
+    return toScreen(pathTransform(pts, size), pts[index + 1]!);
+  },
+  locate(seq: SequenceView, params: Params, size: Size, x: number, y: number) {
+    const pts = turtlePath(seq, Number(params.angle), Number(params.k));
+    const p = nearestIndex(pts, pathTransform(pts, size), x, y);
+    if (p === null) return null;
+    const index = Math.max(0, p - 1);
+    return index < seq.length ? { kind: 'term' as const, index } : null;
+  },
 };

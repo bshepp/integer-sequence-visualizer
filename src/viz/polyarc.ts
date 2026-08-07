@@ -1,12 +1,16 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { strokePath } from './turtle';
+import { pathTransform, toScreen, nearestIndex } from './pathTransform';
+
+/** Arc segments drawn per term. Each term therefore owns 8 path points. */
+const SEGMENTS = 8;
 
 export function polyarcPath(
   seq: SequenceView,
   opts: { angle: number; modulus: number; centered: boolean; segments?: number },
 ): Array<{ x: number; y: number }> {
-  const segments = opts.segments ?? 8;
+  const segments = opts.segments ?? SEGMENTS;
   const pts = [{ x: 0, y: 0 }];
   let heading = 0;
   let x = 0, y = 0;
@@ -48,5 +52,24 @@ export const polyarcViz: Visualizer = {
       ctx,
       size,
     );
+  },
+  position(seq: SequenceView, params: Params, size: Size, index: number) {
+    if (index < 0 || index >= seq.length) return null;
+    const pts = polyarcPath(seq, {
+      angle: Number(params.angle), modulus: Number(params.modulus),
+      centered: Boolean(params.centered),
+    });
+    // Last segment of term `index`, i.e. where that term finished bending.
+    return toScreen(pathTransform(pts, size), pts[Math.min(pts.length - 1, (index + 1) * SEGMENTS)]!);
+  },
+  locate(seq: SequenceView, params: Params, size: Size, x: number, y: number) {
+    const pts = polyarcPath(seq, {
+      angle: Number(params.angle), modulus: Number(params.modulus),
+      centered: Boolean(params.centered),
+    });
+    const p = nearestIndex(pts, pathTransform(pts, size), x, y);
+    if (p === null) return null;
+    const index = Math.min(seq.length - 1, Math.max(0, Math.floor((p - 1) / SEGMENTS)));
+    return { kind: 'term' as const, index };
   },
 };

@@ -1,7 +1,6 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
-import { spiralCoord } from './gridUtils';
-import { minMax } from './mathUtils';
+import { spiralLayout } from './gridUtils';
 
 function cellColor(seq: SequenceView, i: number, colorBy: string, modulus: number, maxLog: number): string {
   if (colorBy === 'parity') return seq.mod(i, 2) === 0 ? '#1d2026' : '#7aa2f7';
@@ -27,23 +26,39 @@ export const ulamViz: Visualizer = {
   ],
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
     const n = seq.length;
-    const coords = Array.from({ length: n }, (_, i) => spiralCoord(i));
-    const xs = coords.map((c) => c.x), ys = coords.map((c) => c.y);
-    // See turtle.ts's strokePath for why a loop-based min/max, not a spread,
-    // is required once `n` (here, coords.length === seq.length) is large.
-    const { lo: minX, hi: maxX } = minMax(xs);
-    const { lo: minY, hi: maxY } = minMax(ys);
-    const cols = maxX - minX + 1, rows = maxY - minY + 1;
-    const cell = Math.max(1, Math.floor(Math.min(size.width / cols, size.height / rows)));
-    const ox = (size.width - cols * cell) / 2;
-    const oy = (size.height - rows * cell) / 2;
+    const L = spiralLayout(n, size);
     let maxLog = 0;
     for (let i = 0; i < n; i++) maxLog = Math.max(maxLog, seq.logMagnitude(i));
     for (let i = 0; i < n; i++) {
       ctx.fillStyle = cellColor(seq, i, String(params.colorBy), Number(params.modulus), maxLog);
-      const c = coords[i]!;
+      const c = L.coords[i]!;
       // canvas y grows downward; flip so the spiral matches math orientation
-      ctx.fillRect(ox + (c.x - minX) * cell, oy + (maxY - c.y) * cell, cell, cell);
+      ctx.fillRect(L.ox + (c.x - L.minX) * L.cell, L.oy + (L.maxY - c.y) * L.cell, L.cell, L.cell);
     }
+  },
+  position(seq: SequenceView, _params: Params, size: Size, index: number) {
+    if (index < 0 || index >= seq.length) return null;
+    const L = spiralLayout(seq.length, size);
+    const c = L.coords[index]!;
+    // Centre of the cell, so locate() maps it back unambiguously.
+    return {
+      x: L.ox + (c.x - L.minX) * L.cell + L.cell / 2,
+      y: L.oy + (L.maxY - c.y) * L.cell + L.cell / 2,
+    };
+  },
+  locate(seq: SequenceView, _params: Params, size: Size, x: number, y: number) {
+    const L = spiralLayout(seq.length, size);
+    const col = Math.floor((x - L.ox) / L.cell);
+    const row = Math.floor((y - L.oy) / L.cell);
+    if (col < 0 || row < 0 || col >= L.cols || row >= L.rows) return null;
+    const cx = col + L.minX, cy = L.maxY - row;
+    // Linear scan rather than a Map: building a Map costs O(n) allocations on
+    // every pointer move, and n here is the term count (never the digit-walk
+    // blow-up), so the scan allocates nothing and is cheaper in practice.
+    for (let i = 0; i < L.coords.length; i++) {
+      const c = L.coords[i]!;
+      if (c.x === cx && c.y === cy) return { kind: 'term' as const, index: i };
+    }
+    return null;
   },
 };

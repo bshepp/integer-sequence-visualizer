@@ -62,6 +62,15 @@ export const autocorrViz: Visualizer = {
     const key = useLog ? `r${LOG_SUFFIX}` : 'r';
     return { [key]: autocorrelation(seqValues(seq, useLog), maxLag) };
   },
+  // No position(): the horizontal axis is lag, not index, so no screen point
+  // corresponds to a term. Reporting one would be a lie.
+  locate(seq: SequenceView, params: Params, size: Size, x: number, y: number) {
+    const maxLag = Math.min(Number(params.maxLag), seq.length - 2);
+    const w = size.width - 2 * MARGIN, h = size.height - 2 * MARGIN;
+    if (x < MARGIN || x > MARGIN + w || y < MARGIN || y > MARGIN + h) return null;
+    const lag = Math.round(((x - MARGIN) / w) * maxLag);
+    return lag >= 0 && lag <= maxLag ? { kind: 'lag' as const, lag } : null;
+  },
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
     const maxLag = Math.min(Number(params.maxLag), seq.length - 2);
     const useLog = overrideFromParams(params) ?? shouldUseLogScale(seq);

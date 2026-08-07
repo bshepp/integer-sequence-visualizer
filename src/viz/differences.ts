@@ -61,6 +61,26 @@ export const differencesViz: Visualizer = {
   statistics(seq: SequenceView, params: Params) {
     return { value: derived(seq, params) };
   },
+  position(seq: SequenceView, params: Params, size: Size, index: number) {
+    const vals = derived(seq, params);
+    if (index < 0 || index >= vals.length) return null;
+    const { lo: rawLo, hi: rawHi } = minMax(vals);
+    const lo = Math.min(rawLo, 0), hi = Math.max(rawHi, 1);
+    const w = size.width - 2 * MARGIN, h = size.height - 2 * MARGIN;
+    return {
+      x: MARGIN + (index / Math.max(1, vals.length - 1)) * w,
+      y: MARGIN + h - ((vals[index]! - lo) / (hi - lo || 1)) * h,
+    };
+  },
+  locate(seq: SequenceView, params: Params, size: Size, x: number, _y: number) {
+    // Plots n-1 points for n terms: point i is the step from a(i) to a(i+1),
+    // so the reported index is the earlier term of the pair.
+    const n = derived(seq, params).length;
+    const w = size.width - 2 * MARGIN;
+    if (x < MARGIN || x > MARGIN + w || n === 0) return null;
+    const index = Math.round(((x - MARGIN) / w) * Math.max(1, n - 1));
+    return index >= 0 && index < n ? { kind: 'term' as const, index } : null;
+  },
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
     const vals = derived(seq, params);
     const { lo: rawLo, hi: rawHi } = minMax(vals);
