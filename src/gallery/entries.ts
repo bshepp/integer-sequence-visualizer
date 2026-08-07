@@ -15,12 +15,12 @@ export const GALLERY: GalleryEntry[] = [
     sequence: oeisSeq('A000002', 'Kolakoski sequence', kolakoski(N)),
     state: {
       seqRef: { kind: 'oeis', aNumber: 'A000002' },
-      vizId: 'ulam', params: { colorBy: 'mod', modulus: 2 },
+      vizId: 'turtle', params: { angle: 90, k: 4 },
       mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
     },
     verdict: 'real',
-    caption: 'The texture on the left is real: these terms alternate far more than chance allows.',
-    body: 'The Kolakoski sequence contains only 1s and 2s, and it is its own run-length encoding — so its runs can never be longer than 2. That forces an alternation far more regular than chance, and it is what makes the spiral legible at all. Measured against 200 permutation surrogates, which hold the exact same terms and only reorder them, 66.4% of adjacent pairs differ against a null band of 45.7% to 54.1%. No surrogate reached even 56.1%. The pattern is a property of the arrangement, not of the two values.',
+    caption: 'Same terms in both panels. Only the order differs — and the walk on the right falls apart.',
+    body: 'Both pictures are drawn from exactly the same 600 numbers; the right-hand one has simply had them shuffled. A turtle walk turns by each term in turn, so it is cumulative and every term displaces everything drawn after it. The real sequence keeps folding back on itself and stays compact; the shuffle drifts away. The Kolakoski sequence contains only 1s and 2s and is its own run-length encoding, so its runs can never exceed 2 — forcing an alternation far more regular than chance. Measured against 200 permutation surrogates, 66.4% of adjacent pairs differ against a null band of 45.7% to 54.1%, and no surrogate reached even 56.1%.',
     evidence: {
       statistic: 'switchRate',
       measured: 0.664440734557596,
@@ -31,16 +31,19 @@ export const GALLERY: GalleryEntry[] = [
   },
   {
     id: 'rainbow-rings',
-    title: 'Structure that is not there',
-    sequence: oeisSeq('A001477', 'The non-negative integers', naturals(N)),
+    title: 'Structure that means nothing',
+    // 2500 terms (a ~50x50 spiral): the beat between the hue period and the
+    // winding radius only becomes legible once the spiral has wound enough
+    // times for successive arms to line up.
+    sequence: oeisSeq('A001477', 'The non-negative integers', naturals(2500)),
     state: {
       seqRef: { kind: 'oeis', aNumber: 'A001477' },
       vizId: 'ulam', params: { colorBy: 'mod', modulus: 12 },
       mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
     },
     verdict: 'artifact',
-    caption: 'Beautiful concentric rings, drawn entirely by the spiral — not by the sequence.',
-    body: 'This is a(n) = n, the simplest sequence there is. Because the hue advances a fixed step per cell while the spiral winds at a steadily increasing radius, the two periodicities beat against each other and produce rings. Nothing here is a property of the numbers: any sequence increasing by a constant produces the same picture, and changing the modulus just changes the ring spacing. This is the exact failure mode the whole site exists to catch, which is why it sits second.',
+    caption: 'Striking structure from the most trivial sequence there is — and the null model endorses it.',
+    body: 'This is a(n) = n. Nothing could be less interesting, yet the picture is full of structure, because the hue advances one step per cell while the spiral winds at a steadily growing radius and the two periodicities beat against each other. Now the uncomfortable part: shuffle the terms and the structure does vanish, so a permutation null reports that the ordering matters. It is right, and it is useless — every sequence that climbs by a constant draws this same picture, so it distinguishes nothing. A null model tells you whether a pattern survives a specific scrambling. It cannot tell you whether the pattern is worth anything. That is still your job, and this entry is the reminder.',
   },
   {
     id: 'primes-spiral',
@@ -48,12 +51,12 @@ export const GALLERY: GalleryEntry[] = [
     sequence: oeisSeq('A000040', 'The prime numbers', primes(N)),
     state: {
       seqRef: { kind: 'oeis', aNumber: 'A000040' },
-      vizId: 'ulam', params: { colorBy: 'parity', modulus: 6 },
+      vizId: 'modgrid', params: { modulus: 6, columns: 30 },
       mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
     },
     verdict: 'open',
-    caption: 'The diagonals Ulam noticed in 1963 — shown here without a verdict.',
-    body: 'Stanislaw Ulam noticed while doodling at a conference that primes plotted on a square spiral fall along diagonal lines, corresponding to prime-rich quadratic polynomials. Note that this view plots the primes themselves rather than marking primes among the integers, so it is not the classical picture, and we have not measured it. Marked open rather than guessed at.',
+    caption: 'Both panels use only two colours — and this null model cannot tell them apart.',
+    body: 'Every prime above 3 is either 1 or 5 more than a multiple of 6, so colouring the primes by their remainder mod 6 uses just two colours (plus 2 and 3 themselves). That is a real and non-obvious fact. But look at the null: it is the same two colours in the same proportions, because a permutation surrogate keeps the exact multiset of terms and only reorders them. This view shows a property of the values, so the one null model that holds values fixed is structurally blind to it. Knowing which questions a null cannot answer matters as much as knowing which it can.',
   },
   {
     id: 'recaman-walk',
@@ -71,7 +74,10 @@ export const GALLERY: GalleryEntry[] = [
   {
     id: 'fibonacci-ratios',
     title: 'A real result you can read off the screen',
-    sequence: oeisSeq('A000045', 'Fibonacci numbers', fibonacci(N)),
+    // Only 40 terms: the ratio converges within about 20, so the full 600
+    // would render as a flat line with the interesting part squashed into
+    // the first 3% of the width.
+    sequence: oeisSeq('A000045', 'Fibonacci numbers', fibonacci(40)),
     state: {
       seqRef: { kind: 'oeis', aNumber: 'A000045' },
       vizId: 'differences', params: { mode: 'ratios' },
@@ -87,12 +93,12 @@ export const GALLERY: GalleryEntry[] = [
     sequence: oeisSeq('A000002', 'Kolakoski sequence', kolakoski(N)),
     state: {
       seqRef: { kind: 'oeis', aNumber: 'A000002' },
-      vizId: 'turtle', params: { angle: 90, k: 4 },
+      vizId: 'ulam', params: { colorBy: 'mod', modulus: 2 },
       mode: 'flip', surrogate: 'permutation', seed: 1, ensembleN: 200,
     },
     verdict: 'open',
-    caption: 'Flip between the real sequence and its shuffle, and watch the path change.',
-    body: 'A turtle walk is cumulative: every term displaces everything drawn after it, so this view is far more sensitive to ordering than a grid is. Use the flip button to swap between the real sequence and a permutation of it. Click any point first and the marker will follow that same term across the flip.',
+    caption: 'The same sequence on a spiral, where the difference is far harder to see.',
+    body: 'This is the hero sequence again, drawn as an Ulam spiral instead of a walk. The grid places each term by index rather than accumulating, so a shuffle moves colours around without changing the overall texture much — the difference is real but nothing like as visible. Use the flip button to swap between the real sequence and its shuffle, and click a cell first so the marker follows that same term across the flip. Worth comparing against the hero: the technique you choose decides how much a null model can show you.',
   },
 ];
 

@@ -127,7 +127,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .landing-title { margin: 0; font-size: clamp(24px, 4vw, 38px); text-align: center; }
 .landing-lede { margin: 0; max-width: 62ch; text-align: center; color: var(--muted); font-size: 15px; }
 .landing-hero { margin: 8px 0 0; display: flex; flex-direction: column; gap: 8px; align-items: center; max-width: 100%; }
-.landing-hero canvas { max-width: 100%; border: 1px solid #3a3d44; border-radius: 6px; }
+.landing-hero canvas { max-width: 100%; border-radius: 5px; display: block; }
 .landing-hero-caption { color: var(--text); font-size: 14px; text-align: center; max-width: 62ch; }
 .landing-hero-body { margin: 0; max-width: 62ch; text-align: center; color: var(--muted); font-size: 13px; }
 .landing-open {
@@ -157,3 +157,8 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+.landing-hero-button {
+  background: none; border: 1px solid #3a3d44; border-radius: 6px;
+  padding: 0; cursor: pointer; line-height: 0; max-width: 100%;
+}
+.landing-hero-button:hover { border-color: var(--accent); }

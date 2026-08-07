@@ -18,7 +18,7 @@ export function shouldShowLanding(hash: string): boolean {
 
 const VERDICT_LABEL: Record<GalleryEntry['verdict'], string> = {
   real: 'Survives the null',
-  artifact: 'Rendering artifact',
+  artifact: 'Drawn by the layout',
   open: 'Not yet measured',
 };
 
@@ -93,16 +93,25 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
 
   const heroFigure = document.createElement('figure');
   heroFigure.className = 'landing-hero';
+  // The hero is an image AND a link into the engine, like every other image
+  // on this page — clicking the picture you are being pitched on should open
+  // that exact view.
+  const heroButton = document.createElement('button');
+  heroButton.className = 'landing-hero-button';
+  heroButton.type = 'button';
+  heroButton.setAttribute('aria-label', `Open ${hero.title} in the engine`);
+  heroButton.addEventListener('click', () => opts.onPick(hero));
   const heroCanvas = document.createElement('canvas');
   heroCanvas.setAttribute('role', 'img');
   heroCanvas.setAttribute('aria-label', `${hero.title}. ${hero.caption}`);
+  heroButton.appendChild(heroCanvas);
   const heroCaption = document.createElement('figcaption');
   heroCaption.className = 'landing-hero-caption';
   const verdictTag = document.createElement('span');
   verdictTag.className = `verdict verdict--${hero.verdict}`;
   verdictTag.textContent = VERDICT_LABEL[hero.verdict];
   heroCaption.append(verdictTag, document.createTextNode(` ${hero.caption}`));
-  heroFigure.append(heroCanvas, heroCaption);
+  heroFigure.append(heroButton, heroCaption);
 
   const heroBody = document.createElement('p');
   heroBody.className = 'landing-hero-body';

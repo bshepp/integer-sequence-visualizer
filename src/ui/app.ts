@@ -21,6 +21,8 @@ import { buildReadout, describeHit, drawMarker, correspondingIndex } from './rea
 import { hitIndex } from '../viz/hit';
 import type { Size } from '../viz/types';
 import { buildLanding, shouldShowLanding } from './landing';
+import { heroEntry } from '../gallery/entries';
+import type { GalleryEntry } from '../gallery/types';
 
 const MODES = ['off', 'side', 'flip', 'ensemble'];
 const SURROGATES = ['permutation', 'difference', 'matched'];
@@ -284,6 +286,11 @@ export function mountApp(root: HTMLElement): void {
   let lastHashWritten = '';
 
   function syncUrl(): void {
+    // While the landing is up the URL must stay bare (or #gallery). Without
+    // this, the redraw that paints the engine underneath immediately
+    // replaceState()s a default engine hash over "/", and a reload would then
+    // decode that hash and skip the landing forever.
+    if (landingEl) return;
     try {
       const hash = '#' + encodeState({
         seqRef: currentRef, vizId: state.vizId, params: state.params,
@@ -498,7 +505,12 @@ export function mountApp(root: HTMLElement): void {
   // against the registry, params are merged over defaults, mode/surrogate
   // fall back if unrecognized, and decodeState itself returns null for
   // anything that isn't valid encoded JSON (leaving current state untouched).
-  function applyHash(hash: string): void {
+  // `presetSeq` short-circuits the sequence restore at the end: a gallery
+  // entry already carries its own bundled terms, and the bulk data file caps
+  // stored terms per sequence — so letting the normal lookup run would swap
+  // the 600-term walk the visitor just clicked for an 80-term one. Same
+  // A-number, same attribution, just the fuller term list they were shown.
+  function applyHash(hash: string, presetSeq?: Sequence): void {
     // Navigating to a real engine state closes the landing if it is still up.
     if (!shouldShowLanding(hash)) dismissLanding(false);
     const decoded = decodeState(hash);
@@ -528,6 +540,8 @@ export function mountApp(root: HTMLElement): void {
     }
     redraw();
 
+    if (presetSeq) { applySeq(presetSeq); return; }
+
     // Restore the shared sequence, if this hash carried one.
     const ref = decoded?.seqRef;
     if (ref?.kind === 'oeis') {
@@ -553,17 +567,22 @@ export function mountApp(root: HTMLElement): void {
     if (focusEngine) picker.focus();
   }
 
+  function openEntry(entry: GalleryEntry): void {
+    dismissLanding(false);
+    const hash = '#' + encodeState(entry.state);
+    lastHashWritten = hash;
+    try { history.replaceState(null, '', hash); } catch { /* sandboxed */ }
+    applyHash(hash, entry.sequence);
+  }
+
   function showLanding(): void {
     if (landingDismissed || landingEl) return;
     landingEl = buildLanding({
-      onOpen: () => dismissLanding(),
-      onPick: (entry) => {
-        dismissLanding(false);
-        const hash = '#' + encodeState(entry.state);
-        lastHashWritten = hash;
-        try { history.replaceState(null, '', hash); } catch { /* sandboxed */ }
-        applyHash(hash);
-      },
+      // "Open the full engine" lands on the hero's own view rather than an
+      // empty canvas telling the visitor to load a sequence — which is the
+      // cold open this whole screen exists to replace.
+      onOpen: () => { openEntry(heroEntry()); picker.focus(); },
+      onPick: openEntry,
     });
     root.appendChild(landingEl);
   }
@@ -578,10 +597,12 @@ export function mountApp(root: HTMLElement): void {
     applyHash(location.hash);
   });
   if (shouldShowLanding(location.hash)) {
-    // Draw the engine underneath first so dismissing reveals a live view
-    // rather than an empty canvas, then mount the landing over it.
-    redraw();
+    // Mount the landing BEFORE the first redraw: syncUrl is suppressed only
+    // while landingEl is set, and a redraw ahead of it would replaceState a
+    // default engine hash over the bare "/" — after which a reload decodes
+    // that hash and the landing never appears again.
     showLanding();
+    redraw();
   } else {
     applyHash(location.hash);
   }
