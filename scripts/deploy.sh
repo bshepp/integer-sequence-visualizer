@@ -11,6 +11,15 @@ BUCKET=ulam-briansheppard-com
 DISTRIBUTION=E24RI80DXLMTA4
 INDEX_KEY=data/search-index.txt
 
+# The OG card is a stored PNG while the landing hero is a live render, so the
+# two drift apart whenever the hero gallery entry changes. Regenerating needs
+# a browser (it reuses the real render path), so it cannot happen here -- this
+# is the reminder. See README "Social preview card".
+if [ ! -f public/og-card.png ]; then
+  echo "WARNING: public/og-card.png is missing; social previews will 404." >&2
+  echo "         Regenerate: npm run dev, then open /?ogcard" >&2
+fi
+
 echo "==> building"
 npm run build
 

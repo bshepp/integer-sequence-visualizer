@@ -29,6 +29,16 @@ experimental apparatus for answering it.
 - **Shareable URLs** encoding the sequence, visualizer, parameters,
   comparison mode, and random seed in the hash, so a specific view can be
   linked and reproduced exactly.
+- **A landing gallery**: curated real-vs-null comparisons that render on first
+  paint with no network round-trip, each one a saved engine state you can click
+  straight into. Every verdict shown is recomputed in CI against its recorded
+  null band — the gallery cannot claim a structure is real unless the code
+  still measures it that way.
+- **Explanations everywhere**: every visualizer and every surrogate documents
+  itself (enforced at compile time), surfaced by an (i) button and reused as
+  the canvas's accessible description.
+- **Cursor readout**: hover to identify the term, digit, bin, or lag under the
+  pointer; click a term to mark its counterpart in the null model.
 
 ## Develop
 
@@ -128,6 +138,19 @@ redistributed under that same **CC BY-SA 4.0** license, same as any other
 OEIS sequence data this app displays.
 
 ## Deploy
+
+### Social preview card
+
+`public/og-card.png` is a **stored** 1200x630 image, while the landing hero is
+a live canvas render — so the two drift apart whenever the hero gallery entry
+changes. Regenerate it by running `npm run dev` and opening `/?ogcard`, which
+renders the current hero through the real render path and downloads the PNG;
+save it over `public/og-card.png`. `scripts/deploy.sh` warns if the file is
+missing but cannot detect staleness.
+
+Static hosting means one card for every share link: a link to Recamán and a
+link to Kolakoski preview identically. Per-state cards would need SSR or
+Lambda@Edge.
 
 Static assets build to `dist/` (`npm run build`) and are served from an S3
 bucket behind CloudFront (mirroring the owner's existing
