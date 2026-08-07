@@ -14,8 +14,7 @@ export interface EnsembleJob {
   seed: number;
   vizId: string;
   params: Params;
-  loPct?: number;
-  hiPct?: number;
+  levels?: number[];
 }
 
 export interface EnsembleResult { stats: Record<string, Bands>; }
@@ -42,7 +41,7 @@ export function runEnsemble(
 
   const stats: Record<string, Bands> = {};
   for (const [key, arrays] of Object.entries(collected)) {
-    stats[key] = percentileBands(arrays, job.loPct ?? 5, job.hiPct ?? 95);
+    stats[key] = percentileBands(arrays, job.levels ?? undefined);
   }
   return { stats };
 }

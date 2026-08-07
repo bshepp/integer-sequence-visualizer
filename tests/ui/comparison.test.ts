@@ -6,6 +6,11 @@ import {
 import type { Bands } from '../../src/nullmodel/bands';
 import { fakeCtx } from '../helpers/fakeCtx';
 
+// Builds the nested-level shape from a single flat lo/median/hi triple, so
+// these tests keep expressing one band the way they always did.
+const flat = (lo: number[], median: number[], hi: number[]): Bands =>
+  ({ median, levels: [{ pct: 90, lo, hi }] });
+
 const seq = { terms: [1n, 2n, 3n, 4n, 5n], name: 'Test', offset: 0, source: 'paste' as const };
 
 describe('surrogateSequence', () => {
@@ -21,7 +26,7 @@ describe('surrogateSequence', () => {
 describe('drawEnsembleChart', () => {
   it('draws without throwing for two stat keys', () => {
     const { ctx } = fakeCtx();
-    const bands = { lo: [0, 0], median: [1, 1], hi: [2, 2] };
+    const bands = flat([0, 0], [1, 1], [2, 2]);
     expect(() =>
       drawEnsembleChart(ctx, { width: 400, height: 300 },
         { a: [1.5, 0.5], b: [0, 1] }, { a: bands, b: bands }),
@@ -31,11 +36,11 @@ describe('drawEnsembleChart', () => {
 
 describe('isDegenerateBand', () => {
   it('is true when lo/median/hi are all equal arrays', () => {
-    const band: Bands = { lo: [1, 2, 3], median: [1, 2, 3], hi: [1, 2, 3] };
+    const band = flat([1, 2, 3], [1, 2, 3], [1, 2, 3]);
     expect(isDegenerateBand(band)).toBe(true);
   });
   it('is false when hi exceeds lo at any index', () => {
-    const band: Bands = { lo: [1, 2, 3], median: [1, 2, 3], hi: [1, 2, 5] };
+    const band = flat([1, 2, 3], [1, 2, 3], [1, 2, 5]);
     expect(isDegenerateBand(band)).toBe(false);
   });
 });
@@ -43,7 +48,7 @@ describe('isDegenerateBand', () => {
 describe('drawEnsembleChart degenerate band caption', () => {
   it('records a fillText call explaining the zero-width band', () => {
     const { ctx, callLog } = fakeCtx();
-    const band: Bands = { lo: [1, 1], median: [1, 1], hi: [1, 1] };
+    const band = flat([1, 1], [1, 1], [1, 1]);
     drawEnsembleChart(ctx, { width: 400, height: 300 }, { a: [1, 1] }, { a: band });
     const texts = callLog.filter((c) => c.name === 'fillText').map((c) => String(c.args[0]));
     expect(texts.some((t) => t.toLowerCase().includes('zero width'))).toBe(true);
@@ -51,7 +56,7 @@ describe('drawEnsembleChart degenerate band caption', () => {
 
   it('does not add the caption for a normal (non-degenerate) band', () => {
     const { ctx, callLog } = fakeCtx();
-    const band: Bands = { lo: [0, 0], median: [1, 1], hi: [2, 2] };
+    const band = flat([0, 0], [1, 1], [2, 2]);
     drawEnsembleChart(ctx, { width: 400, height: 300 }, { a: [1.5, 0.5] }, { a: band });
     const texts = callLog.filter((c) => c.name === 'fillText').map((c) => String(c.args[0]));
     expect(texts.some((t) => t.toLowerCase().includes('zero width'))).toBe(false);

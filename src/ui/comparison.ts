@@ -24,14 +24,17 @@ export function surrogateSequence(seq: Sequence, type: SurrogateType, seed: numb
   return { ...s, name: `${seq.name} (${type} surrogate)` };
 }
 
-// NaN widths (e.g. malformed/empty upstream data) compare false against
-// epsilon and so read as "not degenerate" — intentional fail-safe: drawing
-// the (possibly odd-looking) band is preferable to asserting a specific
-// "zero width" explanation we can't actually confirm. An empty band.lo is
-// vacuously degenerate (every() on []); harmless since drawEnsembleChart has
-// nothing to plot for a zero-length band regardless.
+// Degenerate = the *widest* level has no width, i.e. no surrogate draw moved
+// this statistic at all. NaN widths (e.g. malformed/empty upstream data)
+// compare false against epsilon and so read as "not degenerate" — intentional
+// fail-safe: drawing the (possibly odd-looking) band is preferable to
+// asserting a specific "zero width" explanation we can't actually confirm. An
+// empty level is vacuously degenerate (every() on []); harmless since
+// drawEnsembleChart has nothing to plot for a zero-length band regardless.
 export function isDegenerateBand(band: Bands, epsilon = 1e-9): boolean {
-  return band.lo.every((lo, i) => (band.hi[i]! - lo) < epsilon);
+  const widest = band.levels[0];
+  if (!widest) return true;
+  return widest.lo.every((lo, i) => (widest.hi[i]! - lo) < epsilon);
 }
 
 export function drawEnsembleChart(
@@ -51,7 +54,7 @@ export function drawEnsembleChart(
     const top = p * panelH;
     const w = size.width - 2 * MARGIN;
     const h = panelH - 2 * MARGIN;
-    const all = [...band.lo, ...band.hi, ...realVals];
+    const all = [...band.levels.flatMap((l) => [...l.lo, ...l.hi]), ...realVals];
     // Loop-based min/max, not a spread — see turtle.ts's strokePath — since
     // `all` scales with the sequence length for per-index statistics (e.g.
     // scatter's 'value').
@@ -60,13 +63,17 @@ export function drawEnsembleChart(
     const x = (i: number) => MARGIN + (i / Math.max(1, n - 1)) * w;
     const y = (v: number) => top + MARGIN + h - ((v - lo) / (hi - lo || 1)) * h;
 
-    // band fill
-    ctx.fillStyle = 'rgba(122,162,247,0.18)';
-    ctx.beginPath();
-    for (let i = 0; i < n; i++) (i === 0 ? ctx.moveTo : ctx.lineTo).call(ctx, x(i), y(band.hi[i]!));
-    for (let i = n - 1; i >= 0; i--) ctx.lineTo(x(i), y(band.lo[i]!));
-    ctx.closePath();
-    ctx.fill();
+    // Band fill, wide-to-narrow with increasing opacity: the innermost level
+    // reads darkest, so how deep inside (or how far outside) the real line
+    // sits is legible without reading any numbers.
+    band.levels.forEach((level, li) => {
+      ctx.fillStyle = `rgba(122,162,247,${0.10 + li * 0.07})`;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) (i === 0 ? ctx.moveTo : ctx.lineTo).call(ctx, x(i), y(level.hi[i]!));
+      for (let i = n - 1; i >= 0; i--) ctx.lineTo(x(i), y(level.lo[i]!));
+      ctx.closePath();
+      ctx.fill();
+    });
 
     // median (dashed)
     ctx.strokeStyle = '#9aa0aa';

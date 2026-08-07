@@ -2,6 +2,11 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { runEnsemble, startEnsembleWorker, type EnsembleJob } from '../../src/nullmodel/ensemble';
 import { SequenceView, type Sequence } from '../../src/sequence/sequence';
 import { shouldUseLogScale, computeHistogram } from '../../src/viz/histogram';
+import { bandAt, type Bands } from '../../src/nullmodel/bands';
+
+// The 90% level is exactly the old flat 5-95 band, so these regression
+// assertions keep the precise meaning they were written with.
+const L90 = (b: Bands) => bandAt(b, 90)!;
 
 const job = (over: Partial<EnsembleJob> = {}): EnsembleJob => ({
   terms: ['0', '1', '1', '2', '3', '5', '8', '13'],
@@ -19,13 +24,13 @@ describe('runEnsemble', () => {
     const b = runEnsemble(job());
     expect(a).toEqual(b);
     expect(a.stats.value!.median.length).toBe(8);
-    expect(a.stats.value!.lo.length).toBe(8);
+    expect(L90(a.stats.value!).lo.length).toBe(8);
   });
 
   it('permutation bands stay within the value range', () => {
     const { stats } = runEnsemble(job());
-    for (const v of stats.value!.hi) expect(v).toBeLessThanOrEqual(13);
-    for (const v of stats.value!.lo) expect(v).toBeGreaterThanOrEqual(0);
+    for (const v of L90(stats.value!).hi) expect(v).toBeLessThanOrEqual(13);
+    for (const v of L90(stats.value!).lo) expect(v).toBeGreaterThanOrEqual(0);
   });
 
   it('reports progress and clamps count', () => {
@@ -76,12 +81,12 @@ describe('runEnsemble: histogram log-scale must be synchronized across surrogate
 
   it('without the override, the disagreeing draw collapses into one bin', () => {
     const { stats } = runEnsemble(ensembleJob({ target: 'terms', bins: 10 }));
-    expect(Math.max(...stats.count!.hi)).toBeGreaterThanOrEqual(6);
+    expect(Math.max(...L90(stats.count!).hi)).toBeGreaterThanOrEqual(6);
   });
 
   it('with the override threaded through the draw, it no longer collapses', () => {
     const { stats } = runEnsemble(ensembleJob({ target: 'terms', bins: 10, logScaleOverride: override }));
-    expect(Math.max(...stats.count!.hi)).toBeLessThanOrEqual(4);
+    expect(Math.max(...L90(stats.count!).hi)).toBeLessThanOrEqual(4);
   });
 });
 
@@ -126,13 +131,13 @@ describe('runEnsemble: histogram bin edges must be domain-synced across surrogat
 
   it('without a domain override, the band for bin 0 excludes the true count (a false "far outside the null envelope")', () => {
     const { stats } = runEnsemble(jobFor({ target: 'terms', bins: 10 }));
-    expect(stats.count!.hi[0]!).toBeLessThan(realBin0); // 13 < 46, per-draw-edges band
+    expect(L90(stats.count!).hi[0]!).toBeLessThan(realBin0); // 13 < 46, per-draw-edges band
   });
 
   it('with an explicit domain override (histogramDomainLo/Hi), the band for bin 0 correctly contains the true count', () => {
     const { stats } = runEnsemble(jobFor({ target: 'terms', bins: 10, histogramDomainLo: realLo, histogramDomainHi: realHi }));
-    expect(stats.count!.lo[0]!).toBeLessThanOrEqual(realBin0);
-    expect(stats.count!.hi[0]!).toBeGreaterThanOrEqual(realBin0); // 107 >= 46, fixed-domain band
+    expect(L90(stats.count!).lo[0]!).toBeLessThanOrEqual(realBin0);
+    expect(L90(stats.count!).hi[0]!).toBeGreaterThanOrEqual(realBin0); // 107 >= 46, fixed-domain band
   });
 });
 
