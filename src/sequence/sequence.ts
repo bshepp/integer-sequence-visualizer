@@ -18,8 +18,8 @@ const MAX_SAFE = BigInt(Number.MAX_SAFE_INTEGER);
 // sentinel (0, not -Infinity) so it composes into sums/fits/histograms
 // without special-casing at every call site. Exported standalone (not just
 // as a SequenceView method) so other modules that need an overflow-safe
-// magnitude for a bare bigint — not one already living inside a
-// SequenceView — compute it identically instead of re-deriving this formula
+// magnitude for a bare bigint - not one already living inside a
+// SequenceView - compute it identically instead of re-deriving this formula
 // and risking it drifting out of sync (src/viz/histogram.ts's 'gaps' target
 // and src/nullmodel/surrogates.ts's matched-surrogate log-space fit both use
 // this, per task FR C2/I1).
@@ -33,8 +33,8 @@ export function bigMagnitude(t: bigint): number {
 // Same magnitude, with the original sign folded back in. Plain (unsigned)
 // magnitude is fine for a value like a histogram 'terms' target where most
 // OEIS sequences are non-negative; it is NOT fine for a quantity that
-// routinely goes negative — e.g. successive-term gaps in a non-monotone
-// sequence (Recamán-like) — where collapsing sign would silently relabel a
+// routinely goes negative - e.g. successive-term gaps in a non-monotone
+// sequence (Recamán-like) - where collapsing sign would silently relabel a
 // decrease as an increase of the same size once it's past float64's exact
 // range.
 export function signedLogMagnitude(t: bigint): number {

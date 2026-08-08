@@ -17,7 +17,7 @@ describe('readLinesFromStream', () => {
   it('decodes a multi-byte UTF-8 character split exactly across a chunk boundary', async () => {
     // "é" is 0xC3 0xA9 in UTF-8. A naive per-chunk Buffer#toString('utf8')
     // decode (each chunk decoded in isolation) turns each half into a lone
-    // U+FFFD replacement character instead of one "é" — this constructs
+    // U+FFFD replacement character instead of one "é" - this constructs
     // that split deterministically rather than hoping a real gzip stream
     // happens to break there.
     const eAcute = Buffer.from('é', 'utf8');

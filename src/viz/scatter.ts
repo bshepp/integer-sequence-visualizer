@@ -31,7 +31,7 @@ export const scatterViz: Visualizer = {
     // side as it does on linear); statistics used to skip that fold, so
     // switching a signed sequence from 'off' to 'ensemble' silently swapped
     // a monotone curve (render) for a V-shaped one (the old unsigned
-    // statistics) — comparing the real line against a null band computed on
+    // statistics) - comparing the real line against a null band computed on
     // a different-shaped quantity than what's drawn. Reuse values() itself
     // rather than re-deriving the same formula a second time.
     return { value: values(seq, String(params.scale)) };
@@ -48,7 +48,7 @@ export const scatterViz: Visualizer = {
     };
   },
   locate(seq: SequenceView, params: Params, size: Size, x: number, _y: number) {
-    // Index is a pure function of x here, so vertical position is ignored —
+    // Index is a pure function of x here, so vertical position is ignored -
     // the user is pointing at a column of the plot, not hunting a dot.
     const n = values(seq, String(params.scale)).length;
     const w = size.width - 2 * MARGIN;

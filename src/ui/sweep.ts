@@ -4,7 +4,7 @@ import type { Params, Visualizer } from '../viz/types';
 
 // `count` values spread uniformly across [min, max]. The endpoints (`min`, `max`)
 // are always included exactly. Interior values are snapped to the step grid
-// (relative to `min`) and clamped strictly inside (min, max) — this keeps the
+// (relative to `min`) and clamped strictly inside (min, max) - this keeps the
 // two ends exact even when `step` doesn't evenly divide the span. Deduplicated,
 // ascending. `count` >= 2.
 export function sweepValues(spec: { min: number; max: number; step: number }, count: number): number[] {
@@ -88,7 +88,7 @@ export function buildSweepView(opts: {
       const canvas = document.createElement('canvas');
       canvas.width = 180;
       canvas.height = 140;
-      // Decorative — the caption carries the meaning, and without this each
+      // Decorative - the caption carries the meaning, and without this each
       // cell announces an extra unlabelled graphic.
       canvas.setAttribute('aria-hidden', 'true');
       const caption = document.createElement('span');

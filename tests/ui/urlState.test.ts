@@ -42,7 +42,7 @@ describe('urlState', () => {
 
   it('decodes a hash encoded before ensembleN existed without throwing (backward compatibility)', () => {
     // `state` itself has no ensembleN key, so encoding it already simulates
-    // a pre-M8 link — decoding must not throw or otherwise choke on the
+    // a pre-M8 link - decoding must not throw or otherwise choke on the
     // missing key.
     const decoded = decodeState(encodeState(state));
     expect(decoded).not.toBeNull();

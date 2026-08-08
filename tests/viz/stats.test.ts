@@ -101,7 +101,7 @@ describe('histogramViz target "gaps" on an overflowing sequence (task FR, C2)', 
   });
 
   it('a non-monotone sequence keeps negative gaps distinguishable from positive ones of the same magnitude (sign-preserving)', () => {
-    // Two overflowing terms (needed for shouldUseLogScale to fire — it
+    // Two overflowing terms (needed for shouldUseLogScale to fire - it
     // requires 2+, not just 1, overflowing terms): gap 0 = +1e30 (positive),
     // gap 1 = -1e30 (negative, same magnitude). An unsigned log transform
     // would put both in the same bin; a 2-bin split at 0 should instead put
@@ -125,7 +125,7 @@ describe('histogramViz honors an explicit logScaleOverride (cross-surrogate scal
   // A 'difference' surrogate (same gap multiset, reshuffled) that happens to
   // place both overflowing gaps so that only the very last term ends up
   // beyond the safe range. Confirmed deterministic for this exact input:
-  // shouldUseLogScale is FALSE for this draw even though REAL's is TRUE —
+  // shouldUseLogScale is FALSE for this draw even though REAL's is TRUE -
   // exactly the cross-draw disagreement the ensemble sync fix targets.
   const SURROGATE = makeSurrogate(REAL, 'difference', 2);
 

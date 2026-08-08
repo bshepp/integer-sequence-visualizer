@@ -1,11 +1,11 @@
 # Does line shape make a difference?
 
-**Short answer: no — by two to three orders of magnitude.**
+**Short answer: no - by two to three orders of magnitude.**
 
 The question came up while adding render controls: if you can change the line
 join, does that change what you'd conclude about a sequence? It's a fair
 question, and the honest way to answer it is the same way this project answers
-everything else — put the effect next to a null model instead of arguing about
+everything else - put the effect next to a null model instead of arguing about
 it.
 
 ## How it was measured
@@ -23,7 +23,7 @@ restyling moves the measure more than reshuffling does, and shape would be
 something you'd have to control for. Below 1 means it's cosmetic.
 
 Swept area is computed analytically from the path geometry
-(`src/viz/sweptArea.ts`) rather than by counting pixels — each join type has a
+(`src/viz/sweptArea.ts`) rather than by counting pixels - each join type has a
 closed form per vertex (bevel `(r²/2)·sin θ`, round `(θ/2)·r²`, miter
 `r²·tan(θ/2)`, with the canvas miter-limit fallback at 10). That makes the
 whole experiment deterministic and runnable in CI, with no canvas involved.
@@ -50,7 +50,7 @@ any sequence or width tested.
 
 The scaling behaves as the geometry predicts: joins are a fixed-radius effect
 contributing O(w²) while the body of the stroke contributes O(w), so the ratio
-should grow roughly linearly in width — and it does, about 12× across a 12×
+should grow roughly linearly in width - and it does, about 12× across a 12×
 width increase. Extrapolating that trend, shape would only start to compete
 with the null at a stroke width somewhere around 280 pixels, which is not a
 drawing, it's a colour field.
@@ -71,8 +71,8 @@ segments on first, still does.
 ## Scope, honestly
 
 - Measured on the **turtle walk at angle 90°, mod 4**. That is one family of
-  drawings. A visualizer that interpolates new geometry between points — a
-  smoothed or spline-fitted curve rather than a polyline — is a different
+  drawings. A visualizer that interpolates new geometry between points - a
+  smoothed or spline-fitted curve rather than a polyline - is a different
   question, because it changes the path itself rather than only how the path
   is stroked. The polyarc curve already does something like this via its
   8-segments-per-term arc subdivision, and it has not been measured here.

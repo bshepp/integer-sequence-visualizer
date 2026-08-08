@@ -32,7 +32,7 @@ describe('gallery entries', () => {
 
   it('the bundled sequence agrees with the state seqRef', () => {
     // A mismatch would render one sequence on the landing and open a
-    // different one in the engine — quiet, plausible, and very confusing.
+    // different one in the engine - quiet, plausible, and very confusing.
     for (const e of GALLERY) {
       if (e.state.seqRef?.kind === 'oeis') {
         expect(e.sequence.aNumber, e.id).toBe(e.state.seqRef.aNumber);

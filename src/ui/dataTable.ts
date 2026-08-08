@@ -8,7 +8,7 @@ const MAX_ROWS = 500;
  *
  * A rendering conveys its information visually, and the cursor readout only
  * describes one point at a time, so without this there is no way to read the
- * actual numbers behind a picture — the accessibility gap recorded at the end
+ * actual numbers behind a picture - the accessibility gap recorded at the end
  * of round 2. Shares sequenceRows with the CSV/JSON export: a table and a
  * download are the same data in different shapes.
  */
@@ -44,8 +44,8 @@ export function buildDataTable(): {
       const total = seq.terms.length;
       const rows = sequenceRows(seq, MAX_ROWS);
       caption.textContent = total > MAX_ROWS
-        ? `${seq.name} — first ${MAX_ROWS} of ${total} terms`
-        : `${seq.name} — ${total} terms`;
+        ? `${seq.name} - first ${MAX_ROWS} of ${total} terms`
+        : `${seq.name} - ${total} terms`;
       for (const r of rows) {
         const tr = document.createElement('tr');
         const th = document.createElement('th');

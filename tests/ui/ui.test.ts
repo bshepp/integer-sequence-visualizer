@@ -119,7 +119,7 @@ describe('buildSequencePanel', () => {
   });
 });
 
-describe('buildSequencePanel — search index loading UX', () => {
+describe('buildSequencePanel - search index loading UX', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
@@ -172,13 +172,13 @@ describe('buildSequencePanel — search index loading UX', () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(btn.disabled).toBe(false);
     // The loading placeholder is replaced by the result count, which the
-    // status element announces as a live region — see tests/ui/a11y.test.ts.
+    // status element announces as a live region - see tests/ui/a11y.test.ts.
     expect(status.textContent).not.toMatch(/loading/i);
     expect(status.textContent).toMatch(/1 match/);
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     input.value = 'fibonacci';
-    btn.click(); // second search: index already cached — no loading phase this time
+    btn.click(); // second search: index already cached - no loading phase this time
     expect(btn.disabled).toBe(false);
     expect(status.textContent).not.toMatch(/loading/i);
     await new Promise((r) => setTimeout(r, 20));
@@ -240,7 +240,7 @@ describe('mountApp', () => {
   });
 });
 
-describe('mountApp — same-document hash navigation', () => {
+describe('mountApp - same-document hash navigation', () => {
   function clearTrackedHashchangeListeners(): void {
     for (const l of trackedHashchangeListeners.splice(0)) window.removeEventListener('hashchange', l as EventListener);
   }
@@ -341,10 +341,10 @@ function loadPastedSequence(root: HTMLElement, text: string): void {
   loadBtn.click();
 }
 
-describe('mountApp — sweep button Cancel handling (task FR, M9)', () => {
+describe('mountApp - sweep button Cancel handling (task FR, M9)', () => {
   // Picking 'turtle' writes it into location.hash via redraw()'s syncUrl()
-  // (mountApp's own hashchange listener is never removed — see this file's
-  // top-of-file comment — and neither is that hash write). Left in place, a
+  // (mountApp's own hashchange listener is never removed - see this file's
+  // top-of-file comment - and neither is that hash write). Left in place, a
   // later test's fresh mountApp() would decode it on mount and start on
   // 'turtle' instead of its own default, exactly the kind of cross-test
   // pollution the "same-document hash navigation" describe block below
@@ -396,7 +396,7 @@ describe('mountApp — sweep button Cancel handling (task FR, M9)', () => {
   });
 });
 
-describe('mountApp — ensemble failure does not stay permanently stuck on "Computing…" (task FR, I3)', () => {
+describe('mountApp - ensemble failure does not stay permanently stuck on "Computing…" (task FR, I3)', () => {
   class FakeWorker {
     static instances: FakeWorker[] = [];
     onmessage: ((e: { data: unknown }) => void) | null = null;
@@ -424,7 +424,7 @@ describe('mountApp — ensemble failure does not stay permanently stuck on "Comp
   it('retries on the next redraw instead of being wedged on the failed job forever', () => {
     vi.stubGlobal('Worker', FakeWorker);
     // jsdom has no real canvas 2D context in this project (no `canvas` npm
-    // package installed — see the "Not implemented" warnings elsewhere in
+    // package installed - see the "Not implemented" warnings elsewhere in
     // this suite), so drawScene()'s `if (!ctx) return;` would otherwise skip
     // the ensemble-dispatch code entirely before this test ever reached it.
     // Patch getContext() to hand back fakeCtx's no-op-but-callable context

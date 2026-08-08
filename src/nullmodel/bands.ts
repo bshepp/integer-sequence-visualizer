@@ -22,7 +22,7 @@ export function bandAt(bands: Bands, pct: number): BandLevel | undefined {
 // of this function, and every additional level is O(1) lookups against an
 // array that is already sorted. Going from one flat band to three nested ones
 // therefore adds no meaningful work to the ensemble worker, while turning an
-// outlier from a binary in/out read into a graded one — "outside the 99%
+// outlier from a binary in/out read into a graded one - "outside the 99%
 // contour" rather than merely "outside the band".
 export function percentileBands(arrays: number[][], levels: number[] = DEFAULT_LEVELS): Bands {
   if (arrays.length === 0) throw new Error('percentileBands: no arrays');

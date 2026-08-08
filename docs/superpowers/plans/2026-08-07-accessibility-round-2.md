@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Bring the existing engine markup — sequence panel, sweep overlay, message banners, document structure — up to the 508/WCAG AA standard that round 1's new markup was written to.
+**Goal:** Bring the existing engine markup - sequence panel, sweep overlay, message banners, document structure - up to the 508/WCAG AA standard that round 1's new markup was written to.
 
-**Architecture:** Almost entirely semantic: real `<label>` elements, the WAI-ARIA tab pattern, live regions for the notification system, the sweep overlay promoted to a focus-managed dialog, and a skip link. No palette work — contrast was measured across every foreground/background pair in the theme and the lowest ratio is 5.75:1, comfortably past the 4.5:1 AA threshold. No visual redesign; every change is either invisible or reveals itself only on keyboard focus.
+**Architecture:** Almost entirely semantic: real `<label>` elements, the WAI-ARIA tab pattern, live regions for the notification system, the sweep overlay promoted to a focus-managed dialog, and a skip link. No palette work - contrast was measured across every foreground/background pair in the theme and the lowest ratio is 5.75:1, comfortably past the 4.5:1 AA threshold. No visual redesign; every change is either invisible or reveals itself only on keyboard focus.
 
 **Tech Stack:** Vanilla TypeScript, Vitest + jsdom, no runtime npm dependencies.
 
@@ -12,7 +12,7 @@
 
 - **No runtime npm dependencies.** Nothing may be added to `dependencies` in `package.json`.
 - **No visual regressions.** These changes must not alter the rendered appearance for a sighted mouse user, except that focus indicators become visible on keyboard focus and the skip link appears when focused.
-- **Contrast is already conformant** — do not change `--text`, `--muted`, `--accent`, `--bg`, or `--panel`. Measured: text 14.51:1, muted-on-bg 6.89:1, muted-on-panel 6.20:1, accent-on-panel 6.48:1, accent-on-field 6.01:1, muted-on-field 5.75:1, error-on-panel 6.17:1. All pass AA normal text.
+- **Contrast is already conformant** - do not change `--text`, `--muted`, `--accent`, `--bg`, or `--panel`. Measured: text 14.51:1, muted-on-bg 6.89:1, muted-on-panel 6.20:1, accent-on-panel 6.48:1, accent-on-field 6.01:1, muted-on-field 5.75:1, error-on-panel 6.17:1. All pass AA normal text.
 - **`placeholder` is not an accessible name.** Every control needs a real `<label>` or `aria-label`.
 - Run `npm test` and `npm run build` (`tsc --noEmit && vite build`) before every commit.
 - The existing 273 tests must stay green throughout.
@@ -49,7 +49,7 @@ The most serious defect in the audit. `showError` builds a plain `<div>` and app
 - Test: `tests/ui/a11y.test.ts` (create)
 
 **Interfaces:**
-- Consumes: `initMessages(el)`, `showError(msg)`, `showNotice(msg)` — signatures unchanged.
+- Consumes: `initMessages(el)`, `showError(msg)`, `showNotice(msg)` - signatures unchanged.
 - Produces: same three exports; `initMessages` now builds two child live regions inside the container it is given.
 
 - [ ] **Step 1: Write the failing test**
@@ -100,7 +100,7 @@ describe('message live regions', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/a11y.test.ts`
-Expected: FAIL — no `[role="alert"]` element exists.
+Expected: FAIL - no `[role="alert"]` element exists.
 
 - [ ] **Step 3: Implement**
 
@@ -127,7 +127,7 @@ function makeRegion(container: HTMLElement, assertiveRegion: boolean): HTMLEleme
 /**
  * Both regions are created here, empty, rather than when the first message
  * arrives. A live region has to exist in the DOM *before* its contents change
- * — assistive technology subscribes to the node, so one inserted already
+ * - assistive technology subscribes to the node, so one inserted already
  * populated is frequently not announced at all.
  */
 export function initMessages(el: HTMLElement): void {
@@ -223,7 +223,7 @@ describe('labelledControl', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/a11y.test.ts -t labelledControl`
-Expected: FAIL — module `src/ui/a11y` not found.
+Expected: FAIL - module `src/ui/a11y` not found.
 
 - [ ] **Step 3: Implement `src/ui/a11y.ts`**
 
@@ -264,7 +264,7 @@ export function labelledControl(
 Append to `src/style.css`:
 
 ```css
-/* Removed from view but kept in the accessibility tree — not display:none,
+/* Removed from view but kept in the accessibility tree - not display:none,
    which would remove it from that tree too. */
 .visually-hidden {
   position: absolute !important;
@@ -352,7 +352,7 @@ describe('sequence panel controls are all named', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/a11y.test.ts -t "all named"`
-Expected: FAIL — the A-number, search, paste, formula and count controls have no name.
+Expected: FAIL - the A-number, search, paste, formula and count controls have no name.
 
 - [ ] **Step 3: Wrap each control**
 
@@ -362,20 +362,20 @@ In `src/ui/sequencePanel.ts`, add the import:
 import { labelledControl } from './a11y';
 ```
 
-A-number pane — replace `pane.append(input, btn);` with:
+A-number pane - replace `pane.append(input, btn);` with:
 
 ```ts
     input.setAttribute('inputmode', 'text');
     pane.append(labelledControl('OEIS A-number', input), btn);
 ```
 
-Search pane — replace `pane.append(input, btn, status, results);` with:
+Search pane - replace `pane.append(input, btn, status, results);` with:
 
 ```ts
     pane.append(labelledControl('Search OEIS by keyword', input), btn, status, results);
 ```
 
-Custom pane — replace `pane.append(ta, pasteBtn, formula, formulaErr, count, formulaBtn);` with:
+Custom pane - replace `pane.append(ta, pasteBtn, formula, formulaErr, count, formulaBtn);` with:
 
 ```ts
     pane.append(
@@ -388,7 +388,7 @@ Custom pane — replace `pane.append(ta, pasteBtn, formula, formulaErr, count, f
     );
 ```
 
-Info card b-file input — replace `info.append(btn, cap);` with:
+Info card b-file input - replace `info.append(btn, cap);` with:
 
 ```ts
       info.append(btn, labelledControl('Maximum terms to fetch', cap));
@@ -397,7 +397,7 @@ Info card b-file input — replace `info.append(btn, cap);` with:
 - [ ] **Step 4: Run tests**
 
 Run: `npx vitest run tests/ui/a11y.test.ts && npm test`
-Expected: PASS. If an existing test in `tests/ui/ui.test.ts` queried an input by `pane.children[0]` or similar positional access, update it to a class/selector query — the label wrapper changes child positions.
+Expected: PASS. If an existing test in `tests/ui/ui.test.ts` queried an input by `pane.children[0]` or similar positional access, update it to a class/selector query - the label wrapper changes child positions.
 
 - [ ] **Step 5: Commit**
 
@@ -491,7 +491,7 @@ describe('sequence panel tabs follow the ARIA tab pattern', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/a11y.test.ts -t "ARIA tab pattern"`
-Expected: FAIL — no `[role="tablist"]`.
+Expected: FAIL - no `[role="tablist"]`.
 
 - [ ] **Step 3: Implement**
 
@@ -564,7 +564,7 @@ In `src/ui/sequencePanel.ts`, replace the whole `// --- tabs ---` block (from `e
 - [ ] **Step 4: Run tests**
 
 Run: `npm test && npm run build`
-Expected: PASS. `tests/ui/ui.test.ts` has tab-switching tests that click `.tab-button` — those still work, since the buttons keep that class and their click handlers.
+Expected: PASS. `tests/ui/ui.test.ts` has tab-switching tests that click `.tab-button` - those still work, since the buttons keep that class and their click handlers.
 
 - [ ] **Step 5: Commit**
 
@@ -629,7 +629,7 @@ describe('sequence panel structure and status', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/a11y.test.ts -t "structure and status"`
-Expected: FAIL — `sectionLabel` returns a `<div>`.
+Expected: FAIL - `sectionLabel` returns a `<div>`.
 
 - [ ] **Step 3: Implement**
 
@@ -676,11 +676,11 @@ In the Custom pane, replace the formula error wiring:
     });
 ```
 
-Note `formulaErr` must now be declared **before** the `formula.addEventListener` call it references — move the `const formulaErr` block above it if the existing order differs.
+Note `formulaErr` must now be declared **before** the `formula.addEventListener` call it references - move the `const formulaErr` block above it if the existing order differs.
 
 - [ ] **Step 4: Keep heading styling identical**
 
-`.section-label` already sets `font-size: 11px`, `text-transform: uppercase` and margins, so an `h2` inherits the same look — but browsers apply a default `font-weight: bold` to headings. Append to `src/style.css`:
+`.section-label` already sets `font-size: 11px`, `text-transform: uppercase` and margins, so an `h2` inherits the same look - but browsers apply a default `font-weight: bold` to headings. Append to `src/style.css`:
 
 ```css
 .section-label { font-weight: 400; }
@@ -702,7 +702,7 @@ git commit -m "fix: sidebar headings, announced search results, announced formul
 
 ## Task 6: The sweep overlay becomes a dialog
 
-The overlay covers the viewport, but the engine behind it stays in the tab order, there is no `role`, Escape does nothing, and each thumbnail is a `<figure>` with a click handler — not focusable, not announced as interactive. Same defect class as the gallery thumbnails fixed in round 1.
+The overlay covers the viewport, but the engine behind it stays in the tab order, there is no `role`, Escape does nothing, and each thumbnail is a `<figure>` with a click handler - not focusable, not announced as interactive. Same defect class as the gallery thumbnails fixed in round 1.
 
 **Files:**
 - Modify: `src/ui/sweep.ts`
@@ -711,7 +711,7 @@ The overlay covers the viewport, but the engine behind it stays in the tab order
 - Test: `tests/ui/sweep.test.ts`
 
 **Interfaces:**
-- Consumes: `buildSweepView(opts)` — signature unchanged.
+- Consumes: `buildSweepView(opts)` - signature unchanged.
 - Produces: overlay element now exposes `role="dialog"` and its cells are `<button class="sweep-cell">`.
 
 - [ ] **Step 1: Write the failing test**
@@ -783,7 +783,7 @@ describe('sweep overlay accessibility', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/sweep.test.ts -t accessibility`
-Expected: FAIL — overlay has no `role`.
+Expected: FAIL - overlay has no `role`.
 
 - [ ] **Step 3: Implement in `src/ui/sweep.ts`**
 
@@ -820,7 +820,7 @@ Replace the body of `buildSweepView` below the `spec` check:
     const canvas = document.createElement('canvas');
     canvas.width = 180;
     canvas.height = 140;
-    // Decorative here — the caption below carries the meaning.
+    // Decorative here - the caption below carries the meaning.
     canvas.setAttribute('aria-hidden', 'true');
     const caption = document.createElement('span');
     caption.className = 'sweep-caption';
@@ -855,14 +855,14 @@ In `src/style.css`, replace the `.sweep-cell` rules with:
 .sweep-caption { color: var(--muted); font-size: 12px; text-align: center; padding-top: 4px; }
 ```
 
-(The old `.sweep-cell figcaption` selector no longer matches anything — remove it.)
+(The old `.sweep-cell figcaption` selector no longer matches anything - remove it.)
 
 - [ ] **Step 5: Manage focus in `app.ts`**
 
 In the sweep button handler in `src/ui/app.ts`, replace the `const overlay = buildSweepView({…}); root.appendChild(overlay);` block with:
 
 ```ts
-    // Remember where focus came from so it can be restored on close — losing
+    // Remember where focus came from so it can be restored on close - losing
     // focus to <body> after a dialog closes strands keyboard users.
     const opener = document.activeElement as HTMLElement | null;
     const overlay = buildSweepView({
@@ -936,7 +936,7 @@ describe('skip link', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/a11y.test.ts -t "skip link"`
-Expected: FAIL — no `.skip-link`.
+Expected: FAIL - no `.skip-link`.
 
 - [ ] **Step 3: Implement**
 
@@ -1058,12 +1058,12 @@ Expected: PASS
 
 Run `npm run dev` and verify by keyboard only, without touching the mouse:
 
-1. Load `/`, press Tab once — the skip link appears at the top-left.
+1. Load `/`, press Tab once - the skip link appears at the top-left.
 2. From the landing, Tab reaches the hero button, then each thumbnail, then "Open the full engine"; Tab never escapes into the engine behind.
-3. In the engine, Tab once and activate the skip link — focus lands on the visualization region.
+3. In the engine, Tab once and activate the skip link - focus lands on the visualization region.
 4. Tab to the sidebar tablist: it is a single stop; Left/Right arrows switch panes; Home/End jump to the ends.
-5. Trigger a failure (load A-number `zzz`) — confirm a red banner appears inside the `role="alert"` region.
-6. Open Sweep — focus lands on "× close"; Tab cycles only within the dialog; Escape closes it and focus returns to the Sweep button.
+5. Trigger a failure (load A-number `zzz`) - confirm a red banner appears inside the `role="alert"` region.
+6. Open Sweep - focus lands on "× close"; Tab cycles only within the dialog; Escape closes it and focus returns to the Sweep button.
 7. Every focused element shows a visible focus ring.
 
 - [ ] **Step 4: Document conformance in the README**
@@ -1079,8 +1079,8 @@ The interface targets **WCAG 2.1 AA / Section 508**. Specifics:
   accessible name.
 - The sequence-panel tabs implement the WAI-ARIA tab pattern with roving
   tabindex and arrow-key navigation.
-- Errors and notices are delivered through persistent live regions — an
-  assertive one for errors, a polite one for notices — created at startup
+- Errors and notices are delivered through persistent live regions - an
+  assertive one for errors, a polite one for notices - created at startup
   rather than when the first message arrives.
 - The landing overlay and the sweep dialog mark everything behind them
   `inert`, which removes it from both the tab order and the accessibility
@@ -1093,7 +1093,7 @@ The interface targets **WCAG 2.1 AA / Section 508**. Specifics:
 - Colour contrast was measured across every foreground/background pair in the
   theme: the lowest is 5.75:1, against a 4.5:1 AA threshold for normal text.
 
-`tests/ui/a11y.test.ts` enforces the structural half of this — accessible
+`tests/ui/a11y.test.ts` enforces the structural half of this - accessible
 names, no positive tabindex, no click handlers on non-interactive elements,
 and exactly one live region of each urgency.
 
@@ -1128,7 +1128,7 @@ git push origin master
 | 7. Search status never announced | 5 |
 | 8. Formula errors silent | 5 |
 | 9. Section labels aren't headings | 5 |
-| Contrast | none needed — measured conformant |
+| Contrast | none needed - measured conformant |
 
 **Known risk:** Task 3 wraps controls in `<label>` elements, which changes the
 child ordering inside each pane. Any existing test that reaches a control by

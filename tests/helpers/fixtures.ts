@@ -19,7 +19,7 @@ export function fib2000View(): SequenceView {
 }
 
 // Exact (BigInt-precision) base-10 log magnitude, re-derived independently
-// of src/sequence/sequence.ts's bigMagnitude — deliberately a *separate*
+// of src/sequence/sequence.ts's bigMagnitude - deliberately a *separate*
 // implementation (not an import) so these covering tests check the
 // production code against independent math, not against itself.
 export function independentLogMagnitude(t: bigint): number {

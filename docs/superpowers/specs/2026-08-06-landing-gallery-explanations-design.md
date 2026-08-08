@@ -1,4 +1,4 @@
-# Landing Gallery & Explanations — Design
+# Landing Gallery & Explanations - Design
 
 **Date:** 2026-08-06
 **Status:** Approved by user (brainstorming session)
@@ -9,10 +9,10 @@
 The engine works. The front door does not exist.
 
 A cold visitor currently sees a near-black canvas with grey 16px text reading
-*"Load a sequence to begin — try a preset on the left."* (`src/ui/app.ts:238`).
+*"Load a sequence to begin - try a preset on the left."* (`src/ui/app.ts:238`).
 That is the entire pitch. It asks the visitor to do work before showing them
 anything, and it says nothing about the one capability that distinguishes this
-project from Numberscope and NCurve — the null-model layer.
+project from Numberscope and NCurve - the null-model layer.
 
 The site will be shared deliberately at first, to readers who know what an
 integer sequence is but not what a permutation surrogate does. Two things
@@ -44,9 +44,9 @@ follow:
 
 ## Non-goals (this round)
 
-- A 508 conformance audit of the *existing* engine markup — round 2.
+- A 508 conformance audit of the *existing* engine markup - round 2.
 - PNG export, data download, feedback channel, render controls, superimpose
-  mode — round 3.
+  mode - round 3.
 - Per-state social preview images (requires SSR or Lambda@Edge; see
   [Social preview](#5-social-preview-card)).
 - Any change to the OEIS data pipeline, `lookupById`, or the deployment
@@ -65,7 +65,7 @@ exists as the single entry point for hash-driven state:
 | URL | Behavior |
 | --- | --- |
 | `/` (no hash) | Landing overlay renders |
-| `#gallery` (reserved literal) | Landing overlay renders — linkable |
+| `#gallery` (reserved literal) | Landing overlay renders - linkable |
 | Any decodable state hash | Landing skipped entirely; engine opens at that view |
 | Undecodable hash | Landing renders (treated as no hash) |
 
@@ -74,7 +74,7 @@ so it can never collide with an encoded state.
 
 Dismissal is by the prominent **"Open the full engine →"** button or by
 clicking any gallery image. Once dismissed, the landing does not re-mount for
-the remainder of the session — re-showing it after a param tweak would read as
+the remainder of the session - re-showing it after a param tweak would read as
 a bug. A fresh visit to `/` shows it again.
 
 **Why an overlay rather than a real route:** the CloudFront distribution has
@@ -92,7 +92,7 @@ New module: `src/gallery/entries.ts`.
 export interface GalleryEntry {
   id: string;             // stable slug; used in tests and for the strip
   title: string;          // "A structure that survives"
-  state: UrlState;        // the exact engine view — existing type, reused
+  state: UrlState;        // the exact engine view - existing type, reused
   sequence: Sequence;     // bundled terms, so the landing needs no network
   verdict: 'real' | 'artifact' | 'open';
   caption: string;        // one line, under the image
@@ -117,11 +117,11 @@ the landing and open a different one in the engine.
 
 **The hero and the thumbnails are live canvas renders, not stored images.**
 They execute the same visualizer code the engine does, so they cannot drift out
-of sync with it — a stored screenshot would eventually assert something the
+of sync with it - a stored screenshot would eventually assert something the
 code no longer produces, which is the same failure mode §4 exists to prevent.
 The hero paints first; the strip renders after, at thumbnail size.
 
-Opening an entry is `applyHash('#' + encodeState(entry.state))` — the existing
+Opening an entry is `applyHash('#' + encodeState(entry.state))` - the existing
 share-link path, reused verbatim. No new routing, no second render path, no
 duplicated state machine.
 
@@ -130,7 +130,7 @@ duplicated state machine.
 **Cold-start:** the hero cannot wait on `/data/seq/000.json`. It also cannot
 inline its terms as a `paste` ref, because that discards the A-number and
 breaks the OEIS attribution link the project is required to carry. Instead each
-entry ships a bundled `Sequence` — terms *and* `aNumber` *and* `name` — which
+entry ships a bundled `Sequence` - terms *and* `aNumber` *and* `name` - which
 the landing renders from **directly, without calling `lookupById`**. First
 paint costs zero network, attribution survives intact, and `lookupById` keeps
 its current behavior unchanged for every other caller. The normal lookup runs
@@ -156,7 +156,7 @@ in-app.
 
 Surfaced by an **(i)** button beside the visualizer picker, opening a small
 dismissible panel. In round 2 the same `long` string becomes the canvas's
-`aria-label` — which is why the explanation corpus and the accessibility work
+`aria-label` - which is why the explanation corpus and the accessibility work
 were merged into one project rather than sequenced apart.
 
 ### 4. Verdict claims must be computed, not asserted
@@ -167,7 +167,7 @@ measurement produced by this codebase.
 Two claims are already established:
 
 - **A000002 (Kolakoski), Ulam spiral.** Angular variance 0.000332 against a
-  200-surrogate permutation band of 0.000506–0.001288 — outside the band on the
+  200-surrogate permutation band of 0.000506–0.001288 - outside the band on the
   low side, i.e. *excess* regularity. Supporting: switch rate 0.6665 vs ≈0.50
   for surrogates; longest run 2 vs 11–18. Verdict `real`.
 - **The rainbow concentric rings.** Established by construction rather than by
@@ -179,7 +179,7 @@ Two claims are already established:
 
 Every other entry requires a measurement before it ships a `real` or `artifact`
 caption. Entries that cannot be measured in this round get verdict `'open'`
-with a caption saying so — an honest and genuinely interesting thing for this
+with a caption saying so - an honest and genuinely interesting thing for this
 particular landing page to admit.
 
 **Enforcement:** a test recomputes the statistic for every entry carrying
@@ -191,7 +191,7 @@ exists to expose; committing it on the landing page would be self-refuting.
 `evidence` is required for verdict `real` and optional for `artifact`, because
 an artifact may be established by construction (as the rings are) rather than
 by a band. An `artifact` caption without `evidence` must state its reasoning in
-`body` — the test cannot check prose, so the requirement is that the claim be
+`body` - the test cannot check prose, so the requirement is that the claim be
 *shown*, not merely asserted.
 
 ### 5. Social preview card
@@ -218,12 +218,12 @@ wordmark.
 - **`null:` surrogate dropdown** (`src/ui/comparison.ts:141`) is fully inert
   while `Compare:` is `off`, which is the default. It becomes `disabled` in
   that state with a hint explaining why. *Considered and rejected:* auto
-  -switching the mode to `side` when the surrogate is changed — a control that
+  -switching the mode to `side` when the surrogate is changed - a control that
   silently changes a *different* control is worse than one that is honestly
   unavailable.
 - **`Compare: flip`** (`src/ui/app.ts:269`) renders the real sequence, visually
   identical to `off`, until the separate "Flip real / surrogate" button is
-  found and clicked — so selecting it appears to do nothing. Fix: the flip
+  found and clicked - so selecting it appears to do nothing. Fix: the flip
   button becomes prominent and receives focus when the mode is selected, and
   the canvas states which side is currently shown. Selecting the mode changes
   something immediately.
@@ -232,7 +232,7 @@ wordmark.
 
 Scoped to markup authored in this round. The existing engine's audit is round 2.
 
-- `.app-title` becomes a real `<h1>` (fixing an existing gap — it is currently
+- `.app-title` becomes a real `<h1>` (fixing an existing gap - it is currently
   a `<span>`); landing sections use `<h2>`.
 - Gallery thumbnails are `<button>` elements with accessible names, not
   clickable `<div>`s.
@@ -256,7 +256,7 @@ Additionally, replace the single 5–95% band with **nested levels at 50 / 90 /
 sorts each index's column across the ensemble, and that sort is the entire
 cost. Additional quantiles off an already-sorted array are O(1) apiece, so the
 overhead is a few array reads per index against an O(N log N) sort already
-being paid. No extra work in the worker, and no network cost at all — the
+being paid. No extra work in the worker, and no network cost at all - the
 ensemble runs client-side over terms already in memory.
 
 The payoff is that an outlier becomes *graded* rather than binary. Kolakoski's
@@ -279,7 +279,7 @@ position?(seq: SequenceView, params: Params, size: Size, index: number): { x: nu
 ```
 
 Both derive from the mapping each visualizer already computes internally and
-then discards — `strokePath` (`src/viz/turtle.ts:30`) calculates the exact
+then discards - `strokePath` (`src/viz/turtle.ts:30`) calculates the exact
 sequence-space→screen affine transform (`scale`, `ox`, `oy`) to draw with, and
 throws it away. Retaining it makes a screen coordinate invert in three
 arithmetic operations.
@@ -290,24 +290,24 @@ return would make those two answer falsely.
 
 | View | `Hit` reports |
 | --- | --- |
-| scatter, mod grid, Ulam spiral | exact index — `n=42, a(42)=1` |
+| scatter, mod grid, Ulam spiral | exact index - `n=42, a(42)=1` |
 | turtle, polyarc | nearest path point → index (polyarc: 8 segments per term, `⌊ptIdx/8⌋`) |
 | 2D digit walk | term *and* digit position |
-| histogram | a bin — "47 terms in [12, 18)" |
-| autocorrelation | a lag — "lag 7" |
+| histogram | a bin - "47 terms in [12, 18)" |
+| autocorrelation | a lag - "lag 7" |
 
 **Rejected alternative:** a color-picking buffer (offscreen render with each
 term colored by index, `getImageData` on click). Uniform and exact, but it
 requires every visualizer to support a picking palette regardless, doubles
 render cost, and cannot be tested without a canvas. `locate`/`position` are
-assertable in pure JS — which matters here, given that 141 green tests once
+assertable in pure JS - which matters here, given that 141 green tests once
 missed three Critical defects because nothing executed the code at realistic
 scale.
 
 **Performance:** a click is trivial. Hover is an O(n) nearest-point scan,
 acceptable to roughly 50k points on rAF-throttled `mousemove`. The 2D digit
 walk's measured 418,487-point case gets a uniform bucket grid built once per
-render *only if* it actually feels sluggish — not preemptively.
+render *only if* it actually feels sluggish - not preemptively.
 
 #### Linked markers across the comparison
 
@@ -315,14 +315,14 @@ Clicking a point on the real sequence marks the corresponding point in the
 null. "Corresponding" is surrogate-dependent, and the asymmetry is pedagogical
 rather than incidental:
 
-- **Permutation** — same multiset, shuffled. Two honest correspondences: same
+- **Permutation** - same multiset, shuffled. Two honest correspondences: same
   *index*, or same *value*. Value-tracing is the valuable one: it shows the
   term survived intact and only its **position** changed, which is what was
   carrying the structure. Requires `makeSurrogate` to also return the
   permutation array (deterministic from the existing seed; one extra array).
-- **Difference** — differences shuffled and re-integrated, so values do not
+- **Difference** - differences shuffled and re-integrated, so values do not
   survive. Index-to-index only.
-- **Matched-random** — no term-level relationship. Index-to-index only.
+- **Matched-random** - no term-level relationship. Index-to-index only.
 
 That value-tracing works for exactly one of the three is worth surfacing in the
 UI, not hiding: discovering you can follow a term through a permutation but not
@@ -331,10 +331,10 @@ interaction rather than by prose.
 
 Per comparison mode:
 
-- **`side`** — paired markers, one per panel.
-- **`flip`** — the marker persists across the flip, anchoring the eye on one
+- **`side`** - paired markers, one per panel.
+- **`flip`** - the marker persists across the flip, anchoring the eye on one
   term while the substrate swaps beneath it.
-- **`ensemble`** — no single surrogate exists, so clicking the real line
+- **`ensemble`** - no single surrogate exists, so clicking the real line
   highlights that index's **column of the null distribution** instead, reading
   out the nested levels at that index against the real value.
 
@@ -342,7 +342,7 @@ Design note: in grid and spiral views the layout is index-driven, so index *i*
 occupies the same cell in both panels and only the colour differs. In
 trajectory views the path is cumulative, so index *i* lands somewhere entirely
 different in the null. The feature is most valuable precisely where the view is
-cumulative — which is also where "is this structure real?" is hardest to judge
+cumulative - which is also where "is this structure real?" is hardest to judge
 by eye.
 
 ## Data flow
@@ -365,7 +365,7 @@ page load
 - A gallery entry whose `state.vizId` is not in the registry is skipped at
   mount with a console warning rather than crashing the landing; the test suite
   catches this at build time so it should never reach production.
-- Hero render failures fall back to the examples strip plus the engine link —
+- Hero render failures fall back to the examples strip plus the engine link -
   the landing degrades to a menu rather than a blank screen.
 - The landing never blocks on network, so there is no loading or timeout state
   to handle on first paint.
@@ -390,7 +390,7 @@ page load
   `locate(position(i)) === i` for a sample of indices at a realistic sequence
   length, not a toy one.
 - Visualizers without a term-level answer (histogram, autocorrelation) either
-  omit `locate` or return a non-index `Hit` kind — asserted, so a future
+  omit `locate` or return a non-index `Hit` kind - asserted, so a future
   contributor cannot quietly make them lie.
 - Permutation surrogates expose an index map for which
   `surrogate[map[i]] === real[i]` holds across the sequence.
@@ -407,7 +407,7 @@ Revisit if any of these become true:
 
 - The gallery grows past roughly a dozen entries and wants its own browsable
   page with per-entry deep links.
-- Search-engine indexing of individual gallery entries becomes desirable —
+- Search-engine indexing of individual gallery entries becomes desirable -
   a hash fragment is not indexable as a distinct URL.
 - Per-state social preview cards are wanted, since that work requires
   edge compute anyway and would absorb the routing change at no extra cost.
@@ -416,14 +416,14 @@ Revisit if any of these become true:
 
 ## Deferred scope
 
-**Round 2 — accessibility audit of the existing engine:** keyboard navigation,
+**Round 2 - accessibility audit of the existing engine:** keyboard navigation,
 contrast pass, ARIA and labelling across the sequence panel and comparison bar,
 canvas text alternatives wired to the `explain` corpus built in this round.
 
-**Round 3 — export, controls, and superimpose:** PNG image download, sequence
+**Round 3 - export, controls, and superimpose:** PNG image download, sequence
 data download, feedback/issue channel (blocked on a decision about the private
 repository), coloring choices including none, line width, gradient start/stop,
 line shape, and a superimpose comparison mode. The line-shape question the user
-raised — *would line shape make a difference?* — is itself a null-model
+raised - *would line shape make a difference?* - is itself a null-model
 experiment and should be answered with the app's own machinery rather than
 settled by preference.

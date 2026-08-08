@@ -30,7 +30,7 @@ export function describeHit(hit: Hit, seq: SequenceView): string {
 /**
  * Where the term at `realIndex` corresponds to in the surrogate.
  *
- * `traced: true` means the *same term* is at that position — only possible
+ * `traced: true` means the *same term* is at that position - only possible
  * for permutation surrogates, which preserve the value multiset. Difference
  * and matched-random surrogates contain entirely new values, so the only
  * honest correspondence is index-for-index, and the UI must say so rather

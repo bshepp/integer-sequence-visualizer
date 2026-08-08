@@ -37,14 +37,14 @@ export function longestRun(seq: SequenceView): number {
  * mean unit vector from the spiral centre to its cells. A class whose cells
  * are spread evenly in all directions has a near-zero resultant; a class
  * clumped into one sector has a long one. The statistic is the variance of
- * those resultant lengths across classes — low means every class is spread
+ * those resultant lengths across classes - low means every class is spread
  * evenly (unusual regularity), high means classes clump into sectors.
  *
  * Deterministic and pure: no RNG, so the same sequence always measures the
  * same value and the evidence recorded in the gallery reproduces exactly.
  *
  * NOTE: this statistic does NOT distinguish Kolakoski from its own
- * permutation null — measured 2.28e-5 against a band of 5.6e-7..1.32e-3, well
+ * permutation null - measured 2.28e-5 against a band of 5.6e-7..1.32e-3, well
  * inside. It is kept because that negative result is worth having on record
  * (tests/gallery/verdicts.test.ts pins it), and because the reason is
  * instructive: the spiral distributes any two-valued sequence over roughly

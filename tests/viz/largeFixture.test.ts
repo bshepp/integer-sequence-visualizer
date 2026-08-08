@@ -13,20 +13,20 @@ const SIZE = { width: 600, height: 450 };
 // Small slack beyond the raw canvas dimensions: legitimate non-coordinate
 // numeric args (radii, angles in radians, line widths, small offsets) are
 // tiny compared to a 600x450 canvas, so a generous-but-real bound still
-// catches what actually broke here — a spread-crash producing NaN/Infinity,
+// catches what actually broke here - a spread-crash producing NaN/Infinity,
 // or a clamp-to-MAX_SAFE_INTEGER (9007199254740991) leaking into a drawn
-// coordinate — without being a pixel-exact layout assertion this test isn't
+// coordinate - without being a pixel-exact layout assertion this test isn't
 // meant to be.
 const SLACK = 50;
 // fakeCtx's call log doesn't tag which position an argument occupies (x, y,
 // width, height, radius, angle, …), so the bound must be the larger of the
-// two canvas dimensions applied uniformly — not each argument checked
+// two canvas dimensions applied uniformly - not each argument checked
 // against both axes independently (an x-coordinate near size.width would
 // wrongly fail a "< size.height" check on a non-square canvas).
 const MAX_DIM = Math.max(SIZE.width, SIZE.height) + SLACK;
 
 describe('every visualizer survives a 2000-term Fibonacci sequence (task FR test gap)', () => {
-  // Every render test before this one used <= 8 terms — nothing was large
+  // Every render test before this one used <= 8 terms - nothing was large
   // enough to clamp past float64-safe range (C2) or to exceed V8's ~250k
   // spread-argument limit (C3: digitWalk alone produces hundreds of
   // thousands of points from this fixture, since late Fibonacci terms have
@@ -46,7 +46,7 @@ describe('every visualizer survives a 2000-term Fibonacci sequence (task FR test
       expect(() => viz.render(view, defaultParams(viz.params), ctx, SIZE)).not.toThrow();
       expect(callLog.length).toBeGreaterThan(0);
       // A digit-walk-style path from this fixture is hundreds of thousands
-      // of points (that scale is the whole point — see C3 above), so the
+      // of points (that scale is the whole point - see C3 above), so the
       // bounds check itself must stay a plain boolean scan: calling
       // vitest's expect() (which eagerly builds its failure message) once
       // per numeric arg here was itself slow enough to time the test out.
@@ -72,7 +72,7 @@ describe('stats-level correctness on the 2000-term Fibonacci fixture, checked in
 
   it('autocorrelation switches to the sign-preserving log-magnitude series once terms overflow, matching an independent computation', () => {
     const maxLag = 10;
-    // Fibonacci is non-negative throughout, so the sign fold is a no-op —
+    // Fibonacci is non-negative throughout, so the sign fold is a no-op -
     // still routed through the same independentLogMagnitude used elsewhere
     // in this file, not through the module under test.
     const independentLogSeries = FIB_2000.map((t) => independentLogMagnitude(t));
@@ -113,7 +113,7 @@ describe('stats-level correctness on the 2000-term Fibonacci fixture, checked in
     // then saturate to exactly 1 forever once both terms clamp to the same
     // MAX_SAFE_INTEGER. Fibonacci's ratio converges to phi so fast that,
     // correctly computed, everything from a couple hundred terms in on is
-    // indistinguishable from phi at float64 precision — the opposite of "1".
+    // indistinguishable from phi at float64 precision - the opposite of "1".
     for (let i = 200; i < stats.value!.length; i++) expect(stats.value![i]!).toBeCloseTo(phi, 6);
   });
 });

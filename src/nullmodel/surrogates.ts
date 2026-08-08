@@ -72,7 +72,7 @@ function gaussian(rand: () => number): number {
 
 // Inverse of the (unsigned) magnitude half of signedLogMagnitude: reconstruct
 // a same-order-of-magnitude BigInt from a base-10 log value, preserving ~15
-// significant digits (float64's own precision budget — the same 15 digits
+// significant digits (float64's own precision budget - the same 15 digits
 // bigMagnitude reads off the decimal string). Never routes the
 // full-precision integer through `Number` (which is exactly the bug this
 // exists to avoid: `Math.round(10 ** log)` silently loses precision past
@@ -120,7 +120,7 @@ function clampBigint(v: bigint, lo: bigint, hi: bigint): bigint {
 // in exact *signed* log-magnitude space, only converting to BigInt at the
 // very end. Using signedLogMagnitude (not the unsigned bigMagnitude) rather
 // than requiring non-negative input is what makes this sound for sign-mixed
-// overflowing sequences too — e.g. alternating huge positive/negative
+// overflowing sequences too - e.g. alternating huge positive/negative
 // terms, reachable today via the paste tab (pasteParser.ts has no magnitude
 // or sign restriction). See matchedRandomSurrogate's doc for why the plain
 // numeric path below cannot be used once terms exceed float64-safe range.
@@ -137,19 +137,19 @@ export function matchedRandomSurrogate(terms: bigint[], seed: number): bigint[] 
   const rand = mulberry32(seed);
 
   // clampNum() ceilings every term beyond float64-safe range to the same
-  // Number.MAX_SAFE_INTEGER — fitting/generating from that flattens a
+  // Number.MAX_SAFE_INTEGER - fitting/generating from that flattens a
   // genuinely varying tail into a constant and models THAT clamping
   // artifact instead of the sequence (measured: a 2001-term Fibonacci
   // b-file's matched surrogate has 1057 distinct values out of 2001, 945 of
-  // them pinned at MAX_SAFE — task FR, I1). Route every overflowing
-  // sequence — sign-mixed included — through an exact signed-log-magnitude
+  // them pinned at MAX_SAFE - task FR, I1). Route every overflowing
+  // sequence - sign-mixed included - through an exact signed-log-magnitude
   // fit instead: the plain numeric exp-fit branch below cannot do the same
   // (it requires strict positivity, since Math.log10(v) is -Infinity at
   // v <= 0), but signedLogMagnitude is defined and continuous for zero and
   // negative terms too (see sequence.ts), so there is no sign restriction
   // needed here. This matters because pasteParser.ts places no cap on
   // magnitude or sign, so a user can paste e.g. alternating +-1e20-scale
-  // terms and pick 'matched' directly — an earlier version of this fix
+  // terms and pick 'matched' directly - an earlier version of this fix
   // gated on `terms.every(t => t >= 0n)` on the mistaken assumption that a
   // sign-mixed *overflowing* sequence could only arise from this module's
   // own (slope-bounded) linear model reaching that far, rather than simply
@@ -172,11 +172,11 @@ export function matchedRandomSurrogate(terms: bigint[], seed: number): bigint[] 
     const expRelMse = exp.mse / Math.max(1e-12, (logHi - logLo) ** 2 || 1);
     if (expRelMse < linRelMse) {
       // Noise scale: the *residual standard deviation* (sqrt of the fit's
-      // mean squared residual), drawn from a Gaussian — not the old
+      // mean squared residual), drawn from a Gaussian - not the old
       // uniform-on-[-maxRes,+maxRes] draw. Uniform-on-±max has sd =
       // max/sqrt(3), typically 2-4x the true residual sd for a roughly
       // normal residual distribution, with a flat hard-edged shape instead
-      // of a bell curve — so the old bands were too wide, silently making
+      // of a bell curve - so the old bands were too wide, silently making
       // the app under-reject (call real structure "could be noise") more
       // often than the surrogate's own residual spread justifies. That's
       // the quieter, more dangerous direction of error for a tool whose job

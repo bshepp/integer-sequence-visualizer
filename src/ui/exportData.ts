@@ -2,7 +2,7 @@ import type { Sequence } from '../sequence/sequence';
 
 export interface DataRow { n: number; term: string; [key: string]: string | number; }
 
-/** Terms as exact decimal strings — never toNumber, which clamps past 2^53. */
+/** Terms as exact decimal strings - never toNumber, which clamps past 2^53. */
 export function sequenceRows(seq: Sequence, limit?: number): DataRow[] {
   const n = limit === undefined ? seq.terms.length : Math.min(limit, seq.terms.length);
   const rows: DataRow[] = [];

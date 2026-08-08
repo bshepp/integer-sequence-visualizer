@@ -17,11 +17,11 @@ function derived(seq: SequenceView, params: Params): number[] {
     // toNumber(i+1)/toNumber(i) clamps each side independently past
     // float64-safe range, so Fibonacci-style ratios go φ… up to the clamp
     // point, then exactly 1 forever (numerator and denominator saturate to
-    // the same MAX_SAFE_INTEGER) — measured, and it is the single most
+    // the same MAX_SAFE_INTEGER) - measured, and it is the single most
     // likely thing a user checks. term(i+1)/term(i) = 10^(logMag(i+1) -
     // logMag(i)) is exact to ~15 significant digits regardless of magnitude
     // and never saturates, so use that unconditionally (no shouldUseLogScale
-    // branch, hence no ensemble cross-draw sync concern either — every draw
+    // branch, hence no ensemble cross-draw sync concern either - every draw
     // computes the identical formula).
     for (let i = 0; i + 1 < seq.length; i++) {
       const denom = seq.term(i);
@@ -34,10 +34,10 @@ function derived(seq: SequenceView, params: Params): number[] {
     // 'differences': already an exact BigInt subtraction; only the
     // clampBig() conversion to a plotted number was lossy. Measured:
     // Fibonacci(2001) differences collapse to a constant
-    // 9007199254740991 from index 80 onward — one distinct value across
+    // 9007199254740991 from index 80 onward - one distinct value across
     // 1900 entries. Swap in the same sign-preserving log-magnitude fallback
     // 'gaps' uses in histogram.ts, gated the same way (shared
-    // logScaleOverride so ensemble draws agree — see histogram.ts's doc).
+    // logScaleOverride so ensemble draws agree - see histogram.ts's doc).
     const useLog = overrideFromParams(params) ?? shouldUseLogScale(seq);
     for (let i = 0; i + 1 < seq.length; i++) {
       const d = seq.term(i + 1) - seq.term(i);

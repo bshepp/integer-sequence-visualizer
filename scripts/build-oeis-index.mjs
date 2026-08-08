@@ -2,7 +2,7 @@
 // Builds the static OEIS lookup + search data served from public/data/.
 //
 // Why: OEIS's /search endpoint is behind Cloudflare, which challenges
-// requests from datacenter IPs (HTTP 403 "Just a moment...") — so a
+// requests from datacenter IPs (HTTP 403 "Just a moment...") - so a
 // deployed proxy to /search never works. Static files, including OEIS's
 // own daily bulk downloads, are the documented path for bulk consumers
 // (see the OEIS EULA) and are what we serve from our own origin instead.
@@ -13,7 +13,7 @@
 // Both carry 4 leading "#" comment lines. There is no bulk offsets file,
 // so lookupById always reports offset 0 for OEIS sequences (see README).
 //
-// Outputs (public/data/, gitignored — regenerate with `npm run build:data`):
+// Outputs (public/data/, gitignored - regenerate with `npm run build:data`):
 //   seq/<shard>.json     shard = zero-padded thousands bucket of the
 //                         A-number (A019488 -> "019"); maps A-number ->
 //                         { n: <name>, d: <comma-separated terms, no
@@ -100,7 +100,7 @@ async function ensureFile(url, destPath, { force, trustExisting }) {
 // multi-byte UTF-8 sequences across chunk boundaries internally (a
 // StringDecoder) instead of decoding each Buffer chunk in isolation. A
 // naive `carry += chunk` on raw Buffer chunks coerces each chunk to a
-// string independently — any multi-byte character that happens to
+// string independently - any multi-byte character that happens to
 // straddle a chunk boundary silently becomes two U+FFFD replacement
 // characters instead of one real character, with no exception thrown.
 // names.gz is full of accented names (Bézout, Erdős, Recamán, Ménage,
@@ -271,7 +271,7 @@ async function main() {
   // End-of-build encoding guard: re-read the file we just wrote (not the
   // in-memory string) and scan it for U+FFFD replacement characters. Their
   // presence means a multi-byte character was mis-decoded somewhere in the
-  // pipeline (see readLinesFromStream's docs) — fail loudly here rather
+  // pipeline (see readLinesFromStream's docs) - fail loudly here rather
   // than silently shipping corrupted names to production.
   const writtenIndexText = readFileSync(searchIndexPath, 'utf8');
   const nonAsciiLines = countNonAsciiLines(writtenIndexText);
@@ -291,13 +291,13 @@ async function main() {
       `Encoding corruption detected: ${replacementChars} U+FFFD replacement character(s) found ` +
       `in ${searchIndexPath}. This means a multi-byte UTF-8 character was mis-decoded somewhere ` +
       `in the build (e.g. split across a stream chunk boundary). Aborting before this reaches ` +
-      `production — do not deploy this public/data/ directory.`,
+      `production - do not deploy this public/data/ directory.`,
     );
   }
 }
 
 // Only run the build when this file is executed directly (`node
-// scripts/build-oeis-index.mjs`), not when it's imported — e.g. by tests
+// scripts/build-oeis-index.mjs`), not when it's imported - e.g. by tests
 // importing readLinesFromStream/countReplacementChars/countNonAsciiLines
 // in isolation, which must not trigger a live download of OEIS's bulk
 // files as a side effect of merely loading the module.

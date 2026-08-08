@@ -1,7 +1,7 @@
 // Math.min(...values) / Math.max(...values) spread every element into a
 // function call's argument list. V8's argument-count limit is ~250k
 // (verified: fine at 200k, `RangeError: Maximum call stack size exceeded` at
-// 300k) — well within reach of a loaded b-file's point count (e.g. a
+// 300k) - well within reach of a loaded b-file's point count (e.g. a
 // 2000-term sequence's 2D digit walk produces hundreds of thousands of
 // points). A loop has no such limit, so every min/max over a
 // caller-supplied-length array goes through this helper instead of a spread.

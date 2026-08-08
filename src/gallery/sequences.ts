@@ -5,7 +5,7 @@ import type { Sequence } from '../sequence/sequence';
  *
  * Generated rather than pasted so it is exactly right at any length, and
  * still labelled with its A-number so the OEIS attribution and entry link
- * survive — the reason gallery entries bundle a full Sequence rather than a
+ * survive - the reason gallery entries bundle a full Sequence rather than a
  * bare term list.
  */
 export function kolakoski(n: number): bigint[] {
@@ -42,7 +42,7 @@ export function primes(n: number): bigint[] {
   return out;
 }
 
-/** A005132: Recamán — step back by n if that lands somewhere new and positive. */
+/** A005132: Recamán - step back by n if that lands somewhere new and positive. */
 export function recaman(n: number): bigint[] {
   const seen = new Set<number>([0]);
   const out = [0];
@@ -58,7 +58,7 @@ export function recaman(n: number): bigint[] {
 
 /**
  * A010060: Thue-Morse. a(n) = parity of the number of 1 bits in n.
- * Overlap-free and strongly self-similar — a good second "real" case,
+ * Overlap-free and strongly self-similar - a good second "real" case,
  * structurally different from Kolakoski but two-valued in the same way.
  */
 export function thueMorse(n: number): bigint[] {
@@ -71,7 +71,7 @@ export function thueMorse(n: number): bigint[] {
   return out;
 }
 
-/** A001511: the ruler sequence — 1 + the 2-adic valuation of n, from n = 1. */
+/** A001511: the ruler sequence - 1 + the 2-adic valuation of n, from n = 1. */
 export function ruler(n: number): bigint[] {
   const out: bigint[] = [];
   for (let i = 1; i <= n; i++) {

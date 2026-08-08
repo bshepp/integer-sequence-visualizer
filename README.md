@@ -1,7 +1,7 @@
 # Integer Sequence Visualizer
 
 A live webpage that renders [OEIS](https://oeis.org) sequences with multiple
-visualization techniques and a first-class **null-model comparison layer** —
+visualization techniques and a first-class **null-model comparison layer** -
 so you can test whether the structure you see is a property of the sequence
 or an artifact of the rendering technique.
 
@@ -15,7 +15,7 @@ experimental apparatus for answering it.
 - **Nine visualizers** across four families: basic (term-vs-index scatter,
   differences/ratios), stats (histogram, autocorrelation), grid (Ulam-style
   spiral, mod-N grid), and trajectory (turtle walk, 2D digit walk, polyarc
-  curve — NCurve-style).
+  curve - NCurve-style).
 - **Null models everywhere**: permutation, difference, and matched-random
   surrogates, comparable against the real sequence in side-by-side or flip
   mode for any visualizer, plus ensemble confidence bands (Web Worker, up to
@@ -32,7 +32,7 @@ experimental apparatus for answering it.
 - **A landing gallery**: curated real-vs-null comparisons that render on first
   paint with no network round-trip, each one a saved engine state you can click
   straight into. Every verdict shown is recomputed in CI against its recorded
-  null band — the gallery cannot claim a structure is real unless the code
+  null band - the gallery cannot claim a structure is real unless the code
   still measures it that way.
 - **Explanations everywhere**: every visualizer and every surrogate documents
   itself (enforced at compile time), surfaced by an (i) button and reused as
@@ -46,7 +46,7 @@ experimental apparatus for answering it.
   offered only where position carries information (grids place term *n* by
   index, so an overlay would simply overwrite).
 - **Export**: PNG with the OEIS credit drawn into the bitmap, plus CSV and
-  JSON carrying it in a header — attribution has to survive leaving the page.
+  JSON carrying it in a header - attribution has to survive leaving the page.
   Terms export at full BigInt precision.
 - **The numbers behind the picture**: a data table of index and exact term,
   which doubles as the textual equivalent of the canvas for screen-reader
@@ -55,7 +55,7 @@ experimental apparatus for answering it.
 ## Develop
 
     npm install
-    npm run build:data   # generates public/data/ (see Data pipeline) — optional
+    npm run build:data   # generates public/data/ (see Data pipeline) - optional
     npm run dev          # Vite dev server; /api/* proxies to oeis.org
     npm test             # Vitest suite
 
@@ -69,7 +69,7 @@ banner (nothing crashes) until you run it once.
 A-number lookup and keyword search are served from **static files we
 generate ourselves**, not from OEIS's own `/search` endpoint. OEIS sits
 behind Cloudflare, which serves an HTTP 403 bot challenge to `/search`
-requests from datacenter IP ranges — every cloud host (AWS/GCP/Azure)
+requests from datacenter IP ranges - every cloud host (AWS/GCP/Azure)
 included. That makes a server-side proxy to `/search` useless in
 production, even though it works fine from a residential IP in local dev.
 OEIS's static per-sequence pages (used for the b-file deep fetch) are
@@ -77,33 +77,33 @@ Cloudflare-cached and unaffected, so that fetch still proxies live through
 `/api/*`.
 
 The fix: OEIS publishes daily bulk snapshots for exactly this purpose (the
-documented path for bulk consumers, linked from the OEIS EULA) —
+documented path for bulk consumers, linked from the OEIS EULA) -
 [`names.gz`](https://oeis.org/names.gz) (`A000045 <name>` per line) and
 [`stripped.gz`](https://oeis.org/stripped.gz) (`A000045 ,0,1,1,2,...,` per
 line). `npm run build:data` (`scripts/build-oeis-index.mjs`) downloads both
-(caching them locally so repeat runs don't hit OEIS unnecessarily — see
+(caching them locally so repeat runs don't hit OEIS unnecessarily - see
 `--force`/`--from-cache` in the script), joins them by A-number, and emits
 into `public/data/` (gitignored, regenerate locally or in CI before
 deploying):
 
-- `seq/<shard>.json` — one file per zero-padded thousands bucket of the
+- `seq/<shard>.json` - one file per zero-padded thousands bucket of the
   A-number (`A019488` → `seq/019.json`), mapping A-number → `{ n: name,
   d: terms }`.
-- `search-index.txt` — one `A-number<TAB>name` line per sequence, lazily
+- `search-index.txt` - one `A-number<TAB>name` line per sequence, lazily
   fetched by the client on the first search and cached for the rest of the
   session.
-- `meta.json` — generation date, sequence count, source, and license.
+- `meta.json` - generation date, sequence count, source, and license.
 
 Two limitations follow directly from this approach, both by design:
 
-- **Data is a daily snapshot**, not live — it reflects whatever `names.gz`/
+- **Data is a daily snapshot**, not live - it reflects whatever `names.gz`/
   `stripped.gz` looked like the last time `build:data` ran, not the current
   instant on oeis.org. New/edited OEIS sequences appear after the next
   regeneration.
 - **`offset` is always `0`** for OEIS-sourced sequences. There is no bulk
   `offsets.gz` file (it 404s), so the real per-sequence offset metadata
-  isn't available this way. No visualizer reads `offset` — it's
-  display-only — so this has no effect on rendering.
+  isn't available this way. No visualizer reads `offset` - it's
+  display-only - so this has no effect on rendering.
 - If the emitted `public/data/` would exceed roughly 120 MB uncompressed,
   the script caps stored terms at the first 80 per sequence (noted in its
   own output when it happens); the b-file deep fetch still covers anyone
@@ -115,7 +115,7 @@ Two limitations follow directly from this approach, both by design:
 - Implementation plan: [`docs/superpowers/plans/2026-08-05-oeis-visualizer.md`](docs/superpowers/plans/2026-08-05-oeis-visualizer.md)
 - Origin thread: [`docs/seqfan-ncurve-thread.md`](docs/seqfan-ncurve-thread.md)
 - Does line shape matter? [`docs/line-shape-answer.md`](docs/line-shape-answer.md)
-  — measured: no, by two to three orders of magnitude.
+  - measured: no, by two to three orders of magnitude.
 
 ## Architecture (one paragraph)
 
@@ -124,7 +124,7 @@ on Canvas 2D. Visualizers are pure `render(seq, params, ctx, size)` modules
 composed by the null-model layer and the sweep view. A-number lookup and
 search are served from statically generated `/data/*` files (see
 [Data pipeline](#data-pipeline)); the b-file deep fetch is the one remaining
-live call, proxied through `/api/*` to `oeis.org` — CloudFront in
+live call, proxied through `/api/*` to `oeis.org` - CloudFront in
 production, Vite's dev proxy locally (`npm run dev`). Sequence terms are
 `bigint` throughout.
 
@@ -190,7 +190,7 @@ tabular view of the underlying terms. That is the obvious next step.
 ### Social preview card
 
 `public/og-card.png` is a **stored** 1200x630 image, while the landing hero is
-a live canvas render — so the two drift apart whenever the hero gallery entry
+a live canvas render - so the two drift apart whenever the hero gallery entry
 changes. Regenerate it by running `npm run dev` and opening `/?ogcard`, which
 renders the current hero through the real render path and downloads the PNG;
 save it over `public/og-card.png`. `scripts/deploy.sh` warns if the file is
@@ -206,7 +206,7 @@ bucket behind CloudFront (mirroring the owner's existing
 CloudFront behaviour + viewer-request function proxies `/api/*` to
 `oeis.org` for the b-file deep fetch only, standing in for the Vite dev
 proxy used locally. `npm run build` alone produces a fully static site with
-no build-time dependency on this infrastructure — but `npm run build:data`
+no build-time dependency on this infrastructure - but `npm run build:data`
 must be run at least once beforehand (and re-run periodically to refresh
 the daily snapshot) so `public/data/` exists and gets copied into `dist/`;
 without it, lookup and search fail gracefully with a visible error banner

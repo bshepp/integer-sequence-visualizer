@@ -177,7 +177,7 @@ dist/
 import './style.css';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
-app.textContent = 'OEIS Sequence Visualizer — scaffold OK';
+app.textContent = 'OEIS Sequence Visualizer - scaffold OK';
 ```
 
 `src/style.css` (starter; Task 15 expands it):
@@ -197,9 +197,9 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 
 - [ ] **Step 4: Verify dev server and build**
 
-Run: `npm run dev` — open the printed URL, confirm the scaffold text renders on a dark page, then stop the server.
-Run: `npm run build` — expected: completes without errors.
-Run: `npm test` — expected: passes (no test files yet).
+Run: `npm run dev` - open the printed URL, confirm the scaffold text renders on a dark page, then stop the server.
+Run: `npm run build` - expected: completes without errors.
+Run: `npm test` - expected: passes (no test files yet).
 
 - [ ] **Step 5: Commit**
 
@@ -225,7 +225,7 @@ export type SequenceSource = 'oeis' | 'paste' | 'formula';
 
 export interface Sequence {
   terms: bigint[];
-  aNumber?: string;      // "A000045" — present when source === 'oeis'
+  aNumber?: string;      // "A000045" - present when source === 'oeis'
   name: string;          // OEIS name, or "Pasted sequence" / the formula text
   offset: number;        // index of first term (OEIS offset), 0 for paste/formula
   source: SequenceSource;
@@ -307,7 +307,7 @@ describe('SequenceView', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run tests/sequence/sequence.test.ts`
-Expected: FAIL — cannot resolve `src/sequence/sequence`.
+Expected: FAIL - cannot resolve `src/sequence/sequence`.
 
 - [ ] **Step 3: Implement**
 
@@ -455,7 +455,7 @@ describe('parsePasted', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run tests/sequence/pasteParser.test.ts`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Implement**
 
@@ -517,7 +517,7 @@ export function sequenceFromFormula(src: string, count: number, start?: number):
 // name = src, offset = start (default 0), source = 'formula'
 ```
 
-Grammar (recursive descent, integer/bigint semantics): `+ - * / % ^`, unary minus, parentheses, variable `n`, functions `abs(x)`, `min(a,b)`, `max(a,b)`, `gcd(a,b)`. `/` truncates toward zero (BigInt division). `^` is right-associative, exponent must be ≥ 0 and ≤ 1e6. No `eval` — hand-written tokenizer + parser.
+Grammar (recursive descent, integer/bigint semantics): `+ - * / % ^`, unary minus, parentheses, variable `n`, functions `abs(x)`, `min(a,b)`, `max(a,b)`, `gcd(a,b)`. `/` truncates toward zero (BigInt division). `^` is right-associative, exponent must be ≥ 0 and ≤ 1e6. No `eval` - hand-written tokenizer + parser.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -588,7 +588,7 @@ describe('compileFormula', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run tests/sequence/formula.test.ts`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Implement**
 
@@ -777,7 +777,7 @@ git commit -m "feat: safe bigint formula evaluator (no eval)"
 
 ---
 
-### Task 5: OEIS client — lookup and search
+### Task 5: OEIS client - lookup and search
 
 **Files:**
 - Create: `src/sequence/oeisClient.ts`, `tests/fixtures/oeis-fib.json`, `tests/fixtures/oeis-empty.json`
@@ -799,7 +799,7 @@ export async function lookupById(aNumber: string, fetchFn?: FetchLike): Promise<
 export async function search(query: string, fetchFn?: FetchLike): Promise<OeisSearchHit[]>;
 ```
 
-`fetchFn` defaults to the global `fetch`; tests inject fakes returning fixture JSON. Real URLs used: `/api/search?q=id:A000045&fmt=json` and `/api/search?q=<encoded query>&fmt=json`. The OEIS JSON body has shape `{ count: number, results: Array<{ number: number, name: string, data: string, offset: string }> | null }` — `results` is `null` when nothing matches. `data` is a comma-joined term string; `offset` is like `"0,4"` (first part is the sequence offset).
+`fetchFn` defaults to the global `fetch`; tests inject fakes returning fixture JSON. Real URLs used: `/api/search?q=id:A000045&fmt=json` and `/api/search?q=<encoded query>&fmt=json`. The OEIS JSON body has shape `{ count: number, results: Array<{ number: number, name: string, data: string, offset: string }> | null }` - `results` is `null` when nothing matches. `data` is a comma-joined term string; `offset` is like `"0,4"` (first part is the sequence offset).
 
 - [ ] **Step 1: Write fixtures**
 
@@ -905,7 +905,7 @@ describe('search', () => {
 - [ ] **Step 3: Run tests to verify they fail**
 
 Run: `npx vitest run tests/sequence/oeisClient.test.ts`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 4: Implement**
 
@@ -966,7 +966,7 @@ export async function search(query: string, fetchFn: FetchLike = defaultFetch): 
 }
 ```
 
-Note: `tsconfig.json` needs `"resolveJsonModule": true` added to `compilerOptions` for the fixture imports — add it in this task.
+Note: `tsconfig.json` needs `"resolveJsonModule": true` added to `compilerOptions` for the fixture imports - add it in this task.
 
 - [ ] **Step 5: Run tests to verify they pass**
 
@@ -1002,7 +1002,7 @@ export function parseBFile(text: string, cap: number): bigint[];
 export async function fetchBFile(aNumber: string, cap?: number, fetchFn?: FetchLike): Promise<bigint[]>;
 // GET /api/<A-number>/b<digits>.txt, e.g. /api/A000045/b000045.txt; cap default 10000
 export function withTerms(seq: Sequence, terms: bigint[]): Sequence;
-// same metadata, new terms — the "upgrade in place" used by the UI
+// same metadata, new terms - the "upgrade in place" used by the UI
 ```
 
 - [ ] **Step 1: Write fixtures**
@@ -1094,7 +1094,7 @@ describe('withTerms', () => {
 - [ ] **Step 3: Run tests to verify they fail**
 
 Run: `npx vitest run tests/sequence/bfile.test.ts`
-Expected: FAIL — exports missing.
+Expected: FAIL - exports missing.
 
 - [ ] **Step 4: Implement (append to `src/sequence/oeisClient.ts`)**
 
@@ -1136,7 +1136,7 @@ export function withTerms(seq: Sequence, terms: bigint[]): Sequence {
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `npx vitest run tests/sequence/bfile.test.ts`
-Expected: PASS (7 tests). Also run the full suite: `npm test` — all green.
+Expected: PASS (7 tests). Also run the full suite: `npm test` - all green.
 
 - [ ] **Step 6: Commit**
 
@@ -1288,7 +1288,7 @@ describe('percentileBands', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run tests/nullmodel`
-Expected: FAIL — modules not found.
+Expected: FAIL - modules not found.
 
 - [ ] **Step 3: Implement**
 
@@ -1477,7 +1477,7 @@ export function clearRegistry(): void;                      // test-only helper
 // tests/helpers/fakeCtx.ts
 export function fakeCtx(): { ctx: CanvasRenderingContext2D; calls: string[] };
 // Proxy that no-ops every method (recording its name in calls) and accepts any
-// property set — lets render() smoke-tests run under Node without a real canvas.
+// property set - lets render() smoke-tests run under Node without a real canvas.
 ```
 
 - [ ] **Step 1: Write the failing tests**
@@ -1536,11 +1536,11 @@ describe('fakeCtx', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run tests/viz/registry.test.ts`
-Expected: FAIL — modules not found.
+Expected: FAIL - modules not found.
 
 - [ ] **Step 3: Implement**
 
-`src/viz/types.ts` — exactly the interfaces shown above, plus:
+`src/viz/types.ts` - exactly the interfaces shown above, plus:
 
 ```ts
 export function defaultParams(specs: ParamSpec[]): Params {
@@ -1614,7 +1614,7 @@ git commit -m "feat: visualizer interface, registry, and fake-canvas test helper
 
 ---
 
-### Task 9: Basic visualizers — scatter, differences & ratios
+### Task 9: Basic visualizers - scatter, differences & ratios
 
 **Files:**
 - Create: `src/viz/scatter.ts`, `src/viz/differences.ts`, `src/viz/all.ts`
@@ -1628,12 +1628,12 @@ git commit -m "feat: visualizer interface, registry, and fake-canvas test helper
 // scatter.ts
 export const scatterViz: Visualizer;  // id 'scatter', family 'basic', minTerms 2
 // params: [{kind:'select', id:'scale', label:'Scale', default:'linear', options:['linear','log']}]
-// statistics: { value: number[] } — toNumber per index for 'linear', logMagnitude for 'log'
+// statistics: { value: number[] } - toNumber per index for 'linear', logMagnitude for 'log'
 
 // differences.ts
 export const differencesViz: Visualizer;  // id 'differences', family 'basic', minTerms 3
 // params: [{kind:'select', id:'mode', label:'Mode', default:'differences', options:['differences','ratios']}]
-// statistics: { value: number[] } — length N-1; clamped bigint differences, or
+// statistics: { value: number[] } - length N-1; clamped bigint differences, or
 // ratios toNumber(i+1)/toNumber(i) with 0 where the denominator term is 0
 
 // all.ts
@@ -1718,7 +1718,7 @@ describe('registerAll', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run tests/viz/basic.test.ts`
-Expected: FAIL — modules not found.
+Expected: FAIL - modules not found.
 
 - [ ] **Step 3: Implement**
 
@@ -1876,7 +1876,7 @@ git commit -m "feat: scatter and differences/ratios visualizers with statistics"
 
 ---
 
-### Task 10: Stats visualizers — histogram, autocorrelation
+### Task 10: Stats visualizers - histogram, autocorrelation
 
 **Files:**
 - Create: `src/viz/histogram.ts`, `src/viz/autocorrelation.ts`
@@ -1896,14 +1896,14 @@ export const histogramViz: Visualizer;  // id 'histogram', family 'stats', minTe
 //          {kind:'number', id:'bins', label:'Bins', default:20, min:4, max:60, step:1}]
 // 'terms' = clamped values; 'gaps' = differences; 'digits' = all base-10 digits pooled;
 // 'leading' = first digit of each |term| (Benford view)
-// statistics: { count: number[] } — the counts array (length = bins param)
+// statistics: { count: number[] } - the counts array (length = bins param)
 
 // autocorrelation.ts
 export function autocorrelation(values: number[], maxLag: number): number[];
 // r[0..maxLag]; r[0] === 1; r[k] = Σ(x_i-μ)(x_{i+k}-μ) / Σ(x_i-μ)²; returns zeros if variance is 0
 export const autocorrViz: Visualizer;  // id 'autocorr', family 'stats', minTerms 8
 // params: [{kind:'number', id:'maxLag', label:'Max lag', default:32, min:4, max:200, step:1}]
-// statistics: { r: number[] } — autocorrelation of clamped terms, maxLag capped at length-2
+// statistics: { r: number[] } - autocorrelation of clamped terms, maxLag capped at length-2
 ```
 
 - [ ] **Step 1: Write the failing tests**
@@ -1979,7 +1979,7 @@ describe('render smoke tests', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run tests/viz/stats.test.ts`
-Expected: FAIL — modules not found.
+Expected: FAIL - modules not found.
 
 - [ ] **Step 3: Implement**
 
@@ -2141,7 +2141,7 @@ git commit -m "feat: histogram and autocorrelation visualizers"
 
 ---
 
-### Task 11: Grid visualizers — Ulam-style spiral, mod-N grid
+### Task 11: Grid visualizers - Ulam-style spiral, mod-N grid
 
 **Files:**
 - Create: `src/viz/gridUtils.ts`, `src/viz/ulamSpiral.ts`, `src/viz/modGrid.ts`
@@ -2219,7 +2219,7 @@ describe('grid render smoke tests', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run tests/viz/grid.test.ts`
-Expected: FAIL — modules not found.
+Expected: FAIL - modules not found.
 
 - [ ] **Step 3: Implement**
 
@@ -2341,7 +2341,7 @@ git commit -m "feat: Ulam spiral and mod-N grid visualizers"
 
 ---
 
-### Task 12: Trajectory visualizers — turtle walk, digit walk
+### Task 12: Trajectory visualizers - turtle walk, digit walk
 
 **Files:**
 - Create: `src/viz/turtle.ts`, `src/viz/digitWalk.ts`
@@ -2437,7 +2437,7 @@ describe('trajectory render smoke tests', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run tests/viz/trajectory.test.ts`
-Expected: FAIL — modules not found.
+Expected: FAIL - modules not found.
 
 - [ ] **Step 3: Implement**
 
@@ -2575,7 +2575,7 @@ export const polyarcViz: Visualizer;  // id 'polyarc', family 'trajectory', minT
 //          {kind:'boolean', id:'centered', label:'Center residues', default:true}]
 ```
 
-Centered residues make low residues curve one way and high residues the other — this is what produces NCurve's organic closed forms rather than always-spiraling-left curves.
+Centered residues make low residues curve one way and high residues the other - this is what produces NCurve's organic closed forms rather than always-spiraling-left curves.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2628,7 +2628,7 @@ describe('polyarc render smoke test', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run tests/viz/polyarc.test.ts`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Implement**
 
@@ -2685,7 +2685,7 @@ export const polyarcViz: Visualizer = {
 };
 ```
 
-Update `src/viz/all.ts` — final registration list (all nine):
+Update `src/viz/all.ts` - final registration list (all nine):
 
 ```ts
 for (const v of [
@@ -2735,7 +2735,7 @@ export interface EnsembleJob {
 export interface EnsembleResult { stats: Record<string, Bands>; }
 export function runEnsemble(job: EnsembleJob, onProgress?: (done: number, total: number) => void): EnsembleResult;
 // Throws if vizId is unknown or the visualizer has no statistics().
-// Surrogate j uses seed job.seed + j — reproducible and independent per member.
+// Surrogate j uses seed job.seed + j - reproducible and independent per member.
 
 export type EnsembleMessage =
   | { type: 'progress'; done: number; total: number }
@@ -2798,7 +2798,7 @@ describe('runEnsemble', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run tests/nullmodel/ensemble.test.ts`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Implement**
 
@@ -2832,7 +2832,7 @@ export function runEnsemble(
   onProgress?: (done: number, total: number) => void,
 ): EnsembleResult {
   const viz = getVisualizer(job.vizId);
-  if (!viz.statistics) throw new Error(`Visualizer "${job.vizId}" has no statistics() — ensemble mode unavailable.`);
+  if (!viz.statistics) throw new Error(`Visualizer "${job.vizId}" has no statistics() - ensemble mode unavailable.`);
   const terms = job.terms.map((t) => BigInt(t));
   const total = Math.max(1, Math.min(1000, Math.floor(job.count)));
 
@@ -2912,7 +2912,7 @@ git commit -m "feat: ensemble runner with Web Worker wrapper and progress"
 
 ---
 
-### Task 15: App shell UI — layout, sequence panel, presets, param controls
+### Task 15: App shell UI - layout, sequence panel, presets, param controls
 
 **Files:**
 - Create: `src/ui/app.ts`, `src/ui/sequencePanel.ts`, `src/ui/paramControls.ts`, `src/ui/messages.ts`, `src/sequence/presets.ts`
@@ -2951,7 +2951,7 @@ export function buildSequencePanel(handlers: {
 }): { el: HTMLElement; setInfo(seq: Sequence): void };
 // Tabs: "A-number" | "Search" | "Custom" (paste textarea + formula input + term count).
 // Presets shelf below the tabs. setInfo fills the info card: name, linked A-number,
-// term count, source, and — for source 'oeis' — a "Load all terms" b-file button
+// term count, source, and - for source 'oeis' - a "Load all terms" b-file button
 // with a numeric cap input (default 10000); on success calls
 // handlers.onSequence(withTerms(seq, terms)).
 
@@ -3044,7 +3044,7 @@ describe('mountApp', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run tests/ui/ui.test.ts`
-Expected: FAIL — modules not found.
+Expected: FAIL - modules not found.
 
 - [ ] **Step 3: Implement**
 
@@ -3223,7 +3223,7 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
           for (const hit of hits.slice(0, 12)) {
             const li = document.createElement('li');
             const a = document.createElement('button');
-            a.textContent = `${hit.aNumber} — ${hit.name}`;
+            a.textContent = `${hit.aNumber} - ${hit.name}`;
             a.addEventListener('click', () => load(lookupById(hit.aNumber)));
             li.appendChild(a);
             results.appendChild(li);
@@ -3431,7 +3431,7 @@ export function mountApp(root: HTMLElement): void {
     if (!state.seq) {
       ctx.fillStyle = '#9aa0aa';
       ctx.font = '16px system-ui';
-      ctx.fillText('Load a sequence to begin — try a preset on the left.', 24, 40);
+      ctx.fillText('Load a sequence to begin - try a preset on the left.', 24, 40);
       return;
     }
     const viz = getVisualizer(state.vizId);
@@ -3512,7 +3512,7 @@ git commit -m "feat: app shell with sequence panel, presets, and auto-generated 
 
 ---
 
-### Task 16: Comparison modes — side-by-side, flip, ensemble bands
+### Task 16: Comparison modes - side-by-side, flip, ensemble bands
 
 **Files:**
 - Create: `src/ui/comparison.ts`
@@ -3625,7 +3625,7 @@ describe('buildComparisonBar', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run tests/ui/comparison.test.ts`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Implement `src/ui/comparison.ts`**
 
@@ -3882,14 +3882,14 @@ Append to `src/style.css`:
 
 - [ ] **Step 5: Run tests, then verify manually**
 
-Run: `npx vitest run tests/ui/comparison.test.ts` then `npm test` — all green.
+Run: `npx vitest run tests/ui/comparison.test.ts` then `npm test` - all green.
 Run: `npm run dev` and verify with A000045 + polyarc: side-by-side shows real vs shuffled clearly differing; flip toggles in place; with scatter + ensemble, bands appear after a brief "Computing…" state; changing seed/N recomputes; picking turtle disables the ensemble option.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add src/ui/comparison.ts src/ui/app.ts src/style.css tests/ui/comparison.test.ts
-git commit -m "feat: null-model comparison modes — side-by-side, flip, ensemble bands"
+git commit -m "feat: null-model comparison modes - side-by-side, flip, ensemble bands"
 ```
 
 ---
@@ -3977,7 +3977,7 @@ describe('buildSweepView', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run tests/ui/sweep.test.ts`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Implement `src/ui/sweep.ts`**
 
@@ -4087,8 +4087,8 @@ Append to `src/style.css`:
 
 - [ ] **Step 5: Run tests, then verify manually**
 
-Run: `npx vitest run tests/ui/sweep.test.ts` then `npm test` — all green.
-Run: `npm run dev` — load A019488, pick polyarc, press Sweep, choose `angle`: 12 thumbnails, clicking one adopts the value.
+Run: `npx vitest run tests/ui/sweep.test.ts` then `npm test` - all green.
+Run: `npm run dev` - load A019488, pick polyarc, press Sweep, choose `angle`: 12 thumbnails, clicking one adopts the value.
 
 - [ ] **Step 6: Commit**
 
@@ -4176,7 +4176,7 @@ describe('urlState', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run tests/ui/urlState.test.ts`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Implement `src/ui/urlState.ts`**
 
@@ -4269,12 +4269,12 @@ if (initial) {
 }
 ```
 
-where `applySeq` is the existing sequence-apply path (`state.seq = seq; panel.setInfo(seq); bar.update(...); redraw();` — factor it out of the panel handler so both share it). Add the needed imports (`lookupById`, `sequenceFromFormula`).
+where `applySeq` is the existing sequence-apply path (`state.seq = seq; panel.setInfo(seq); bar.update(...); redraw();` - factor it out of the panel handler so both share it). Add the needed imports (`lookupById`, `sequenceFromFormula`).
 
 - [ ] **Step 5: Run tests, then verify manually**
 
-Run: `npx vitest run tests/ui/urlState.test.ts` then `npm test` — all green.
-Run: `npm run dev` — load A019488 + polyarc + side mode, copy the URL into a new tab: identical view appears.
+Run: `npx vitest run tests/ui/urlState.test.ts` then `npm test` - all green.
+Run: `npm run dev` - load A019488 + polyarc + side mode, copy the URL into a new tab: identical view appears.
 
 - [ ] **Step 6: Commit**
 
@@ -4297,7 +4297,7 @@ git commit -m "feat: shareable URL hash state"
   `/api/search?...` → `https://oeis.org/search?...` and
   `/api/A######/b######.txt` → the b-file. 24h edge cache.
 
-The spec says "Cloudflare Worker at `/api/*`" — a Pages Function is exactly that (a Worker bundled with the Pages deployment), with the advantage that no separate route/zone configuration is needed: one Pages project serves both the static site and `/api/*` on the same origin, and Vite's dev proxy remains the local substitute.
+The spec says "Cloudflare Worker at `/api/*`" - a Pages Function is exactly that (a Worker bundled with the Pages deployment), with the advantage that no separate route/zone configuration is needed: one Pages project serves both the static site and `/api/*` on the same origin, and Vite's dev proxy remains the local substitute.
 
 - [ ] **Step 1: Implement `functions/api/[[path]].ts`**
 
@@ -4341,7 +4341,7 @@ Update `tsconfig.json` `include` to `["src", "tests", "functions"]`.
 # Integer Sequence Visualizer
 
 A live webpage that renders [OEIS](https://oeis.org) sequences with nine
-visualization techniques and a first-class **null-model comparison layer** —
+visualization techniques and a first-class **null-model comparison layer** -
 so you can test whether the structure you see is a property of the sequence
 or an artifact of the rendering. Inspired by a SeqFan thread on George
 Whale's NCurve (see `docs/seqfan-ncurve-thread.md`).
@@ -4370,8 +4370,8 @@ Local production check: `npm run build && npx wrangler pages dev dist`.
 
 - [ ] **Step 3: Verify**
 
-Run: `npm run build` — clean.
-Run: `npm test` — full suite green.
+Run: `npm run build` - clean.
+Run: `npm test` - full suite green.
 Optional (needs network): `npx wrangler pages dev dist` and confirm `curl http://127.0.0.1:8788/api/search?q=id:A000045&fmt=json` returns OEIS JSON and `/api/anything-else` returns 404.
 
 - [ ] **Step 4: Commit**
@@ -4385,7 +4385,7 @@ git commit -m "feat: Cloudflare Pages Function OEIS proxy and README"
 
 ## Plan self-review notes
 
-- **Spec coverage:** all spec sections map to tasks — data layer (2–6), presets (15), visualizers ×9 (9–13), surrogates + ensemble + Worker (7, 14), comparison modes (16), sweep (17), URL state (18), error handling (15–16 banners + per-module throws), testing strategy (every task), deployment (1, 19). The spec's "Cloudflare Worker" is delivered as a Pages Function — same runtime, same-origin `/api/*`, less configuration; noted in Task 19.
-- **Ensemble bands rendering:** the spec's "bands under the real curve" is delivered as a dedicated statistic-vs-index chart in ensemble mode (comparison-owned), because visualizer-internal axes aren't exposed. This satisfies the spec's intent — seeing which statistics escape the null — without coupling the overlay to per-visualizer coordinate systems.
+- **Spec coverage:** all spec sections map to tasks - data layer (2–6), presets (15), visualizers ×9 (9–13), surrogates + ensemble + Worker (7, 14), comparison modes (16), sweep (17), URL state (18), error handling (15–16 banners + per-module throws), testing strategy (every task), deployment (1, 19). The spec's "Cloudflare Worker" is delivered as a Pages Function - same runtime, same-origin `/api/*`, less configuration; noted in Task 19.
+- **Ensemble bands rendering:** the spec's "bands under the real curve" is delivered as a dedicated statistic-vs-index chart in ensemble mode (comparison-owned), because visualizer-internal axes aren't exposed. This satisfies the spec's intent - seeing which statistics escape the null - without coupling the overlay to per-visualizer coordinate systems.
 - **Type consistency check:** `SequenceView` accessor names (`toNumber`, `logMagnitude`, `mod`, `digits`, `sign`, `term`, `length`) match across Tasks 2 and 9–13; `Bands` `{lo, median, hi}` matches across 7, 14, 16; `EnsembleJob` fields match between 14 and 16; `withTerms` (6) used by 15–16; `strokePath` exported from turtle (12) and consumed by digitWalk (12) and polyarc (13).
 

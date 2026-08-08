@@ -25,7 +25,7 @@ export function spiralCoord(i: number): { x: number; y: number } {
  * All spiral coordinates up to n in a single O(n) walk.
  *
  * spiralCoord(i) restarts the walk on every call, so building the whole list
- * from it is O(n^2) — render already paid that, and locate() would have paid
+ * from it is O(n^2) - render already paid that, and locate() would have paid
  * it again on every pointer move.
  */
 export function spiralCoords(n: number): Array<{ x: number; y: number }> {

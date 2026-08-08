@@ -24,7 +24,7 @@ export function runEnsemble(
   onProgress?: (done: number, total: number) => void,
 ): EnsembleResult {
   const viz = getVisualizer(job.vizId);
-  if (!viz.statistics) throw new Error(`Visualizer "${job.vizId}" has no statistics() — ensemble mode unavailable.`);
+  if (!viz.statistics) throw new Error(`Visualizer "${job.vizId}" has no statistics() - ensemble mode unavailable.`);
   const terms = job.terms.map((t) => BigInt(t));
   const total = Math.max(1, Math.min(1000, Math.floor(job.count)));
 

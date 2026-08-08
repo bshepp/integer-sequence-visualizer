@@ -15,7 +15,7 @@ const PAD = 0.1;
 /**
  * The sequence-space -> screen mapping that strokePath used to compute inline
  * and then throw away. Extracted so a click can be inverted through the exact
- * same numbers the drawing used — anything else would put the marker
+ * same numbers the drawing used - anything else would put the marker
  * somewhere the line is not.
  */
 export function pathTransform(pts: Pt[], size: Size): PathTransform {
@@ -41,7 +41,7 @@ export function toScreen(t: PathTransform, p: Pt): Pt {
 
 /**
  * Nearest point to a screen coordinate, or null if nothing is within
- * maxDist pixels. O(n) — fine for a click, and fine for rAF-throttled hover
+ * maxDist pixels. O(n) - fine for a click, and fine for rAF-throttled hover
  * up to roughly 50k points. Bucket only if a specific view measurably drags.
  */
 export function nearestIndex(

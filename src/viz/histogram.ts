@@ -20,7 +20,7 @@ export function computeHistogram(
   // independent statistics() calls (one per surrogate draw) as though bin i
   // means the same value interval in every draw. Without a shared domain
   // each draw computes its own lo/hi from its own values, so bin i is a
-  // *different* interval per draw — the stacked "band" is comparing
+  // *different* interval per draw - the stacked "band" is comparing
   // incommensurate bins and can report the real sequence as wildly outside
   // the null envelope when it is not (see task FR, C1: measured band 2..13
   // vs a fixed-domain band of 3..107 for the same real count of 46). The
@@ -29,7 +29,7 @@ export function computeHistogram(
   // EnsembleJob.params, the same way logScaleOverride already is. When
   // absent, direct/unit-test callers keep today's per-call auto-derived
   // behavior. Values outside the supplied domain are clamped into the
-  // first/last bin rather than dropped — dropping would silently change the
+  // first/last bin rather than dropped - dropping would silently change the
   // total count, its own silent wrongness.
   const { lo, hi } = domain ?? minMax(values);
   const span = hi - lo || 1;
@@ -43,7 +43,7 @@ export function computeHistogram(
   return { edges, counts };
 }
 
-// A single term beyond float64-safe range is harmless in a value histogram —
+// A single term beyond float64-safe range is harmless in a value histogram -
 // it's only when 2+ distinct terms collapse onto the same clamped value that
 // the chart becomes misleading (they all pile into one bin).
 const LOG_SAFE_THRESHOLD = 15.9; // log10(2^53) ≈ 15.95
@@ -64,12 +64,12 @@ export function shouldUseLogScale(seq: SequenceView): boolean {
 // it happens to receive. This matters for ensemble mode: the real line calls
 // statistics() once on the real sequence, while runEnsemble calls it once per
 // surrogate draw. shouldUseLogScale(seq) is exact per-sequence, but nothing
-// guarantees two different sequences agree on it — 'permutation' surrogates
+// guarantees two different sequences agree on it - 'permutation' surrogates
 // preserve the value multiset so they always agree by construction, but
 // 'difference' and 'matched' surrogates do not, so a given draw can pick a
 // different scale than the real line. Mixing scales across draws (or against
 // the real line) means the bin edges each draw computes are not on
-// comparable units — the exact "silently wrong, not a crash" failure mode
+// comparable units - the exact "silently wrong, not a crash" failure mode
 // BV-2's adaptive fallback exists to eliminate, just reintroduced across
 // draws instead of within one sequence. The caller (src/ui/app.ts) computes
 // the decision once from the real sequence and threads it into both the
@@ -84,10 +84,10 @@ export function targetValues(seq: SequenceView, target: string, logScaleOverride
     // clamp-collapse but left 'gaps' on clampBig alone: for a monotone
     // fast-growing sequence (e.g. Fibonacci) consecutive gaps overflow
     // float64-safe range too, and clamping piles them all into the same
-    // MAX_SAFE_INTEGER value — measured: Fibonacci(300) gaps put 220 of 299
+    // MAX_SAFE_INTEGER value - measured: Fibonacci(300) gaps put 220 of 299
     // values in histogram's last bin. Reuse the same overflow decision
     // (shouldUseLogScale / logScaleOverride) 'terms' already uses, and when
-    // it fires, use a *signed* log-magnitude transform — unlike terms (mostly
+    // it fires, use a *signed* log-magnitude transform - unlike terms (mostly
     // non-negative for real OEIS sequences), gaps routinely go negative for
     // non-monotone sequences, and an unsigned transform would relabel a
     // decrease as an increase of the same size.
@@ -118,7 +118,7 @@ export function targetValues(seq: SequenceView, target: string, logScaleOverride
 // Exported: differences.ts and autocorrelation.ts make the same kind of
 // per-sequence log/linear decision (for their own overflow-prone
 // computations) and need the same ensemble cross-draw sync story
-// logScaleOverride documents above — one shared params key/reader so every
+// logScaleOverride documents above - one shared params key/reader so every
 // site agrees on how the override is spelled, rather than three
 // near-identical readers drifting apart.
 export function overrideFromParams(params: Params): boolean | undefined {
@@ -127,7 +127,7 @@ export function overrideFromParams(params: Params): boolean | undefined {
 
 // See computeHistogram's `domain` param doc above for why this exists.
 // Encoded as two numbers (not one {lo,hi} object) because ParamValue is
-// `number | string | boolean` — Params has no object variant.
+// `number | string | boolean` - Params has no object variant.
 function domainFromParams(params: Params): { lo: number; hi: number } | undefined {
   const lo = params.histogramDomainLo;
   const hi = params.histogramDomainHi;

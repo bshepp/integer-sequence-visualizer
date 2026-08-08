@@ -223,7 +223,7 @@ export function mountApp(root: HTMLElement): void {
     const viz = getVisualizer(state.vizId);
     explain.show(
       viz.name,
-      `${viz.explain.long}\n\nNull model — ${comparison.surrogate}: ${SURROGATE_EXPLAIN[comparison.surrogate].long}`,
+      `${viz.explain.long}\n\nNull model - ${comparison.surrogate}: ${SURROGATE_EXPLAIN[comparison.surrogate].long}`,
     );
   });
   topbar.appendChild(explainBtn);
@@ -279,7 +279,7 @@ export function mountApp(root: HTMLElement): void {
     return { size, panelW: comparison.mode === 'side' ? size.width / 2 - 1 : size.width };
   }
 
-  // Pointer position in CSS pixels relative to the canvas — the coordinate
+  // Pointer position in CSS pixels relative to the canvas - the coordinate
   // space every visualizer's locate() works in, since drawScene sets the 2D
   // transform to dpr.
   function canvasPoint(e: { clientX: number; clientY: number }): { x: number; y: number } {
@@ -292,7 +292,7 @@ export function mountApp(root: HTMLElement): void {
    *
    * In side-by-side the right half draws a *different* sequence, so it gets
    * hit-tested against that surrogate rather than being ignored (which is what
-   * it used to do) or — much worse — reported using real-sequence indices.
+   * it used to do) or - much worse - reported using real-sequence indices.
    */
   function hitAt(pt: { x: number; y: number }): { hit: Hit; seq: Sequence; panel: 'real' | 'null' } | null {
     const viz = getVisualizer(state.vizId);
@@ -383,7 +383,7 @@ export function mountApp(root: HTMLElement): void {
     // The URL encodes the whole view as base64, so selecting it out of the
     // address bar is genuinely awkward -- which is the thing people do most.
     const url = location.href;
-    const done = () => showNotice('Link copied — it reproduces this exact view.');
+    const done = () => showNotice('Link copied - it reproduces this exact view.');
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(url).then(done).catch(() => showError('Could not copy the link.'));
     } else {
@@ -469,7 +469,7 @@ export function mountApp(root: HTMLElement): void {
 
   /**
    * Identity line for a rendered panel: which sequence, and how many terms of
-   * it are actually drawn. The term count matters as much as the A-number —
+   * it are actually drawn. The term count matters as much as the A-number -
    * the same sequence at 80 terms and at 2,001 terms produces very different
    * pictures, and without this the two are indistinguishable in a screenshot.
    */
@@ -479,7 +479,7 @@ export function mountApp(root: HTMLElement): void {
   }
 
   function panelLabel(role: string, seq: Sequence): string {
-    return role ? `${role} — ${seqLabel(seq)}` : seqLabel(seq);
+    return role ? `${role} - ${seqLabel(seq)}` : seqLabel(seq);
   }
 
   function drawScene(): void {
@@ -511,7 +511,7 @@ export function mountApp(root: HTMLElement): void {
     if (!state.seq) {
       ctx.fillStyle = '#9aa0aa';
       ctx.font = '16px system-ui';
-      ctx.fillText('Load a sequence to begin — try a preset on the left.', 24, 40);
+      ctx.fillText('Load a sequence to begin - try a preset on the left.', 24, 40);
       return;
     }
     const viz = getVisualizer(state.vizId);
@@ -574,7 +574,7 @@ export function mountApp(root: HTMLElement): void {
       viz.render(view, { ...state.params, ...styleToParams(style) }, ctx, { width, height });
       ctx.fillStyle = '#9aa0aa';
       ctx.font = '12px system-ui';
-      ctx.fillText(`${seqLabel(state.seq)} — real (colour) over ${comparison.surrogate} null (grey)`, 10, 16);
+      ctx.fillText(`${seqLabel(state.seq)} - real (colour) over ${comparison.surrogate} null (grey)`, 10, 16);
       if (pinnedIndex !== null && viz.position) {
         const p = viz.position(view, state.params, { width, height }, pinnedIndex);
         if (p) drawMarker(ctx, p, '#f7768e');
@@ -616,7 +616,7 @@ export function mountApp(root: HTMLElement): void {
         // *domain* rather than the scale: computeHistogram derives lo/hi
         // from whichever values it's handed, so left alone, every surrogate
         // draw bins into its own value range and percentileBands stacks
-        // bin i across draws as though it meant the same interval in each —
+        // bin i across draws as though it meant the same interval in each -
         // it doesn't (task FR, C1: measured band 2..13 vs a fixed-domain
         // band of 3..107 for the same real bin-0 count of 46, a false "far
         // outside the null envelope" on the one claim this product exists
@@ -650,10 +650,10 @@ export function mountApp(root: HTMLElement): void {
             // Leaving ensembleKey pointed at this failed job's key would
             // make every later redraw take the "already dispatched" branch
             // above and keep repainting "Computing…" forever, even though
-            // nothing is actually running anymore — the error banner
+            // nothing is actually running anymore - the error banner
             // auto-dismisses after 6s, but that false "computing" text
             // would not. Clearing it lets the next redraw (from any
-            // trigger — a param tweak, a resize, …) attempt the job again
+            // trigger - a param tweak, a resize, …) attempt the job again
             // instead of being silently wedged.
             ensembleKey = '';
             ensembleFailed = true;
@@ -680,10 +680,10 @@ export function mountApp(root: HTMLElement): void {
       } else if (ensembleFailed) {
         ctx.fillStyle = '#f7768e';
         ctx.font = '14px system-ui';
-        // "the next redraw retries" is literal — a window resize retries
-        // too, not just a parameter change — so this says "will retry"
+        // "the next redraw retries" is literal - a window resize retries
+        // too, not just a parameter change - so this says "will retry"
         // rather than naming one specific trigger.
-        ctx.fillText('Ensemble computation failed — will retry automatically.', 24, 40);
+        ctx.fillText('Ensemble computation failed - will retry automatically.', 24, 40);
       } else {
         ctx.fillStyle = '#9aa0aa';
         ctx.font = '14px system-ui';
@@ -708,7 +708,7 @@ export function mountApp(root: HTMLElement): void {
   // anything that isn't valid encoded JSON (leaving current state untouched).
   // `presetSeq` short-circuits the sequence restore at the end: a gallery
   // entry already carries its own bundled terms, and the bulk data file caps
-  // stored terms per sequence — so letting the normal lookup run would swap
+  // stored terms per sequence - so letting the normal lookup run would swap
   // the 600-term walk the visitor just clicked for an 80-term one. Same
   // A-number, same attribution, just the fuller term list they were shown.
   function applyHash(hash: string, presetSeq?: Sequence): void {
@@ -743,7 +743,7 @@ export function mountApp(root: HTMLElement): void {
       if (SURROGATES.includes(decoded.surrogate)) comparison.surrogate = decoded.surrogate;
       if (typeof decoded.seed === 'number') comparison.seed = decoded.seed;
       // Absent on links encoded before this field existed (or any other
-      // malformed hash) — keep whatever ensembleN already is rather than
+      // malformed hash) - keep whatever ensembleN already is rather than
       // clobbering it with undefined/NaN.
       if (typeof decoded.ensembleN === 'number' && Number.isFinite(decoded.ensembleN)) {
         comparison.ensembleN = decoded.ensembleN;
@@ -780,7 +780,7 @@ export function mountApp(root: HTMLElement): void {
   let overlayEl: HTMLElement | null = null;
   // Once dismissed, stays dismissed for the session: re-mounting the landing
   // after a parameter tweak would read as a bug, not a feature. Explicit
-  // navigation clears it — see applyHash.
+  // navigation clears it - see applyHash.
   let landingDismissed = false;
 
   /** Navigate to a reserved page. Goes through the hash so it is linkable. */
@@ -792,12 +792,12 @@ export function mountApp(root: HTMLElement): void {
   }
 
   // While the landing covers the viewport the engine behind it must not be
-  // reachable by Tab and must not be announced — otherwise a keyboard user
+  // reachable by Tab and must not be announced - otherwise a keyboard user
   // tabs straight off the landing into controls they cannot see. `inert`
   // handles focus and the accessibility tree together.
   function setEngineInert(inert: boolean): void {
     // The skip link is a direct child of root rather than of the chrome, so
-    // it has to be listed explicitly — otherwise Tab escapes a modal onto a
+    // it has to be listed explicitly - otherwise Tab escapes a modal onto a
     // link whose target is itself inert, stranding focus.
     for (const el of [skip, header, layout, footer]) el.toggleAttribute('inert', inert);
   }
@@ -823,7 +823,7 @@ export function mountApp(root: HTMLElement): void {
     overlayEl = buildLanding({
       onAbout: () => goTo(ABOUT_HASH),
       // "Open the full engine" lands on the hero's own view rather than an
-      // empty canvas telling the visitor to load a sequence — which is the
+      // empty canvas telling the visitor to load a sequence - which is the
       // cold open this whole screen exists to replace.
       onOpen: () => { openEntry(heroEntry()); picker.focus(); },
       onPick: openEntry,
@@ -867,7 +867,7 @@ export function mountApp(root: HTMLElement): void {
   window.addEventListener('hashchange', () => {
     // Ignore echoes of our own syncUrl writes. Per spec, history.replaceState
     // shouldn't fire hashchange at all, but that's not guaranteed across
-    // browsers — without this guard a self-inflicted event here would
+    // browsers - without this guard a self-inflicted event here would
     // re-apply state, redraw, call syncUrl, and potentially repeat.
     if (location.hash === lastHashWritten) return;
     applyHash(location.hash);
@@ -875,7 +875,7 @@ export function mountApp(root: HTMLElement): void {
   if (routeFor(location.hash) !== 'engine') {
     // Mount the landing BEFORE the first redraw: syncUrl is suppressed only
     // while landingEl is set, and a redraw ahead of it would replaceState a
-    // default engine hash over the bare "/" — after which a reload decodes
+    // default engine hash over the bare "/" - after which a reload decodes
     // that hash and the landing never appears again.
     showLanding();
     redraw();

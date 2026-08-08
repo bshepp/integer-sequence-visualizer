@@ -3,7 +3,7 @@ import type { UrlState } from '../ui/urlState';
 import type { SurrogateType } from '../nullmodel/surrogates';
 
 /**
- * A recorded measurement backing a verdict — everything needed to reproduce
+ * A recorded measurement backing a verdict - everything needed to reproduce
  * the claim deterministically, so tests/gallery/verdicts.test.ts can recompute
  * it rather than trusting the caption.
  */

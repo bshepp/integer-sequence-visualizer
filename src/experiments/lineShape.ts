@@ -41,7 +41,7 @@ const range = (xs: number[]): number => {
  * the drawn path moves when *only the join changes*, and the yardstick is how
  * much it moves when the sequence itself is replaced by a permutation of its
  * own terms. If shuffling the sequence moves the measure more than restyling
- * it does, shape is cosmetic — anything visible that survives a reshuffle
+ * it does, shape is cosmetic - anything visible that survives a reshuffle
  * cannot be something the join produced.
  *
  * Deterministic: seeded surrogates, no canvas, no pixels.

@@ -25,7 +25,7 @@ describe('scatterViz.statistics', () => {
 
   it('log scale sign-folds negative terms, matching render exactly (task FR, I4)', () => {
     // Measured before the fix: statistics gave 3,2,1,1,2,3 (unsigned) while
-    // render gave -3,-2,-1,1,2,3 (sign-folded) for the same input — an
+    // render gave -3,-2,-1,1,2,3 (sign-folded) for the same input - an
     // ensemble band computed on the wrong shape entirely (monotone real
     // line compared against a V-shaped null band, or vice versa).
     const terms = [-1000n, -100n, -10n, 10n, 100n, 1000n];

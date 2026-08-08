@@ -47,7 +47,7 @@ export function buildStyleControls(
     hueEnd.value = String(style.hueEnd);
     // The hue sliders do nothing in 'none' mode, and the end hue does nothing
     // in 'flat' mode. A live-looking control that cannot affect anything reads
-    // as broken — the same defect fixed on the null-model select in round 1.
+    // as broken - the same defect fixed on the null-model select in round 1.
     hueStart.disabled = style.colorMode === 'none';
     hueEnd.disabled = style.colorMode !== 'spectrum';
   }

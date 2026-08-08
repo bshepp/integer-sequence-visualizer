@@ -39,7 +39,7 @@ export async function lookupById(aNumber: string, fetchFn: FetchLike = defaultFe
   const res = await fetchFn(`/data/seq/${shardFor(id)}.json`);
   if (!res.ok) {
     // A 5xx means the /data/* origin itself is broken (bad deploy, outage),
-    // which would otherwise look identical to "every sequence is missing" —
+    // which would otherwise look identical to "every sequence is missing" -
     // surface that distinctly rather than folding it into the not-found
     // message. A missing shard normally 404s (unknown/out-of-range id) and
     // is treated the same as a present-shard-but-missing-key below.
@@ -56,7 +56,7 @@ export async function lookupById(aNumber: string, fetchFn: FetchLike = defaultFe
 // sequence) is tens of MB uncompressed. It is fetched at most once per page
 // load and cached in this module-level promise; every search() call reuses
 // it. clearSearchIndexCache() exists solely so tests can reset that cache
-// between cases — production code never needs to call it.
+// between cases - production code never needs to call it.
 let searchIndexPromise: Promise<OeisSearchHit[]> | null = null;
 
 export function clearSearchIndexCache(): void {
@@ -120,7 +120,7 @@ export async function search(query: string, fetchFn: FetchLike = defaultFetch): 
 export function parseBFile(text: string, cap: number): bigint[] {
   // Number('') === 0 (and a cleared/garbage cap input can also produce NaN
   // or a negative number), so a caller that forwards a blindly-coerced UI
-  // field can ask for `cap: 0` — which used to silently succeed, returning
+  // field can ask for `cap: 0` - which used to silently succeed, returning
   // zero terms only for the pathological "no data lines" case but otherwise
   // returning whatever `terms.length >= cap` (0 >= 0, true on the very first
   // parsed line) allows, i.e. a one-term sequence with no visible error.

@@ -1,4 +1,4 @@
-# OEIS Sequence Visualizer — Design
+# OEIS Sequence Visualizer - Design
 
 **Date:** 2026-08-05
 **Status:** Approved by user (brainstorming session)
@@ -47,7 +47,7 @@ Static frontend (Vite + TypeScript, **no UI framework**) rendering to
 Rationale: rendering is entirely client-side (Canvas 2D handles hundreds of
 thousands of points; JS BigInt handles OEIS-scale integers; Web Workers keep
 ensembles off the main thread). The only thing a static site cannot do is
-call oeis.org directly (no CORS headers) — hence the Worker.
+call oeis.org directly (no CORS headers) - hence the Worker.
 
 ### Modules
 
@@ -91,10 +91,10 @@ composition: fixed sequence, one parameter varied, thumbnail grid.
   integer arithmetic (`+ - * / % ^`), parentheses, and a few functions
   (`abs`, `min`, `max`, `gcd`); user chooses n-range. Live validation with
   inline errors.
-- **Presets shelf**: the SeqFan thread's named finds — A000376 (French
+- **Presets shelf**: the SeqFan thread's named finds - A000376 (French
   curve), A000464 (pie crust), A000828 (propeller), A001051 (tire), A001553
   (saw blade), A001571, A001603, A019488 (Sloane's), A039188 (record disc),
-  A039685 (zipper), A039970 (Slinky) — plus classics (A000045 Fibonacci,
+  A039685 (zipper), A039970 (Slinky) - plus classics (A000045 Fibonacci,
   A000040 primes, A005132 Recamán).
 
 OEIS main-entry lookups yield ~30–60 terms immediately; the b-file button
@@ -123,7 +123,7 @@ what makes side-by-side, flip, ensemble, and sweep all "call it again with
 different inputs."
 
 `ParamSpec` covers: number (range slider), integer, select, boolean, color
-scheme. Each has id, label, default, and (for numbers) min/max/step —
+scheme. Each has id, label, default, and (for numbers) min/max/step -
 enough for the sweep view to pick a parameter and a range automatically.
 
 ### Initial roster (9)
@@ -145,13 +145,13 @@ enough for the sweep view to pick a parameter and a range automatically.
 Three surrogate generators, all seeded (reproducible; seed shown in UI and
 encoded in the share URL):
 
-1. **Permutation surrogate** — shuffle the sequence's own terms. Preserves
+1. **Permutation surrogate** - shuffle the sequence's own terms. Preserves
    the exact value multiset; destroys order. Tests: "is the *order* doing
    the work?"
-2. **Difference surrogate** — shuffle first differences, re-accumulate from
+2. **Difference surrogate** - shuffle first differences, re-accumulate from
    the first term. Preserves increment multiset and overall growth; destroys
    increment ordering. The right null for trajectory visualizers.
-3. **Matched-random** — fit a growth envelope (linear vs. exponential chosen
+3. **Matched-random** - fit a growth envelope (linear vs. exponential chosen
    by regression fit on log scale), sample fresh terms within it. The
    "generic sequence with these gross statistics" baseline.
 
@@ -212,7 +212,7 @@ Vitest, focused on logic that fails subtly:
   oversized files hitting the cap).
 - Formula evaluator: precedence, integer semantics, error cases.
 - Paste parser: OEIS copy-paste formats, brackets, negatives.
-- Surrogate generators — invariants: permutation preserves exact multiset;
+- Surrogate generators - invariants: permutation preserves exact multiset;
   difference surrogate preserves first term and increment multiset;
   matched-random respects envelope; identical seeds → identical output.
 - Visualizer smoke tests: each renders to an offscreen canvas without

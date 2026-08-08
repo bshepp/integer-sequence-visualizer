@@ -70,7 +70,7 @@ export function paintEntry(entry: GalleryEntry, canvas: HTMLCanvasElement, w: nu
 
   // Same identity line the engine draws, at the top for the same reason: these
   // images get screenshotted and shared, and a picture of a sequence that does
-  // not say which sequence — or how many terms of it — is not much use.
+  // not say which sequence - or how many terms of it - is not much use.
   const who = entry.sequence.aNumber ?? entry.sequence.name;
   const identity = `${who} · ${entry.sequence.terms.length.toLocaleString()} terms`;
   const caption = (text: string, x: number) => {
@@ -85,7 +85,7 @@ export function paintEntry(entry: GalleryEntry, canvas: HTMLCanvasElement, w: nu
     ctx.strokeStyle = '#333';
     ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
     paint(surrogateSequence(entry.sequence, entry.state.surrogate, entry.state.seed), w / 2 + 1, half);
-    caption(`real — ${identity}`, 8);
+    caption(`real - ${identity}`, 8);
     caption(`${entry.state.surrogate} null`, w / 2 + 9);
   } else {
     paint(entry.sequence, 0, w);
@@ -112,12 +112,12 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   const lede = document.createElement('p');
   lede.className = 'landing-lede';
   lede.textContent =
-    'Integer sequences make beautiful pictures. Some of that beauty is in the numbers, and some of it is drawn by the technique. This tool shows you both at once — the sequence, and a null model built from it — so you can tell which is which.';
+    'Integer sequences make beautiful pictures. Some of that beauty is in the numbers, and some of it is drawn by the technique. This tool shows you both at once - the sequence, and a null model built from it - so you can tell which is which.';
 
   const heroFigure = document.createElement('figure');
   heroFigure.className = 'landing-hero';
   // The hero is an image AND a link into the engine, like every other image
-  // on this page — clicking the picture you are being pitched on should open
+  // on this page - clicking the picture you are being pitched on should open
   // that exact view.
   const heroButton = document.createElement('button');
   heroButton.className = 'landing-hero-button';
@@ -156,7 +156,7 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
 
   const stripLabel = document.createElement('h2');
   stripLabel.className = 'landing-strip-label';
-  stripLabel.textContent = 'More examples — click any to open it in the engine';
+  stripLabel.textContent = 'More examples - click any to open it in the engine';
 
   const strip = document.createElement('div');
   strip.className = 'gallery-strip';

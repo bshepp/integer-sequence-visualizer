@@ -48,7 +48,7 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
       const tab = tabs[i]!;
       tab.setAttribute('aria-selected', String(chosen));
       // Roving tabindex: only the selected tab is reachable by Tab, so the
-      // whole tablist is one stop rather than three — arrow keys move within.
+      // whole tablist is one stop rather than three - arrow keys move within.
       tab.tabIndex = chosen ? 0 : -1;
       tab.classList.toggle('active', chosen);
       panes[name]!.hidden = !chosen;
@@ -123,7 +123,7 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     results.className = 'search-results';
     // The search index is tens of MB uncompressed and is fetched at most
     // once (oeisClient caches it module-wide); only that first, genuinely
-    // slow fetch should disable the button and show a loading message —
+    // slow fetch should disable the button and show a loading message -
     // subsequent searches reuse the cached index and stay instant.
     let indexLoaded = false;
     const run = () => {
@@ -143,7 +143,7 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
           for (const hit of hits.slice(0, 12)) {
             const li = document.createElement('li');
             const a = document.createElement('button');
-            a.textContent = `${hit.aNumber} — ${hit.name}`;
+            a.textContent = `${hit.aNumber} - ${hit.name}`;
             a.addEventListener('click', () => load(lookupById(hit.aNumber)));
             li.appendChild(a);
             results.appendChild(li);
@@ -235,14 +235,14 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
 
   const bfileHint = document.createElement('p');
   bfileHint.className = 'bfile-hint';
-  bfileHint.textContent = 'Most sequences only get interesting with more terms — this fetches the full list from OEIS.';
+  bfileHint.textContent = 'Most sequences only get interesting with more terms - this fetches the full list from OEIS.';
 
   bfileBtn.addEventListener('click', () => {
     const seq = loadedSeq;
     if (!seq?.aNumber) return;
     bfileBtn.disabled = true;
     // Number('') === 0 for a cleared field, and parseBFile(text, 0) used to
-    // silently return a one-term sequence instead of erroring — guard here too
+    // silently return a one-term sequence instead of erroring - guard here too
     // so the common "cleared the input, clicked load" slip doesn't even reach
     // that path. Math.max(1, …) only catches that specific case: non-numeric
     // garbage still coerces to NaN (Math.max with NaN is NaN), which

@@ -23,7 +23,7 @@ export function strokePath(
   style: RenderStyle = DEFAULT_STYLE,
 ): void {
   // The bounding-box maths (and its loop-based min/max, which exists because
-  // a 2001-term b-file's digit walk produces 418,487 points — past V8's ~250k
+  // a 2001-term b-file's digit walk produces 418,487 points - past V8's ~250k
   // spread-argument limit) now lives in pathTransform, so locate() can invert
   // exactly the numbers this draws with.
   const t = pathTransform(pts, size);

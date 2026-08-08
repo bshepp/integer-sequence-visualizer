@@ -9,7 +9,7 @@ import type { Pt } from './pathTransform';
  * by less than the null model moves it, then the shape cannot be responsible
  * for any structure you think you see.
  *
- * Overlap where the stroke crosses itself is not subtracted — the measure is
+ * Overlap where the stroke crosses itself is not subtracted - the measure is
  * additive swept area, and the comparison is like-for-like across shapes on
  * the same path, so the bias is identical in every arm of the experiment.
  */

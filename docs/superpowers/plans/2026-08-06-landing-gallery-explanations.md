@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Give the site a front door — a landing screen that renders a real-vs-null comparison on first paint — plus the explanation corpus, band legend, and cursor readout that make every view legible on its own.
+**Goal:** Give the site a front door - a landing screen that renders a real-vs-null comparison on first paint - plus the explanation corpus, band legend, and cursor readout that make every view legible on its own.
 
 **Architecture:** The landing is an overlay state of the existing SPA, resolved in `applyHash` alongside the existing share-link path; a gallery entry is a saved `UrlState` plus prose plus a bundled `Sequence`, so clicking an image reuses the share-link path verbatim. Explanations become a required field on the `Visualizer` interface so `tsc` enforces coverage. Cursor identification adds an optional inverse pair (`locate`/`position`) built from the sequence-space→screen transforms the visualizers already compute and currently discard.
 
@@ -13,7 +13,7 @@
 - **No runtime npm dependencies.** Nothing may be added to `dependencies` in `package.json`.
 - **No `Math.random()` anywhere in `src/`.** All randomness goes through `mulberry32` (`src/nullmodel/rng.ts`) with an explicit seed.
 - **Sequence terms are `bigint` throughout.** `SequenceView` is the sole float64 boundary.
-- **No `Math.min(...array)` / `Math.max(...array)` spreads** over anything that scales with sequence length — use `minMax` from `src/viz/mathUtils.ts`. A 2001-term b-file's digit walk produces 418,487 points, past V8's ~250k argument limit.
+- **No `Math.min(...array)` / `Math.max(...array)` spreads** over anything that scales with sequence length - use `minMax` from `src/viz/mathUtils.ts`. A 2001-term b-file's digit walk produces 418,487 points, past V8's ~250k argument limit.
 - **OEIS attribution must survive.** Any sequence displayed with an A-number keeps that A-number and links to `https://oeis.org/<aNumber>`.
 - **Every verdict claim in the gallery must be computed, not asserted.** See Task 14.
 - Run `npm test` (Vitest) and `npm run build` (`tsc --noEmit && vite build`) before every commit.
@@ -27,7 +27,7 @@
 
 | File | Responsibility |
 | --- | --- |
-| `src/viz/hit.ts` | The `Hit` union — what `locate` returns. No logic. |
+| `src/viz/hit.ts` | The `Hit` union - what `locate` returns. No logic. |
 | `src/viz/pathTransform.ts` | Sequence-space→screen transform for path visualizers, extracted from `strokePath`; plus `nearestIndex`. |
 | `src/gallery/entries.ts` | The curated `GalleryEntry[]`, with bundled sequences and evidence. |
 | `src/gallery/types.ts` | `GalleryEntry`, `Evidence` types. |
@@ -123,11 +123,11 @@ describe('nested percentile levels', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/nullmodel/bands.test.ts`
-Expected: FAIL — `DEFAULT_LEVELS` and `bandAt` are not exported; `b.levels` is undefined.
+Expected: FAIL - `DEFAULT_LEVELS` and `bandAt` are not exported; `b.levels` is undefined.
 
 - [ ] **Step 3: Write the implementation**
 
-Delete the existing `export interface Bands { lo: number[]; median: number[]; hi: number[]; }` on line 1 — the private `percentile` helper below it stays exactly as it is — and replace everything from the old `percentileBands` onward with:
+Delete the existing `export interface Bands { lo: number[]; median: number[]; hi: number[]; }` on line 1 - the private `percentile` helper below it stays exactly as it is - and replace everything from the old `percentileBands` onward with:
 
 ```ts
 export interface BandLevel { pct: number; lo: number[]; hi: number[]; }
@@ -189,7 +189,7 @@ In `src/ui/comparison.ts`, `isDegenerateBand` reads `band.lo`/`band.hi`. Replace
 ```ts
 // Degenerate = the *widest* level has no width, i.e. no surrogate draw moved
 // this statistic at all. NaN widths compare false against epsilon and so read
-// as "not degenerate" — intentional fail-safe: drawing a possibly odd-looking
+// as "not degenerate" - intentional fail-safe: drawing a possibly odd-looking
 // band beats asserting a "zero width" explanation we cannot confirm. An empty
 // level is vacuously degenerate (every() on []); harmless, since
 // drawEnsembleChart has nothing to plot for a zero-length band regardless.
@@ -273,7 +273,7 @@ describe('ensemble chart legend', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/comparison.test.ts -t legend`
-Expected: FAIL — no legend text is drawn.
+Expected: FAIL - no legend text is drawn.
 
 - [ ] **Step 3: Implement the legend**
 
@@ -281,7 +281,7 @@ In `src/ui/comparison.ts`, add above `drawEnsembleChart`:
 
 ```ts
 // Drawn once per statistic panel. Without this the chart is a blue smear, a
-// dashed grey line and a pink line with nothing saying which is which — the
+// dashed grey line and a pink line with nothing saying which is which - the
 // single most important thing on screen was unlabelled.
 function drawLegend(ctx: CanvasRenderingContext2D, band: Bands, left: number, top: number): void {
   const items: Array<{ swatch: string; dashed?: boolean; label: string }> = [
@@ -392,7 +392,7 @@ describe('visualizer explanations', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/viz/explain.test.ts`
-Expected: FAIL — `v.explain` is undefined.
+Expected: FAIL - `v.explain` is undefined.
 
 - [ ] **Step 3: Add the required field to the interface**
 
@@ -435,7 +435,7 @@ Insert into each visualizer object literal, immediately after `minTerms`:
 ```ts
   explain: {
     short: 'Successive differences a(n+1) - a(n), or successive ratios.',
-    long: 'Differences expose additive structure and ratios expose multiplicative structure — a linear sequence has constant differences, a geometric one has constant ratios. Ratios are computed in log space, so Fibonacci converges visibly on the golden ratio instead of saturating. A difference surrogate reshuffles exactly this quantity, so comparing against it asks whether the *order* of the steps matters or only their multiset.',
+    long: 'Differences expose additive structure and ratios expose multiplicative structure - a linear sequence has constant differences, a geometric one has constant ratios. Ratios are computed in log space, so Fibonacci converges visibly on the golden ratio instead of saturating. A difference surrogate reshuffles exactly this quantity, so comparing against it asks whether the *order* of the steps matters or only their multiset.',
   },
 ```
 
@@ -443,7 +443,7 @@ Insert into each visualizer object literal, immediately after `minTerms`:
 ```ts
   explain: {
     short: 'How often each value, gap, or digit occurs across the sequence.',
-    long: 'Bins the chosen quantity and counts occurrences, discarding order entirely. Because order is discarded, a permutation null produces exactly the same histogram as the real sequence — which is itself informative: it proves the histogram can only ever tell you about the value distribution, never about arrangement. Difference and matched-random nulls do move it.',
+    long: 'Bins the chosen quantity and counts occurrences, discarding order entirely. Because order is discarded, a permutation null produces exactly the same histogram as the real sequence - which is itself informative: it proves the histogram can only ever tell you about the value distribution, never about arrangement. Difference and matched-random nulls do move it.',
   },
 ```
 
@@ -451,7 +451,7 @@ Insert into each visualizer object literal, immediately after `minTerms`:
 ```ts
   explain: {
     short: 'How strongly the sequence resembles itself shifted by k places.',
-    long: 'For each lag k, correlates the sequence against a copy of itself displaced by k. Peaks indicate periodicity or near-periodicity at that spacing. This is a pure ordering statistic, so a permutation null destroys it completely — a real sequence whose autocorrelation stays outside the null band at some lag has genuine repeating structure at that spacing.',
+    long: 'For each lag k, correlates the sequence against a copy of itself displaced by k. Peaks indicate periodicity or near-periodicity at that spacing. This is a pure ordering statistic, so a permutation null destroys it completely - a real sequence whose autocorrelation stays outside the null band at some lag has genuine repeating structure at that spacing.',
   },
 ```
 
@@ -459,7 +459,7 @@ Insert into each visualizer object literal, immediately after `minTerms`:
 ```ts
   explain: {
     short: 'Terms laid out along a square spiral, coloured by value.',
-    long: 'Walks outward in a square spiral, one cell per term, colouring each cell from the term value. Ulam discovered that primes plotted this way fall on visible diagonals. Be careful here: the spiral path itself imposes strong geometry, so smooth or near-linear sequences produce beautiful rings and diagonals that say nothing about the sequence. Comparing against a permutation null is the check — if the pattern survives shuffling, the layout drew it, not the numbers.',
+    long: 'Walks outward in a square spiral, one cell per term, colouring each cell from the term value. Ulam discovered that primes plotted this way fall on visible diagonals. Be careful here: the spiral path itself imposes strong geometry, so smooth or near-linear sequences produce beautiful rings and diagonals that say nothing about the sequence. Comparing against a permutation null is the check - if the pattern survives shuffling, the layout drew it, not the numbers.',
   },
 ```
 
@@ -467,7 +467,7 @@ Insert into each visualizer object literal, immediately after `minTerms`:
 ```ts
   explain: {
     short: 'Terms in reading order, coloured by their remainder mod N.',
-    long: 'A simple row-major grid, each cell coloured by the term remainder modulo N. Vertical stripes appear when the sequence has period dividing the column count, diagonal stripes when the period and column count are close but unequal. Because the layout is index-driven, a permutation null occupies the same cells with different colours — so any surviving stripe is a real periodicity, not a grid artifact.',
+    long: 'A simple row-major grid, each cell coloured by the term remainder modulo N. Vertical stripes appear when the sequence has period dividing the column count, diagonal stripes when the period and column count are close but unequal. Because the layout is index-driven, a permutation null occupies the same cells with different colours - so any surviving stripe is a real periodicity, not a grid artifact.',
   },
 ```
 
@@ -475,7 +475,7 @@ Insert into each visualizer object literal, immediately after `minTerms`:
 ```ts
   explain: {
     short: 'A path that turns by an angle set by each term, mod k.',
-    long: 'Starts at the origin and, for each term, turns by (angle x term mod k) degrees and steps forward one unit. The path is cumulative, so every term displaces everything drawn after it — which makes this view extremely sensitive to ordering and a good place to see a null model bite hard. A permutation surrogate of the same sequence typically wanders somewhere completely different.',
+    long: 'Starts at the origin and, for each term, turns by (angle x term mod k) degrees and steps forward one unit. The path is cumulative, so every term displaces everything drawn after it - which makes this view extremely sensitive to ordering and a good place to see a null model bite hard. A permutation surrogate of the same sequence typically wanders somewhere completely different.',
   },
 ```
 
@@ -491,7 +491,7 @@ Insert into each visualizer object literal, immediately after `minTerms`:
 ```ts
   explain: {
     short: 'An NCurve-style smooth curve, bending by each term mod N.',
-    long: 'The technique from the SeqFan thread that prompted this project: each term bends the path by an angle set by its residue mod N, drawn as a smooth arc rather than a hard corner, optionally centring residues so they bend both ways. It produces strikingly organic shapes. Whether those shapes mean anything is exactly the open question here — compare against a null and see which features survive.',
+    long: 'The technique from the SeqFan thread that prompted this project: each term bends the path by an angle set by its residue mod N, drawn as a smooth arc rather than a hard corner, optionally centring residues so they bend both ways. It produces strikingly organic shapes. Whether those shapes mean anything is exactly the open question here - compare against a null and see which features survive.',
   },
 ```
 
@@ -546,7 +546,7 @@ describe('surrogate explanations', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/viz/explain.test.ts -t surrogate`
-Expected: FAIL — `SURROGATE_EXPLAIN` is not exported.
+Expected: FAIL - `SURROGATE_EXPLAIN` is not exported.
 
 - [ ] **Step 3: Add the surrogate corpus**
 
@@ -562,11 +562,11 @@ export const SURROGATE_EXPLAIN: Record<SurrogateType, Explain> = {
   },
   difference: {
     short: 'The same steps between terms, taken in a random order.',
-    long: 'Takes the successive differences, shuffles them, and re-integrates from the same starting term. Growth rate and step-size distribution survive; the arrangement of steps does not. Use this when the raw values are less interesting than how the sequence moves — it is a much tighter null than a permutation for anything monotone, because it will not destroy the overall trend.',
+    long: 'Takes the successive differences, shuffles them, and re-integrates from the same starting term. Growth rate and step-size distribution survive; the arrangement of steps does not. Use this when the raw values are less interesting than how the sequence moves - it is a much tighter null than a permutation for anything monotone, because it will not destroy the overall trend.',
   },
   matched: {
     short: 'Fresh random numbers fitted to the same trend and spread.',
-    long: 'Fits a linear or exponential trend to the sequence and generates new terms from that fit plus Gaussian noise scaled to the residual spread. The terms are entirely new, so nothing arithmetic about the original survives — only its scale and growth. This is the loosest null of the three and the strongest test to pass: structure that survives it is not explained by trend alone.',
+    long: 'Fits a linear or exponential trend to the sequence and generates new terms from that fit plus Gaussian noise scaled to the residual spread. The terms are entirely new, so nothing arithmetic about the original survives - only its scale and growth. This is the loosest null of the three and the strongest test to pass: structure that survives it is not explained by trend alone.',
   },
 };
 ```
@@ -634,7 +634,7 @@ In `src/ui/app.ts`, after `topbar.appendChild(picker);` add:
   explainBtn.textContent = 'i';
   explainBtn.addEventListener('click', () => {
     const viz = getVisualizer(state.vizId);
-    explain.show(viz.name, `${viz.explain.long}\n\nNull model — ${comparison.surrogate}: ${SURROGATE_EXPLAIN[comparison.surrogate].long}`);
+    explain.show(viz.name, `${viz.explain.long}\n\nNull model - ${comparison.surrogate}: ${SURROGATE_EXPLAIN[comparison.surrogate].long}`);
   });
   topbar.appendChild(explainBtn);
   main.appendChild(explain.el);
@@ -761,18 +761,18 @@ describe('inert control fixes', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/comparison.test.ts -t inert`
-Expected: FAIL — the select is never disabled.
+Expected: FAIL - the select is never disabled.
 
 - [ ] **Step 3: Implement**
 
 In `src/ui/comparison.ts`, replace the `modeSel` declaration and add a sync helper. The `flipBtn` and `surrSel` consts are declared after `modeSel`, so `syncMode` must be defined as a function declaration (hoisted) and only *called* from the change handler, never at construction time:
 
 ```ts
-  // The surrogate select, the seed, and N all feed the null model — none of
+  // The surrogate select, the seed, and N all feed the null model - none of
   // which is consulted while mode is 'off'. Leaving them live meant a user
   // could cycle the null dropdown indefinitely with nothing redrawing, which
   // reads as a broken control rather than an unused one. Considered and
-  // rejected: auto-switching mode to 'side' when the surrogate changes — a
+  // rejected: auto-switching mode to 'side' when the surrogate changes - a
   // control that silently changes a *different* control is worse than one
   // that is honestly unavailable.
   function syncMode(): void {
@@ -903,7 +903,7 @@ describe('pathTransform', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/viz/locate.test.ts`
-Expected: FAIL — module `src/viz/pathTransform` not found.
+Expected: FAIL - module `src/viz/pathTransform` not found.
 
 - [ ] **Step 3: Create `src/viz/hit.ts`**
 
@@ -947,7 +947,7 @@ const PAD = 0.1;
 /**
  * The sequence-space -> screen mapping that strokePath used to compute inline
  * and then discard. Extracted so a click can be inverted through the exact
- * same numbers the drawing used — anything else would put the marker
+ * same numbers the drawing used - anything else would put the marker
  * somewhere the line is not.
  */
 export function pathTransform(pts: Pt[], size: Size): PathTransform {
@@ -973,7 +973,7 @@ export function toScreen(t: PathTransform, p: Pt): Pt {
 
 /**
  * Nearest point to a screen coordinate, or null if nothing is within
- * maxDist pixels. O(n) — fine for a click, and fine for rAF-throttled hover
+ * maxDist pixels. O(n) - fine for a click, and fine for rAF-throttled hover
  * up to roughly 50k points. Bucket only if a specific view measurably drags.
  */
 export function nearestIndex(
@@ -1030,7 +1030,7 @@ In `src/viz/types.ts`, add to `Visualizer` after `statistics?`:
    * non-term Hit kind, and a view with no answer at all may omit this.
    */
   locate?(seq: SequenceView, params: Params, size: Size, x: number, y: number): Hit | null;
-  /** Inverse of locate for a term index — where that term is drawn. */
+  /** Inverse of locate for a term index - where that term is drawn. */
   position?(seq: SequenceView, params: Params, size: Size, index: number): { x: number; y: number } | null;
 ```
 
@@ -1118,7 +1118,7 @@ describe('grid locate/position round-trip', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/viz/locate.test.ts -t grid`
-Expected: FAIL — `spiralCoords` is not exported and `viz.position` is undefined.
+Expected: FAIL - `spiralCoords` is not exported and `viz.position` is undefined.
 
 - [ ] **Step 3: Add O(n) spiral coords and a shared layout**
 
@@ -1328,7 +1328,7 @@ describe('basic family locate/position round-trip', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/viz/locate.test.ts -t basic`
-Expected: FAIL — `viz.position` is undefined.
+Expected: FAIL - `viz.position` is undefined.
 
 - [ ] **Step 3: Implement for `scatter.ts`**
 
@@ -1347,7 +1347,7 @@ Both files use the identical `x(i)` mapping, so each gets its own small inverse 
     };
   },
   locate(seq: SequenceView, params: Params, size: Size, x: number, _y: number) {
-    // Index is a pure function of x here, so vertical position is ignored —
+    // Index is a pure function of x here, so vertical position is ignored -
     // the user is pointing at a column of the plot, not hunting a dot.
     const n = values(seq, String(params.scale)).length;
     const w = size.width - 2 * MARGIN;
@@ -1473,7 +1473,7 @@ describe('stats family reports non-term hits', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/viz/locate.test.ts -t trajectory`
-Expected: FAIL — methods undefined.
+Expected: FAIL - methods undefined.
 
 - [ ] **Step 3: Implement turtle**
 
@@ -1570,7 +1570,7 @@ Import `pathTransform, toScreen, nearestIndex` from `./pathTransform`.
 
 - [ ] **Step 6: Implement the stats views**
 
-Add to `histogramViz` in `src/viz/histogram.ts` — no `position`, because a bin has no single term:
+Add to `histogramViz` in `src/viz/histogram.ts` - no `position`, because a bin has no single term:
 
 ```ts
   locate(seq: SequenceView, params: Params, size: Size, x: number, y: number) {
@@ -1664,7 +1664,7 @@ describe('permutationWithMap', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/nullmodel/surrogates.test.ts -t permutationWithMap`
-Expected: FAIL — not exported.
+Expected: FAIL - not exported.
 
 - [ ] **Step 3: Implement**
 
@@ -1675,7 +1675,7 @@ Append to `src/nullmodel/surrogates.ts`:
  * A permutation surrogate that also reports where every term went.
  *
  * Needed because permutation is the only surrogate under which an individual
- * term still exists in the null — the multiset is preserved — so it is the
+ * term still exists in the null - the multiset is preserved - so it is the
  * only one where "follow this term into the null model" is a meaningful
  * request. Difference and matched-random surrogates contain entirely new
  * values, so only index-to-index correspondence is honest there.
@@ -1697,7 +1697,7 @@ export function permutationWithMap(terms: bigint[], seed: number): { terms: bigi
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run tests/nullmodel/surrogates.test.ts`
-Expected: PASS. If `permutationWithMap(terms, s).terms` differs from `permutationSurrogate(terms, s)`, the two are consuming the RNG stream differently — make `permutationSurrogate` delegate to `permutationWithMap(...).terms` so there is exactly one shuffle implementation.
+Expected: PASS. If `permutationWithMap(terms, s).terms` differs from `permutationSurrogate(terms, s)`, the two are consuming the RNG stream differently - make `permutationSurrogate` delegate to `permutationWithMap(...).terms` so there is exactly one shuffle implementation.
 
 - [ ] **Step 5: Commit**
 
@@ -1766,7 +1766,7 @@ describe('describeHit', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/readout.test.ts`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Implement `src/ui/readout.ts`**
 
@@ -1956,7 +1956,7 @@ describe('correspondingIndex', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/readout.test.ts -t corresponding`
-Expected: FAIL — not exported.
+Expected: FAIL - not exported.
 
 - [ ] **Step 3: Implement in `src/ui/readout.ts`**
 
@@ -1966,7 +1966,7 @@ import { permutationWithMap, type SurrogateType } from '../nullmodel/surrogates'
 /**
  * Where the term at `realIndex` corresponds to in the surrogate.
  *
- * `traced: true` means the *same term* is at that position — only possible
+ * `traced: true` means the *same term* is at that position - only possible
  * for permutation surrogates, which preserve the value multiset. Difference
  * and matched-random surrogates contain entirely new values, so the only
  * honest correspondence is index-for-index, and the UI must not imply
@@ -2162,7 +2162,7 @@ describe('gallery entries', () => {
 
   it('the bundled sequence agrees with the state seqRef', () => {
     // A mismatch would render one sequence on the landing and open a
-    // different one in the engine — quiet, plausible, and very confusing.
+    // different one in the engine - quiet, plausible, and very confusing.
     for (const e of GALLERY) {
       if (e.state.seqRef?.kind === 'oeis') {
         expect(e.sequence.aNumber, e.id).toBe(e.state.seqRef.aNumber);
@@ -2203,7 +2203,7 @@ describe('gallery entries', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/gallery/entries.test.ts`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Create `src/gallery/types.ts`**
 
@@ -2335,7 +2335,7 @@ export const GALLERY: GalleryEntry[] = [
     },
     verdict: 'real',
     caption: 'The texture on the left is real. Shuffle the same terms and it vanishes.',
-    body: 'The Kolakoski sequence contains only 1s and 2s, and it is its own run-length encoding. Its alternation is far more regular than chance allows, which is what makes the spiral legible. Measured against 200 permutation surrogates, its angular variance falls outside the null band on the low side — excess regularity, not excess disorder.',
+    body: 'The Kolakoski sequence contains only 1s and 2s, and it is its own run-length encoding. Its alternation is far more regular than chance allows, which is what makes the spiral legible. Measured against 200 permutation surrogates, its angular variance falls outside the null band on the low side - excess regularity, not excess disorder.',
     evidence: {
       statistic: 'angularVariance', measured: 0.000332,
       bandLo: 0.000506, bandHi: 0.001288,
@@ -2352,7 +2352,7 @@ export const GALLERY: GalleryEntry[] = [
       mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
     },
     verdict: 'artifact',
-    caption: 'Beautiful concentric rings, drawn entirely by the spiral — not by the sequence.',
+    caption: 'Beautiful concentric rings, drawn entirely by the spiral - not by the sequence.',
     body: 'This is a(n) = n, the simplest sequence there is. Because the hue advances a fixed step per cell and the spiral winds at a steadily increasing radius, the two periodicities beat against each other and produce rings. Nothing here is a property of the numbers: any sequence that increases by a constant produces the same picture. This is the failure mode the whole site exists to catch.',
   },
   {
@@ -2365,7 +2365,7 @@ export const GALLERY: GalleryEntry[] = [
       mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
     },
     verdict: 'open',
-    caption: 'The diagonals Ulam noticed in 1963 — shown here without a verdict.',
+    caption: 'The diagonals Ulam noticed in 1963 - shown here without a verdict.',
     body: 'Stanislaw Ulam noticed while doodling at a conference that primes plotted on a square spiral fall along diagonal lines, which correspond to prime-rich quadratic polynomials. This view plots the primes themselves rather than marking primes among the integers, so it is not the classical picture and we have not measured it. Marked open rather than guessed at.',
   },
   {
@@ -2378,7 +2378,7 @@ export const GALLERY: GalleryEntry[] = [
       mode: 'side', surrogate: 'difference', seed: 1, ensembleN: 200,
     },
     verdict: 'open',
-    caption: 'Subtract if you can, otherwise add — and never repeat yourself.',
+    caption: 'Subtract if you can, otherwise add - and never repeat yourself.',
     body: 'Recamán steps back by n if that lands on a positive number it has not visited, and forward by n otherwise. The result is famously jagged. Compared here against a difference surrogate, which keeps the same step sizes but reorders them, so the question becomes whether the arrangement of steps matters or only their sizes.',
   },
   {
@@ -2392,7 +2392,7 @@ export const GALLERY: GalleryEntry[] = [
     },
     verdict: 'open',
     caption: 'Successive Fibonacci ratios converging on the golden ratio.',
-    body: 'The ratio a(n+1)/a(n) converges to phi = 1.6180339887... This is computed in log space rather than by dividing floats, which is why it stays correct past term 79 — divide the raw values and both sides saturate at the same clamped maximum and the ratio reads exactly 1.0 forever. Hover the line to read the exact terms.',
+    body: 'The ratio a(n+1)/a(n) converges to phi = 1.6180339887... This is computed in log space rather than by dividing floats, which is why it stays correct past term 79 - divide the raw values and both sides saturate at the same clamped maximum and the ratio reads exactly 1.0 forever. Hover the line to read the exact terms.',
   },
   {
     id: 'kolakoski-turtle',
@@ -2508,7 +2508,7 @@ describe('gallery verdicts are computed, not asserted', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/gallery/verdicts.test.ts`
-Expected: FAIL — `src/gallery/angularVariance` not found.
+Expected: FAIL - `src/gallery/angularVariance` not found.
 
 - [ ] **Step 3: Implement the statistic**
 
@@ -2525,7 +2525,7 @@ import { spiralCoords } from '../viz/gridUtils';
  * mean unit vector from the spiral centre to its cells. A class whose cells
  * are spread evenly in all directions has a near-zero resultant; a class
  * clumped into one sector has a long one. The statistic is the variance of
- * those resultant lengths across classes — low means every class is spread
+ * those resultant lengths across classes - low means every class is spread
  * evenly (unusual regularity), high means classes clump into sectors.
  *
  * Deterministic and pure: no RNG, so the same sequence always measures the
@@ -2671,7 +2671,7 @@ describe('landing content', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/landing.test.ts`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Implement `src/ui/landing.ts`**
 
@@ -2764,7 +2764,7 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   const lede = document.createElement('p');
   lede.className = 'landing-lede';
   lede.textContent =
-    'Integer sequences make beautiful pictures. Some of that beauty is in the numbers, and some of it is drawn by the technique. This tool shows you both at once — the sequence, and a null model built from it — so you can tell which is which.';
+    'Integer sequences make beautiful pictures. Some of that beauty is in the numbers, and some of it is drawn by the technique. This tool shows you both at once - the sequence, and a null model built from it - so you can tell which is which.';
 
   const heroFigure = document.createElement('figure');
   heroFigure.className = 'landing-hero';
@@ -2789,7 +2789,7 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
 
   const stripLabel = document.createElement('h2');
   stripLabel.className = 'landing-strip-label';
-  stripLabel.textContent = 'More examples — click any to open it in the engine';
+  stripLabel.textContent = 'More examples - click any to open it in the engine';
 
   const strip = document.createElement('div');
   strip.className = 'gallery-strip';
@@ -2960,12 +2960,12 @@ Replace the `<head>` of `index.html` with:
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ulam — is that pattern real?</title>
+    <title>Ulam - is that pattern real?</title>
     <meta name="description" content="Render OEIS integer sequences, then test whether the structure you see survives a null model." />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Ulam" />
-    <meta property="og:title" content="Ulam — is that pattern real?" />
+    <meta property="og:title" content="Ulam - is that pattern real?" />
     <meta property="og:description" content="Integer sequences make beautiful pictures. Some of that beauty is in the numbers, and some is drawn by the technique. See both at once." />
     <meta property="og:url" content="https://ulam.briansheppard.com/" />
     <meta property="og:image" content="https://ulam.briansheppard.com/og-card.png" />
@@ -2974,7 +2974,7 @@ Replace the `<head>` of `index.html` with:
     <meta property="og:image:alt" content="A sequence rendered as a spiral beside the same sequence shuffled, showing the pattern disappear." />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Ulam — is that pattern real?" />
+    <meta name="twitter:title" content="Ulam - is that pattern real?" />
     <meta name="twitter:description" content="Render OEIS sequences, then test whether the structure survives a null model." />
     <meta name="twitter:image" content="https://ulam.briansheppard.com/og-card.png" />
   </head>
@@ -3061,7 +3061,7 @@ Add to `scripts/deploy.sh` immediately after `echo "==> building"`:
 ```bash
 # The OG card is a stored PNG while the landing hero is a live render, so the
 # two drift whenever the hero entry changes. Regenerating needs a browser (it
-# reuses the real render path), so it cannot happen here — this is the reminder.
+# reuses the real render path), so it cannot happen here - this is the reminder.
 if [ ! -f public/og-card.png ]; then
   echo "WARNING: public/og-card.png is missing; social previews will 404." >&2
   echo "         Regenerate: npm run dev, then open /?ogcard" >&2
@@ -3076,7 +3076,7 @@ Add a subsection under Deploy in `README.md`:
 ### Social preview card
 
 `public/og-card.png` is a **stored** 1200x630 image, while the landing hero is
-a live canvas render — so the two drift apart whenever the hero gallery entry
+a live canvas render - so the two drift apart whenever the hero gallery entry
 changes. Regenerate it by running `npm run dev` and opening `/?ogcard`, which
 renders the current hero through the real render path and downloads the PNG;
 save it over `public/og-card.png`. `scripts/deploy.sh` warns if the file is
@@ -3154,7 +3154,7 @@ describe('accessibility of the app chrome', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/ui.test.ts -t accessibility`
-Expected: FAIL — the title is a `<span>` and the bar labels are `<span>`s.
+Expected: FAIL - the title is a `<span>` and the bar labels are `<span>`s.
 
 - [ ] **Step 3: Promote the title to a heading**
 
@@ -3250,7 +3250,7 @@ Expected: all tests pass, `tsc --noEmit` clean.
 - [ ] **Step 2: Confirm no visualizer was missed**
 
 Run: `npx vitest run tests/viz/explain.test.ts tests/viz/locate.test.ts`
-Expected: PASS — nine visualizers documented, every `locate`/`position` pair round-trips.
+Expected: PASS - nine visualizers documented, every `locate`/`position` pair round-trips.
 
 - [ ] **Step 3: Manual pass in the browser**
 
@@ -3276,7 +3276,7 @@ Add to the "What it does" list:
 - **A landing gallery**: curated real-vs-null comparisons that render on first
   paint with no network round-trip, each one a saved engine state you can click
   straight into. Every verdict shown is recomputed in CI against its recorded
-  null band — the gallery cannot claim a structure is real unless the code
+  null band - the gallery cannot claim a structure is real unless the code
   still measures it that way.
 - **Explanations everywhere**: every visualizer and every surrogate documents
   itself, enforced at compile time, surfaced by an (i) button and reused as the
@@ -3317,6 +3317,6 @@ git push origin master
 | §9 Linked markers, per-mode behaviour | 12 |
 | §9 Permutation index map | 10 |
 
-**Known ordering constraint:** Task 14 rewrites the evidence values placed in Task 13, and may change the hero entry. Do not treat Task 13's numbers as authoritative — they are placeholders that Task 14's test is designed to reject.
+**Known ordering constraint:** Task 14 rewrites the evidence values placed in Task 13, and may change the hero entry. Do not treat Task 13's numbers as authoritative - they are placeholders that Task 14's test is designed to reject.
 
 **Known risk:** `angularVariance` (Task 14) is a new statistic written for this plan, not the exact code that produced the numbers quoted in the spec. The measured values will almost certainly differ. That is expected and handled: Task 14 Step 4 records what the code actually measures and adjusts the verdict to match, rather than adjusting the code to match the caption.

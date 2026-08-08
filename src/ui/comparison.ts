@@ -11,7 +11,7 @@ export type ComparisonMode = 'off' | 'side' | 'over' | 'flip' | 'ensemble';
  * Superimposing only means something where position carries information.
  * Grid and spiral layouts place term i at a position fixed by i alone, so
  * drawing the null on top overwrites the real cells rather than overlaying
- * them — it would look like a comparison while showing only the surrogate.
+ * them - it would look like a comparison while showing only the surrogate.
  */
 export function supportsSuperimpose(viz: Visualizer): boolean {
   return viz.family === 'trajectory' || viz.family === 'basic';
@@ -36,7 +36,7 @@ export function surrogateSequence(seq: Sequence, type: SurrogateType, seed: numb
 
 // Degenerate = the *widest* level has no width, i.e. no surrogate draw moved
 // this statistic at all. NaN widths (e.g. malformed/empty upstream data)
-// compare false against epsilon and so read as "not degenerate" — intentional
+// compare false against epsilon and so read as "not degenerate" - intentional
 // fail-safe: drawing the (possibly odd-looking) band is preferable to
 // asserting a specific "zero width" explanation we can't actually confirm. An
 // empty level is vacuously degenerate (every() on []); harmless since
@@ -49,7 +49,7 @@ export function isDegenerateBand(band: Bands, epsilon = 1e-9): boolean {
 
 // Drawn once per statistic panel. Without this the chart is a blue smear, a
 // dashed grey line and a pink line with nothing on screen saying which is
-// which — the single most important graphic in the app was unlabelled.
+// which - the single most important graphic in the app was unlabelled.
 function drawLegend(ctx: CanvasRenderingContext2D, band: Bands, left: number, top: number): void {
   const items: Array<{ swatch: string; dashed?: boolean; label: string }> = [
     { swatch: '#f7768e', label: 'real sequence' },
@@ -100,7 +100,7 @@ export function drawEnsembleChart(
     const w = size.width - 2 * MARGIN;
     const h = panelH - 2 * MARGIN;
     const all = [...band.levels.flatMap((l) => [...l.lo, ...l.hi]), ...realVals];
-    // Loop-based min/max, not a spread — see turtle.ts's strokePath — since
+    // Loop-based min/max, not a spread - see turtle.ts's strokePath - since
     // `all` scales with the sequence length for per-index statistics (e.g.
     // scatter's 'value').
     const { lo, hi } = minMax(all);
@@ -150,7 +150,7 @@ export function drawEnsembleChart(
       // A couple of px shy of top + MARGIN (where the plot area/band fill
       // begins) so the caption can't crowd the plot when several stat panels
       // share the canvas height.
-      ctx.fillText('band has zero width — this surrogate cannot change this statistic', MARGIN, top + MARGIN - 4);
+      ctx.fillText('band has zero width - this surrogate cannot change this statistic', MARGIN, top + MARGIN - 4);
     }
   });
 }
@@ -191,11 +191,11 @@ export function buildComparisonBar(
   };
 
   // The surrogate select and the seed both feed the null model, and N feeds
-  // the ensemble — none of which is consulted while mode is 'off'. Leaving
+  // the ensemble - none of which is consulted while mode is 'off'. Leaving
   // them live meant a user could cycle the null dropdown indefinitely with
   // nothing redrawing, which reads as a broken control rather than an unused
   // one. Considered and rejected: auto-switching mode to 'side' when the
-  // surrogate changes — a control that silently changes a *different* control
+  // surrogate changes - a control that silently changes a *different* control
   // is worse than one that is honestly unavailable.
   //
   // Declared as a hoisted function so the change handlers below can call it
@@ -273,7 +273,7 @@ export function buildComparisonBar(
     },
     // Reflects `state` (mutated externally, e.g. by decoding a shared URL)
     // back onto the controls. Needed because the selects/inputs only push
-    // changes into `state` on user interaction — they don't observe it.
+    // changes into `state` on user interaction - they don't observe it.
     refresh() {
       modeSel.value = state.mode;
       surrSel.value = state.surrogate;

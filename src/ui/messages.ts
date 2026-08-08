@@ -18,7 +18,7 @@ function makeRegion(container: HTMLElement, assertiveRegion: boolean): HTMLEleme
 /**
  * Both regions are created here, empty, rather than when the first message
  * arrives. A live region has to exist in the DOM *before* its contents change
- * — assistive technology subscribes to the node, so one inserted already
+ * - assistive technology subscribes to the node, so one inserted already
  * populated is frequently not announced at all. Previously every banner was
  * a plain div appended on demand, which meant the entire error-reporting
  * system was invisible to assistive technology.

@@ -40,7 +40,7 @@ export interface Visualizer {
    * this entirely.
    */
   locate?(seq: SequenceView, params: Params, size: Size, x: number, y: number): Hit | null;
-  /** Inverse of locate for a term index — where that term is drawn. */
+  /** Inverse of locate for a term index - where that term is drawn. */
   position?(seq: SequenceView, params: Params, size: Size, index: number): { x: number; y: number } | null;
 }
 

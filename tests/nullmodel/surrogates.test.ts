@@ -104,7 +104,7 @@ describe('matchedRandomSurrogate on a sign-mixed overflowing sequence (task FR, 
   // non-negative overflowing sequences through the log-space path
   // (`terms.every(t => t >= 0n)`), so this exact shape fell through to the
   // plain clamped path and reproduced the original defect (clamping every
-  // overflowing term — regardless of sign — to the same
+  // overflowing term - regardless of sign - to the same
   // +/-MAX_SAFE_INTEGER, modelling the clamp artifact instead of the data).
   const terms: bigint[] = [];
   for (let i = 0; i < 40; i++) terms.push(i % 2 === 0 ? 10n ** 20n : -(10n ** 20n));
@@ -144,7 +144,7 @@ describe('matchedRandomSurrogate on a sign-mixed overflowing sequence (task FR, 
 describe('matchedRandomSurrogate noise is Gaussian at the residual sd, not uniform on the max envelope (task FR, I2)', () => {
   // Starts with 0 (like this file's `fib` fixture above) so allPositive is
   // false and the plain linear branch is exercised deterministically,
-  // independent of the exp-vs-linear model comparison — with one modest
+  // independent of the exp-vs-linear model comparison - with one modest
   // outlier so the OLS fit has a non-degenerate residual spread to compare
   // against.
   const terms = [0n, 10n, 20n, 30n, 140n, 50n, 60n, 70n, 80n, 90n, 100n];

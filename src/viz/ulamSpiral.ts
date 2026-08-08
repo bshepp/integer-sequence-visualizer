@@ -7,7 +7,7 @@ function cellColor(
   seq: SequenceView, i: number, colorBy: string, modulus: number, maxLog: number, style: RenderStyle,
 ): string {
   // 'none' removes colour as a variable entirely, so any structure still
-  // visible cannot be an artifact of the palette — which is the whole reason
+  // visible cannot be an artifact of the palette - which is the whole reason
   // the mode exists. It overrides colorBy, since every colorBy is a palette.
   if (style.colorMode === 'none') {
     const shade = maxLog > 0 ? (seq.logMagnitude(i) / maxLog) * 45 + 25 : 45;

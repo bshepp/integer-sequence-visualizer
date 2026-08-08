@@ -48,19 +48,19 @@ describe('runEnsemble', () => {
 describe('runEnsemble: histogram log-scale must be synchronized across surrogate draws', () => {
   // Same construction as tests/viz/stats.test.ts: a real sequence whose own
   // auto-detected scale is log (two ~2e16 terms), and a 'difference'
-  // surrogate seed (2) confirmed to disagree — shouldUseLogScale is FALSE
+  // surrogate seed (2) confirmed to disagree - shouldUseLogScale is FALSE
   // for that specific draw even though the real sequence's is TRUE.
   // ('permutation' surrogates are exactly value-multiset invariant and so
   // can never disagree; 'difference' and 'matched' are not.)
   //
-  // count:1 pins the ensemble to exactly that one known-disagreeing draw —
-  // percentileBands over a single array returns that array unchanged — so
+  // count:1 pins the ensemble to exactly that one known-disagreeing draw -
+  // percentileBands over a single array returns that array unchanged - so
   // this stays a deterministic, exact regression pin while still driving the
   // real runEnsemble pipeline (makeSurrogate + statistics() + percentileBands),
   // not just the shouldUseLogScale predicate in isolation. (A larger N was
   // tried and rejected: it also pulls in draws that are legitimately
-  // clustered in value for reasons unrelated to this bug — e.g. several
-  // surrogate terms landing close together after the huge gap lands early —
+  // clustered in value for reasons unrelated to this bug - e.g. several
+  // surrogate terms landing close together after the huge gap lands early -
   // which independently produce a concentrated bin and would make the
   // "hi" band assertion no longer isolate the scale-sync defect.)
   const REAL = [
@@ -94,11 +94,11 @@ describe('runEnsemble: histogram bin edges must be domain-synced across surrogat
   // A non-monotone (Recamán-like) sequence: computeHistogram derives lo/hi
   // from whichever values it's handed, and 'difference' surrogates do not
   // preserve the real sequence's value range the way 'permutation' does, so
-  // each of the 300 draws bins into its own range — bin 0 does not mean the
+  // each of the 300 draws bins into its own range - bin 0 does not mean the
   // same interval in every draw, and percentileBands stacks them as if it
   // did. Measured (this exact construction): 296/300 draws had a value
   // range differing >10% from the real sequence's; real bin-0 count is 46;
-  // the per-draw-edges band for bin 0 is 2..13 (excludes 46 — reported as
+  // the per-draw-edges band for bin 0 is 2..13 (excludes 46 - reported as
   // "far outside the null envelope", the opposite of the truth), while the
   // fixed-domain band is 3..107 (comfortably contains 46).
   function recaman(n: number): bigint[] {

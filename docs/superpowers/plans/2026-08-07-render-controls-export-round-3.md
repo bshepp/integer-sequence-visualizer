@@ -1,8 +1,8 @@
-# Render Controls, Export, and the Line-Shape Experiment — Round 3
+# Render Controls, Export, and the Line-Shape Experiment - Round 3
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Give the user control over how things are drawn, let them take the results away as images and data, and answer the question that prompted the controls in the first place — does line shape actually change what you'd conclude?
+**Goal:** Give the user control over how things are drawn, let them take the results away as images and data, and answer the question that prompted the controls in the first place - does line shape actually change what you'd conclude?
 
 **Architecture:** A `RenderStyle` layer lives beside `state.params` and is merged into params at draw time, reusing the reserved-key pattern `logScaleOverride` and `histogramDomainLo/Hi` already established. Export shares one row-extraction function with the screen-reader data table, since a CSV, a JSON file and a table are the same numbers in three shapes. The line-shape experiment measures swept area analytically from the path geometry rather than from pixels, so it is deterministic, runs in CI, and produces a recorded verdict in exactly the format the gallery already verifies.
 
@@ -11,12 +11,12 @@
 ## Global Constraints
 
 - **No runtime npm dependencies.**
-- **No `Math.random()` in `src/`** — seeded `mulberry32` only.
+- **No `Math.random()` in `src/`** - seeded `mulberry32` only.
 - **Sequence terms are `bigint`**; `SequenceView` is the sole float64 boundary.
-- **No `Math.min(...array)` spreads** over sequence-length data — use `minMax`.
-- **Exports leave the site, so they must carry attribution.** Every PNG has the OEIS credit drawn into the image; every CSV/JSON has it in a header. Text: `Sequence data from The On-Line Encyclopedia of Integer Sequences (OEIS), © OEIS Foundation Inc., CC BY-SA 4.0 — https://oeis.org/<A-number>`.
-- **Accessibility is not optional in new markup** — every control labelled, every click target a real button, no positive tabindex. `tests/ui/a11y.test.ts` enforces this and must keep passing.
-- **Any verdict claim must be computed, not asserted**, and reproduced by a test — same rule as the gallery.
+- **No `Math.min(...array)` spreads** over sequence-length data - use `minMax`.
+- **Exports leave the site, so they must carry attribution.** Every PNG has the OEIS credit drawn into the image; every CSV/JSON has it in a header. Text: `Sequence data from The On-Line Encyclopedia of Integer Sequences (OEIS), © OEIS Foundation Inc., CC BY-SA 4.0 - https://oeis.org/<A-number>`.
+- **Accessibility is not optional in new markup** - every control labelled, every click target a real button, no positive tabindex. `tests/ui/a11y.test.ts` enforces this and must keep passing.
+- **Any verdict claim must be computed, not asserted**, and reproduced by a test - same rule as the gallery.
 - Run `npm test` and `npm run build` before every commit. The existing 309 tests must stay green.
 
 ---
@@ -62,7 +62,7 @@
   - `const DEFAULT_STYLE: RenderStyle`
   - `styleToParams(s: RenderStyle): Params`
   - `styleFromParams(p: Params): RenderStyle`
-  - `strokeColorAt(s: RenderStyle, t: number): string` — `t` in [0,1] along the path
+  - `strokeColorAt(s: RenderStyle, t: number): string` - `t` in [0,1] along the path
   - `applyStyle(ctx: CanvasRenderingContext2D, s: RenderStyle): void`
 
 - [ ] **Step 1: Write the failing test**
@@ -125,7 +125,7 @@ describe('strokeColorAt', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/viz/style.test.ts`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Implement `src/viz/style.ts`**
 
@@ -238,7 +238,7 @@ git commit -m "feat: RenderStyle layer carried through params like logScaleOverr
 
 **Interfaces:**
 - Consumes: `styleFromParams`, `strokeColorAt`, `applyStyle` (Task 1).
-- Produces: `strokePath(pts, ctx, size, style?)` — third-party callers unchanged, style optional.
+- Produces: `strokePath(pts, ctx, size, style?)` - third-party callers unchanged, style optional.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -318,7 +318,7 @@ describe('visualizers honour RenderStyle', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/viz/style.test.ts -t "honour RenderStyle"`
-Expected: FAIL — line width is always 1.25 and colours are always hsl.
+Expected: FAIL - line width is always 1.25 and colours are always hsl.
 
 - [ ] **Step 3: Update `strokePath`**
 
@@ -332,7 +332,7 @@ export function strokePath(
   style: RenderStyle = DEFAULT_STYLE,
 ): void {
   // The bounding-box maths (and its loop-based min/max, which exists because
-  // a 2001-term b-file's digit walk produces 418,487 points — past V8's ~250k
+  // a 2001-term b-file's digit walk produces 418,487 points - past V8's ~250k
   // spread-argument limit) lives in pathTransform, so locate() can invert
   // exactly the numbers this draws with.
   const t = pathTransform(pts, size);
@@ -367,14 +367,14 @@ each importing `styleFromParams` from `./style`.
 
 - [ ] **Step 4: Grid and chart visualizers honour colour mode**
 
-`src/viz/ulamSpiral.ts` — replace `cellColor`:
+`src/viz/ulamSpiral.ts` - replace `cellColor`:
 
 ```ts
 function cellColor(
   seq: SequenceView, i: number, colorBy: string, modulus: number, maxLog: number, style: RenderStyle,
 ): string {
   // 'none' removes colour as a variable entirely, so any structure still
-  // visible cannot be an artifact of the palette — which is the whole reason
+  // visible cannot be an artifact of the palette - which is the whole reason
   // the mode exists.
   if (style.colorMode === 'none') return seq.mod(i, 2) === 0 ? '#3a3d44' : '#9aa0aa';
   if (colorBy === 'parity') return seq.mod(i, 2) === 0 ? '#1d2026' : '#7aa2f7';
@@ -388,7 +388,7 @@ function cellColor(
 
 and pass `styleFromParams(params)` into it from `render`.
 
-`src/viz/modGrid.ts` — replace the fill line in `render`:
+`src/viz/modGrid.ts` - replace the fill line in `render`:
 
 ```ts
       const r = seq.mod(i, m);
@@ -399,7 +399,7 @@ and pass `styleFromParams(params)` into it from `render`.
 
 with `const style = styleFromParams(params);` above the loop.
 
-`src/viz/scatter.ts` — before the dot loop:
+`src/viz/scatter.ts` - before the dot loop:
 
 ```ts
     const style = styleFromParams(params);
@@ -408,7 +408,7 @@ with `const style = styleFromParams(params);` above the loop.
 
 replacing `ctx.fillStyle = '#7aa2f7';`.
 
-`src/viz/differences.ts` — replace `ctx.strokeStyle = '#7aa2f7'; ctx.lineWidth = 1.5;` with:
+`src/viz/differences.ts` - replace `ctx.strokeStyle = '#7aa2f7'; ctx.lineWidth = 1.5;` with:
 
 ```ts
     const style = styleFromParams(params);
@@ -416,13 +416,13 @@ replacing `ctx.fillStyle = '#7aa2f7';`.
     ctx.lineWidth = style.lineWidth;
 ```
 
-`src/viz/histogram.ts` — replace `ctx.fillStyle = '#7aa2f7';` with:
+`src/viz/histogram.ts` - replace `ctx.fillStyle = '#7aa2f7';` with:
 
 ```ts
     ctx.fillStyle = strokeColorAt(styleFromParams(params), 0.5);
 ```
 
-`src/viz/autocorrelation.ts` — replace `ctx.strokeStyle = '#7aa2f7'; ctx.lineWidth = 1.5;` with:
+`src/viz/autocorrelation.ts` - replace `ctx.strokeStyle = '#7aa2f7'; ctx.lineWidth = 1.5;` with:
 
 ```ts
     const style = styleFromParams(params);
@@ -510,7 +510,7 @@ describe('style controls', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/export.test.ts`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Implement `src/ui/styleControls.ts`**
 
@@ -566,7 +566,7 @@ export function buildStyleControls(
     hueStart.value = String(style.hueStart);
     hueEnd.value = String(style.hueEnd);
     // The hue sliders do nothing in 'none' mode, and a live-looking control
-    // that cannot affect anything reads as broken — the same defect fixed on
+    // that cannot affect anything reads as broken - the same defect fixed on
     // the null-model select in round 1.
     const hueDead = style.colorMode === 'none';
     hueStart.disabled = hueDead;
@@ -727,7 +727,7 @@ describe('superimpose availability', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/comparison.test.ts -t superimpose`
-Expected: FAIL — `supportsSuperimpose` not exported.
+Expected: FAIL - `supportsSuperimpose` not exported.
 
 - [ ] **Step 3: Implement in `src/ui/comparison.ts`**
 
@@ -740,7 +740,7 @@ export type ComparisonMode = 'off' | 'side' | 'over' | 'flip' | 'ensemble';
  * Superimposing only means something where position carries information.
  * Grid and spiral layouts place term i at a position fixed by i alone, so
  * drawing the null on top overwrites the real cells rather than overlaying
- * them — it would look like a comparison while showing only the surrogate.
+ * them - it would look like a comparison while showing only the surrogate.
  */
 export function supportsSuperimpose(viz: Visualizer): boolean {
   return viz.family === 'trajectory' || viz.family === 'basic';
@@ -928,7 +928,7 @@ describe('data table', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/export.test.ts -t attribution`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Implement `src/ui/exportData.ts`**
 
@@ -937,7 +937,7 @@ import type { Sequence } from '../sequence/sequence';
 
 export interface DataRow { n: number; term: string; [key: string]: string | number; }
 
-/** Terms as exact decimal strings — never toNumber, which clamps past 2^53. */
+/** Terms as exact decimal strings - never toNumber, which clamps past 2^53. */
 export function sequenceRows(seq: Sequence, limit?: number): DataRow[] {
   const n = limit === undefined ? seq.terms.length : Math.min(limit, seq.terms.length);
   const rows: DataRow[] = [];
@@ -952,7 +952,7 @@ export function sequenceRows(seq: Sequence, limit?: number): DataRow[] {
 export function attributionLine(seq: Sequence): string {
   const base = 'Sequence data from The On-Line Encyclopedia of Integer Sequences (OEIS), '
     + '© OEIS Foundation Inc., CC BY-SA 4.0';
-  return seq.aNumber ? `${base} — https://oeis.org/${seq.aNumber}` : `${base} — https://oeis.org/`;
+  return seq.aNumber ? `${base} - https://oeis.org/${seq.aNumber}` : `${base} - https://oeis.org/`;
 }
 
 const csvField = (v: string | number): string => {
@@ -1006,7 +1006,7 @@ const MAX_ROWS = 500;
  * A rendering conveys its information visually and the cursor readout only
  * describes one point at a time, so without this there is no way to read the
  * actual numbers behind a picture. Shares sequenceRows with the CSV/JSON
- * export — a table and a download are the same data in different shapes.
+ * export - a table and a download are the same data in different shapes.
  */
 export function buildDataTable(): {
   el: HTMLElement; setSequence(seq: Sequence | null): void; toggle(): void; isOpen(): boolean;
@@ -1038,8 +1038,8 @@ export function buildDataTable(): {
       const total = seq.terms.length;
       const rows = sequenceRows(seq, MAX_ROWS);
       caption.textContent = total > MAX_ROWS
-        ? `${seq.name} — first ${MAX_ROWS} of ${total} terms`
-        : `${seq.name} — ${total} terms`;
+        ? `${seq.name} - first ${MAX_ROWS} of ${total} terms`
+        : `${seq.name} - ${total} terms`;
       for (const r of rows) {
         const tr = document.createElement('tr');
         const th = document.createElement('th');
@@ -1108,7 +1108,7 @@ describe('PNG attribution', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/export.test.ts -t "PNG attribution"`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Implement `src/ui/exportImage.ts`**
 
@@ -1231,7 +1231,7 @@ describe('export bar', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/ui/a11y.test.ts -t "export bar"`
-Expected: FAIL — no `.export-png`.
+Expected: FAIL - no `.export-png`.
 
 - [ ] **Step 3: Implement in `app.ts`**
 
@@ -1334,7 +1334,7 @@ git commit -m "feat: export bar, data table toggle, and a feedback link"
 
 ---
 
-## Task 8: Swept area — the geometry the line-shape experiment measures
+## Task 8: Swept area - the geometry the line-shape experiment measures
 
 **Files:**
 - Create: `src/viz/sweptArea.ts`
@@ -1410,7 +1410,7 @@ describe('sweptArea', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/viz/sweptArea.test.ts`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Implement `src/viz/sweptArea.ts`**
 
@@ -1426,7 +1426,7 @@ import type { Pt } from './pathTransform';
  * by less than the null model moves it, then the shape cannot be responsible
  * for any structure you think you see.
  *
- * Overlap where the stroke crosses itself is not subtracted — the measure is
+ * Overlap where the stroke crosses itself is not subtracted - the measure is
  * additive swept area, and the comparison is like-for-like across shapes on
  * the same path, so the bias is identical in every arm of the experiment.
  */
@@ -1498,7 +1498,7 @@ git commit -m "feat: analytic swept area of a stroked path, per join and cap"
 
 ## Task 9: The line-shape experiment
 
-Answers the question that prompted the render controls: *would line shape make a difference?* Not by opinion — by putting shape-to-shape variation next to the null model's own variation and seeing which is larger.
+Answers the question that prompted the render controls: *would line shape make a difference?* Not by opinion - by putting shape-to-shape variation next to the null model's own variation and seeing which is larger.
 
 **Files:**
 - Create: `src/experiments/lineShape.ts`
@@ -1564,7 +1564,7 @@ describe('line-shape experiment', () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/experiments/lineShape.test.ts`
-Expected: FAIL — module not found.
+Expected: FAIL - module not found.
 
 - [ ] **Step 3: Implement `src/experiments/lineShape.ts`**
 
@@ -1612,7 +1612,7 @@ const range = (xs: number[]): number => {
  * swept area of the drawn path moves when only the join changes, and the
  * yardstick is how much it moves when the sequence itself is replaced by a
  * permutation of its own terms. If shuffling the sequence moves the measure
- * more than restyling it does, then shape is cosmetic — anything you can see
+ * more than restyling it does, then shape is cosmetic - anything you can see
  * that survives a reshuffle is not something the join could have produced.
  *
  * Deterministic: no RNG beyond the seeded surrogates, no canvas, no pixels.
@@ -1720,7 +1720,7 @@ Add to the feature list:
   offered only where position carries information (grids place term *i* by
   index, so an overlay would simply overwrite).
 - **Export**: PNG with the OEIS credit drawn into the bitmap, plus CSV and
-  JSON carrying it in a header — attribution has to survive leaving the page.
+  JSON carrying it in a header - attribution has to survive leaving the page.
 - **The numbers behind the picture**: a data table of index and exact term,
   which is also the textual equivalent of the canvas for screen-reader users.
 ```
@@ -1762,13 +1762,13 @@ first principles rather than by making the numbers agree. Both the code and one
 test assertion are wrong in different directions; the geometry decides.
 
 **Known risk:** `runLineShapeExperiment` fixes the turtle walk at angle 90 /
-mod 4. That is one path shape, not all of them — the verdict is about that
+mod 4. That is one path shape, not all of them - the verdict is about that
 family of drawings, and `docs/line-shape-answer.md` must say so rather than
 generalising to every visualizer.
 
 ---
 
-## Captured for round 4 — continuous deformation and animation
+## Captured for round 4 - continuous deformation and animation
 
 Not in this round. Recorded here so it is not lost.
 
@@ -1779,7 +1779,7 @@ behaviour may live between the integer steps.
 Three things make this concrete:
 
 1. **Fractional parameters are currently unreachable.** Every numeric
-   `ParamSpec` in the codebase declares `step: 1` — turtle `angle` runs 1..180
+   `ParamSpec` in the codebase declares `step: 1` - turtle `angle` runs 1..180
    by ones, polyarc `angle` 1..120 by ones. An angle of 90.5° cannot be
    expressed at all, so the deformation the user is describing is not merely
    un-animated, it is inaccessible. Allowing fractional `step` is the
@@ -1790,14 +1790,14 @@ Three things make this concrete:
    figure; irrational multiples never close and drift. So sweeping the angle
    passes through resonances where the picture snaps to a stable form and
    intervals between them where it wanders. That structure is a property of
-   the *angle arithmetic*, largely independent of the sequence — which is
+   the *angle arithmetic*, largely independent of the sequence - which is
    exactly the kind of claim this project should measure rather than assert.
 
 3. **The machinery mostly exists.** The sweep view already renders a parameter
    range as small multiples; an animation is the same values played in time
    instead of laid out in space. `locate`/`position` already let a pinned term
    be tracked across re-renders, so a marker could follow one term through the
-   deformation — which is likely where the insight is.
+   deformation - which is likely where the insight is.
 
 The null-model question applies unchanged: does the deformation reveal
 something about *this* sequence, or would any sequence deform the same way

@@ -33,7 +33,7 @@ echo "==> syncing dist/ to s3://$BUCKET/"
 #
 # No --delete: assets are content-hashed, so a deploy publishes new filenames
 # rather than overwriting old ones. Deleting the old ones immediately breaks
-# any browser mid-session — it is still holding the previous index.html and
+# any browser mid-session - it is still holding the previous index.html and
 # will request the worker chunk that just vanished, which surfaces as an
 # ensemble that never finishes rather than a clean error. Stale hashed assets
 # cost almost nothing; prune them deliberately, not on every deploy.
@@ -54,7 +54,7 @@ echo "==> invalidating CloudFront"
 # invalidation paths into Windows paths, which CloudFront rejects.
 # /data/* covers the regenerated seq/*.json + meta.json (build:data output,
 # synced above along with everything else in dist/) as well as the search
-# index — without it, only "/", "/index.html", and the index itself were
+# index - without it, only "/", "/index.html", and the index itself were
 # invalidated, so a re-run of build:data (new OEIS sequences, corrected
 # metadata) stayed served stale from cache until it happened to expire.
 MSYS_NO_PATHCONV=1 aws cloudfront create-invalidation \

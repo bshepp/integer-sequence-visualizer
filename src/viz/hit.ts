@@ -4,7 +4,7 @@
  * Deliberately a union rather than a bare index: not every view has a term
  * under the pointer. A histogram bar identifies a *set* of terms and an
  * autocorrelation bar identifies a *lag*, so forcing either to return an
- * index would make it answer falsely — which is exactly the class of quiet
+ * index would make it answer falsely - which is exactly the class of quiet
  * wrongness this project keeps having to design out.
  */
 export type Hit =
