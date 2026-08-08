@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initMessages, showError, showNotice } from '../../src/ui/messages';
+import { labelledControl } from '../../src/ui/a11y';
+import { buildSequencePanel } from '../../src/ui/sequencePanel';
 
 describe('message live regions', () => {
   let container: HTMLElement;
@@ -35,5 +37,74 @@ describe('message live regions', () => {
     expect(container.querySelector('.banner.banner-error')).not.toBeNull();
     showNotice('hi');
     expect(container.querySelector('.banner.banner-notice')).not.toBeNull();
+  });
+});
+
+describe('labelledControl', () => {
+  it('associates the label with the control by id', () => {
+    const input = document.createElement('input');
+    const label = labelledControl('OEIS A-number', input);
+    expect(label.tagName).toBe('LABEL');
+    expect(input.id).toBeTruthy();
+    expect(label.htmlFor).toBe(input.id);
+    expect(label.textContent).toContain('OEIS A-number');
+  });
+
+  it('hides the label text visually by default', () => {
+    const label = labelledControl('Search', document.createElement('input'));
+    expect(label.querySelector('.visually-hidden')).not.toBeNull();
+  });
+
+  it('can show the label text when the design has room for it', () => {
+    const label = labelledControl('Bins', document.createElement('input'), { visible: true });
+    expect(label.querySelector('.visually-hidden')).toBeNull();
+  });
+
+  it('generates unique ids across calls', () => {
+    const a = document.createElement('input'), b = document.createElement('input');
+    labelledControl('One', a);
+    labelledControl('Two', b);
+    expect(a.id).not.toBe(b.id);
+  });
+});
+
+/** The accessible name of a form control, by the rules that actually apply. */
+export function accessibleName(el: HTMLElement, root: ParentNode): string {
+  const aria = el.getAttribute('aria-label');
+  if (aria) return aria;
+  const labelledby = el.getAttribute('aria-labelledby');
+  if (labelledby) return root.querySelector(`#${labelledby}`)?.textContent ?? '';
+  if (el.id) {
+    const forLabel = root.querySelector<HTMLLabelElement>(`label[for="${el.id}"]`);
+    if (forLabel) return forLabel.textContent ?? '';
+  }
+  return el.closest('label')?.textContent ?? '';
+}
+
+describe('sequence panel controls are all named', () => {
+  it('every input, textarea and select has an accessible name', () => {
+    const { el } = buildSequencePanel({ onSequence: () => {}, onError: () => {} });
+    document.body.appendChild(el);
+    const controls = el.querySelectorAll<HTMLElement>('input, textarea, select');
+    expect(controls.length).toBeGreaterThanOrEqual(5);
+    for (const c of controls) {
+      const name = accessibleName(c, el).trim();
+      expect(name.length, `${c.tagName}.${c.className || '(no class)'} has no accessible name`).toBeGreaterThan(0);
+    }
+  });
+
+  it('does not rely on placeholder as the name', () => {
+    const { el } = buildSequencePanel({ onSequence: () => {}, onError: () => {} });
+    for (const c of el.querySelectorAll<HTMLInputElement>('input[placeholder]')) {
+      expect(accessibleName(c, el).trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  it('every button has a non-empty accessible name', () => {
+    const { el } = buildSequencePanel({ onSequence: () => {}, onError: () => {} });
+    for (const b of el.querySelectorAll<HTMLButtonElement>('button')) {
+      const name = (b.getAttribute('aria-label') ?? b.textContent ?? '').trim();
+      expect(name.length, 'a button has no accessible name').toBeGreaterThan(0);
+    }
   });
 });

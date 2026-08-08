@@ -3,6 +3,7 @@ import { lookupById, search, fetchBFile, withTerms } from '../sequence/oeisClien
 import { sequenceFromPaste } from '../sequence/pasteParser';
 import { sequenceFromFormula, validateFormula } from '../sequence/formula';
 import { PRESETS } from '../sequence/presets';
+import { labelledControl } from './a11y';
 
 interface Handlers {
   onSequence(seq: Sequence): void;
@@ -54,7 +55,7 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     btn.textContent = 'Load';
     btn.addEventListener('click', () => load(lookupById(input.value)));
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') load(lookupById(input.value)); });
-    pane.append(input, btn);
+    pane.append(labelledControl('OEIS A-number', input), btn);
     el.appendChild(pane);
   }
 
@@ -104,7 +105,7 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     };
     btn.addEventListener('click', run);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
-    pane.append(input, btn, status, results);
+    pane.append(labelledControl('Search OEIS by keyword', input), btn, status, results);
     el.appendChild(pane);
   }
 
@@ -136,7 +137,14 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
       try { handlers.onSequence(sequenceFromFormula(formula.value, Number(count.value))); }
       catch (e) { handlers.onError(e instanceof Error ? e.message : String(e)); }
     });
-    pane.append(ta, pasteBtn, formula, formulaErr, count, formulaBtn);
+    pane.append(
+      labelledControl('Paste sequence terms', ta),
+      pasteBtn,
+      labelledControl('Formula in n', formula),
+      formulaErr,
+      labelledControl('Number of terms to generate', count),
+      formulaBtn,
+    );
     el.appendChild(pane);
   }
 
@@ -200,7 +208,7 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
           .catch((e) => handlers.onError(e instanceof Error ? e.message : String(e)))
           .finally(() => { btn.disabled = false; });
       });
-      info.append(btn, cap);
+      info.append(btn, labelledControl('Maximum terms to fetch', cap));
     }
   }
 
