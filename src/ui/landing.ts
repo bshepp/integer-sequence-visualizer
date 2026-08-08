@@ -5,15 +5,27 @@ import { SequenceView, type Sequence } from '../sequence/sequence';
 import { getVisualizer } from '../viz/registry';
 import { surrogateSequence } from './comparison';
 
-/** Reserved literal hash, checked before decodeState so it can never collide. */
+/** Reserved literal hashes, checked before decodeState so they cannot collide. */
 export const GALLERY_HASH = 'gallery';
+export const ABOUT_HASH = 'about';
+
+export type Route = 'landing' | 'about' | 'engine';
+
+/**
+ * Three pages, one hash. Reserved words are matched first so an encoded state
+ * can never be mistaken for a page, and anything undecodable falls back to the
+ * landing rather than dropping the visitor into an engine with no sequence and
+ * no explanation of why.
+ */
+export function routeFor(hash: string): Route {
+  const raw = hash.startsWith('#') ? hash.slice(1) : hash;
+  if (raw === ABOUT_HASH) return 'about';
+  if (raw === '' || raw === GALLERY_HASH) return 'landing';
+  return decodeState(raw) === null ? 'landing' : 'engine';
+}
 
 export function shouldShowLanding(hash: string): boolean {
-  const raw = hash.startsWith('#') ? hash.slice(1) : hash;
-  if (raw === '' || raw === GALLERY_HASH) return true;
-  // An undecodable hash shows the landing rather than dropping the visitor
-  // into an engine with no sequence and no explanation of why.
-  return decodeState(raw) === null;
+  return routeFor(hash) === 'landing';
 }
 
 const VERDICT_LABEL: Record<GalleryEntry['verdict'], string> = {
@@ -74,6 +86,7 @@ export function paintEntry(entry: GalleryEntry, canvas: HTMLCanvasElement, w: nu
 export interface LandingOptions {
   onOpen(): void;
   onPick(entry: GalleryEntry): void;
+  onAbout(): void;
 }
 
 export function buildLanding(opts: LandingOptions): HTMLElement {
@@ -117,11 +130,19 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   heroBody.className = 'landing-hero-body';
   heroBody.textContent = hero.body;
 
+  const actions = document.createElement('div');
+  actions.className = 'landing-actions';
   const open = document.createElement('button');
   open.className = 'landing-open';
   open.type = 'button';
   open.textContent = 'Open the full engine →';
   open.addEventListener('click', () => opts.onOpen());
+  const about = document.createElement('button');
+  about.className = 'landing-about';
+  about.type = 'button';
+  about.textContent = 'About & citations';
+  about.addEventListener('click', () => opts.onAbout());
+  actions.append(open, about);
 
   const stripLabel = document.createElement('h2');
   stripLabel.className = 'landing-strip-label';
@@ -164,7 +185,7 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   cc.textContent = 'CC BY-SA 4.0';
   attribution.append(cc, '.');
 
-  el.append(h1, lede, heroFigure, heroBody, open, stripLabel, strip, attribution);
+  el.append(h1, lede, heroFigure, heroBody, actions, stripLabel, strip, attribution);
   requestAnimationFrame(() => paintEntry(hero, heroCanvas, 760, 340));
   return el;
 }

@@ -245,3 +245,44 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 }
 .busy[hidden] { display: none; }
 .bfile-hint { margin: 6px 0 0; font-size: 11px; line-height: 1.4; color: var(--accent); }
+
+.header-nav { margin-left: auto; display: flex; gap: 8px; }
+.header-nav-button {
+  background: #24262c; color: var(--text); border: 1px solid #3a3d44;
+  border-radius: 4px; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 12px;
+}
+.header-nav-button:hover { border-color: var(--accent); color: var(--accent); }
+
+.landing-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+.landing-about {
+  background: transparent; color: var(--text); border: 1px solid #3a3d44;
+  border-radius: 6px; padding: 10px 18px; font: 600 14px system-ui; cursor: pointer;
+}
+.landing-about:hover { border-color: var(--accent); color: var(--accent); }
+
+.about {
+  position: fixed; inset: 0; z-index: 20; overflow-y: auto;
+  background: var(--bg); padding: 28px 24px 56px;
+}
+.about-inner { max-width: 660px; margin: 0 auto; }
+.about-title { margin: 10px 0 18px; font-size: clamp(22px, 3.5vw, 32px); }
+.about-body { color: var(--text); font-size: 14px; line-height: 1.65; }
+.about-body h2 { font-size: 16px; margin: 28px 0 8px; color: var(--text); }
+.about-body p { margin: 0 0 12px; color: var(--muted); }
+.about-body a { color: var(--accent); }
+.about-citations-head {
+  border-top: 1px solid #3a3d44; padding-top: 20px; margin-top: 34px !important;
+  font-size: 20px !important; color: var(--text) !important;
+}
+.citation-list { margin: 12px 0 0; padding-left: 22px; }
+.citation-list li { margin-bottom: 16px; }
+.citation-text { margin: 0 0 3px !important; color: var(--text) !important; }
+.citation-note { margin: 0 !important; font-size: 12.5px; color: var(--muted) !important; }
+.about-attribution { margin-top: 28px !important; font-size: 12px; border-top: 1px solid #3a3d44; padding-top: 14px; }
+.page-nav { display: flex; gap: 8px; justify-content: flex-end; }
+.page-nav-button {
+  background: #24262c; color: var(--text); border: 1px solid #3a3d44;
+  border-radius: 4px; padding: 5px 12px; cursor: pointer; font: inherit; font-size: 12px;
+}
+.page-nav-button:hover { border-color: var(--accent); color: var(--accent); }
+.page-nav-button--primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }

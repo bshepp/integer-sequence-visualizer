@@ -20,7 +20,8 @@ import { SURROGATE_EXPLAIN } from '../nullmodel/surrogates';
 import { buildReadout, describeHit, drawMarker, correspondingIndex } from './readout';
 import { hitIndex } from '../viz/hit';
 import type { Size } from '../viz/types';
-import { buildLanding, shouldShowLanding } from './landing';
+import { buildLanding, shouldShowLanding, routeFor, GALLERY_HASH, ABOUT_HASH } from './landing';
+import { buildAbout } from './about';
 import { buildStyleControls } from './styleControls';
 import { sequenceRows, toCSV, toJSON, downloadBlob } from './exportData';
 import { exportCanvasPng } from './exportImage';
@@ -86,7 +87,22 @@ export function mountApp(root: HTMLElement): void {
   const tagline = document.createElement('p');
   tagline.className = 'app-tagline';
   tagline.textContent = 'Render an integer sequence, then test whether the structure you see survives a null model.';
-  header.append(wordmark, tagline);
+  const headerNav = document.createElement('nav');
+  headerNav.className = 'header-nav';
+  headerNav.setAttribute('aria-label', 'Pages');
+  const navGallery = document.createElement('button');
+  navGallery.className = 'header-nav-button';
+  navGallery.type = 'button';
+  navGallery.textContent = 'Gallery';
+  navGallery.addEventListener('click', () => goTo(GALLERY_HASH));
+  const navAbout = document.createElement('button');
+  navAbout.className = 'header-nav-button';
+  navAbout.type = 'button';
+  navAbout.textContent = 'About';
+  navAbout.addEventListener('click', () => goTo(ABOUT_HASH));
+  headerNav.append(navGallery, navAbout);
+
+  header.append(wordmark, tagline, headerNav);
   root.appendChild(header);
 
   const layout = document.createElement('div');
@@ -404,11 +420,11 @@ export function mountApp(root: HTMLElement): void {
   let lastHashWritten = '';
 
   function syncUrl(): void {
-    // While the landing is up the URL must stay bare (or #gallery). Without
+    // While an overlay is up the URL must stay on its reserved hash. Without
     // this, the redraw that paints the engine underneath immediately
-    // replaceState()s a default engine hash over "/", and a reload would then
-    // decode that hash and skip the landing forever.
-    if (landingEl) return;
+    // replaceState()s a default engine hash over "/" or "#about", and a reload
+    // would then decode that hash and skip the page forever.
+    if (overlayEl) return;
     try {
       const hash = '#' + encodeState({
         seqRef: currentRef, vizId: state.vizId, params: state.params,
@@ -649,16 +665,20 @@ export function mountApp(root: HTMLElement): void {
   // the 600-term walk the visitor just clicked for an 80-term one. Same
   // A-number, same attribution, just the fuller term list they were shown.
   function applyHash(hash: string, presetSeq?: Sequence): void {
-    if (shouldShowLanding(hash)) {
+    const route = routeFor(hash);
+    if (route === 'about') { showAbout(); return; }
+    if (route === 'landing') {
       // Explicitly navigating to #gallery is a deliberate request to see it,
       // so it overrides the session's "already dismissed" flag. That flag
       // exists to stop the landing re-mounting after an incidental redraw --
       // a parameter tweak or a resize -- not to make the link a dead end.
       landingDismissed = false;
+      overlayEl?.remove();
+      overlayEl = null;
       showLanding();
       return;
     }
-    dismissLanding(false);
+    dismissOverlay(false);
     const decoded = decodeState(hash);
     if (decoded) {
       // Seed currentRef immediately: the redraw() below runs syncUrl before
@@ -707,10 +727,22 @@ export function mountApp(root: HTMLElement): void {
     }
   }
 
-  let landingEl: HTMLElement | null = null;
+  // One overlay slot for both non-engine pages: they are mutually exclusive
+  // screens over the same engine, so tracking two would only create states
+  // where both or neither is right.
+  let overlayEl: HTMLElement | null = null;
   // Once dismissed, stays dismissed for the session: re-mounting the landing
-  // after a parameter tweak would read as a bug, not a feature.
+  // after a parameter tweak would read as a bug, not a feature. Explicit
+  // navigation clears it — see applyHash.
   let landingDismissed = false;
+
+  /** Navigate to a reserved page. Goes through the hash so it is linkable. */
+  function goTo(hash: string): void {
+    location.hash = `#${hash}`;
+    // replaceState-driven navigation does not always fire hashchange, and the
+    // handler ignores our own writes, so apply directly.
+    applyHash(location.hash);
+  }
 
   // While the landing covers the viewport the engine behind it must not be
   // reachable by Tab and must not be announced — otherwise a keyboard user
@@ -723,16 +755,16 @@ export function mountApp(root: HTMLElement): void {
     for (const el of [skip, header, layout, footer]) el.toggleAttribute('inert', inert);
   }
 
-  function dismissLanding(focusEngine = true): void {
+  function dismissOverlay(focusEngine = true): void {
     landingDismissed = true;
-    landingEl?.remove();
-    landingEl = null;
+    overlayEl?.remove();
+    overlayEl = null;
     setEngineInert(false);
     if (focusEngine) picker.focus();
   }
 
   function openEntry(entry: GalleryEntry): void {
-    dismissLanding(false);
+    dismissOverlay(false);
     const hash = '#' + encodeState(entry.state);
     lastHashWritten = hash;
     try { history.replaceState(null, '', hash); } catch { /* sandboxed */ }
@@ -740,8 +772,9 @@ export function mountApp(root: HTMLElement): void {
   }
 
   function showLanding(): void {
-    if (landingDismissed || landingEl) return;
-    landingEl = buildLanding({
+    if (landingDismissed || overlayEl) return;
+    overlayEl = buildLanding({
+      onAbout: () => goTo(ABOUT_HASH),
       // "Open the full engine" lands on the hero's own view rather than an
       // empty canvas telling the visitor to load a sequence — which is the
       // cold open this whole screen exists to replace.
@@ -749,7 +782,18 @@ export function mountApp(root: HTMLElement): void {
       onPick: openEntry,
     });
     setEngineInert(true);
-    root.appendChild(landingEl);
+    root.appendChild(overlayEl);
+  }
+
+  function showAbout(): void {
+    overlayEl?.remove();
+    overlayEl = buildAbout({
+      onGallery: () => goTo(GALLERY_HASH),
+      onEngine: () => { dismissOverlay(false); openEntry(heroEntry()); picker.focus(); },
+    });
+    setEngineInert(true);
+    root.appendChild(overlayEl);
+    overlayEl.querySelector<HTMLButtonElement>('.page-nav-button')?.focus();
   }
 
   // Redraw is synchronous and can take a noticeable moment on a long sequence
@@ -781,7 +825,7 @@ export function mountApp(root: HTMLElement): void {
     if (location.hash === lastHashWritten) return;
     applyHash(location.hash);
   });
-  if (shouldShowLanding(location.hash)) {
+  if (routeFor(location.hash) !== 'engine') {
     // Mount the landing BEFORE the first redraw: syncUrl is suppressed only
     // while landingEl is set, and a redraw ahead of it would replaceState a
     // default engine hash over the bare "/" — after which a reload decodes
