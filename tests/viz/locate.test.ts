@@ -12,6 +12,8 @@ import { polyarcViz } from '../../src/viz/polyarc';
 import { digitWalkViz } from '../../src/viz/digitWalk';
 import { histogramViz } from '../../src/viz/histogram';
 import { autocorrViz } from '../../src/viz/autocorrelation';
+import { kolakoski } from '../../src/gallery/sequences';
+import type { Params, Visualizer } from '../../src/viz/types';
 
 const SIZE = { width: 400, height: 300 };
 
@@ -115,11 +117,20 @@ describe('basic family locate/position round-trip', () => {
 });
 
 describe('trajectory family locate/position round-trip', () => {
-  const seq = mk(Array.from({ length: 200 }, (_, i) => BigInt(i * 7 + 3)));
+  // A fixture whose walk does not retrace itself. The previous one
+  // (i*7+3 at the default angle and mod) collapsed 201 path points onto just
+  // 5 distinct screen positions -- the walk goes round the same square fifty
+  // times -- so locate(position(i)) is ambiguous there by construction, and
+  // an identity assertion passes or fails on tie-breaking order rather than
+  // on correctness. Kolakoski at 73 degrees mod 7 visits 201 distinct points.
+  const seq = mk(kolakoski(200));
+  const CASES: Array<[Visualizer, Params]> = [
+    [turtleViz, { angle: 73, k: 7 }],
+    [polyarcViz, { angle: 37, modulus: 7, centered: true }],
+  ];
 
-  for (const viz of [turtleViz, polyarcViz]) {
+  for (const [viz, params] of CASES) {
     it(`${viz.id}: locate(position(i)) === i`, () => {
-      const params = defaultParams(viz.params);
       for (const i of [0, 10, 99, 199]) {
         const p = viz.position!(seq, params, SIZE, i);
         expect(p, `position(${i}) null`).not.toBeNull();
@@ -127,6 +138,19 @@ describe('trajectory family locate/position round-trip', () => {
       }
     });
   }
+
+  it('on a self-retracing path, reports a term that really is at that point', () => {
+    // Where the walk revisits a position, several terms legitimately share a
+    // pixel. The honest contract is that locate names one of them, not that
+    // it names the one you happened to ask for.
+    const looping = mk(Array.from({ length: 200 }, (_, i) => BigInt(i * 7 + 3)));
+    const params = defaultParams(turtleViz.params);
+    const target = turtleViz.position!(looping, params, SIZE, 10)!;
+    const hit = turtleViz.locate!(looping, params, SIZE, target.x, target.y);
+    expect(hit?.kind).toBe('term');
+    const found = turtleViz.position!(looping, params, SIZE, (hit as { index: number }).index)!;
+    expect(Math.hypot(found.x - target.x, found.y - target.y)).toBeLessThan(0.5);
+  });
 
   it('digitwalk reports the term and the digit position', () => {
     const params = defaultParams(digitWalkViz.params);
@@ -161,5 +185,50 @@ describe('stats family reports non-term hits', () => {
     // offering one would force a false answer.
     expect(histogramViz.position).toBeUndefined();
     expect(autocorrViz.position).toBeUndefined();
+  });
+});
+
+describe('hit-testing follows the line, not its corners', () => {
+  const SIZE2 = { width: 400, height: 300 };
+
+  it('hits the middle of a long segment, not just its endpoints', () => {
+    // A two-point path scaled across the canvas puts its midpoint far from
+    // either vertex. Measuring to vertices would miss it entirely.
+    const pts = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
+    const t = pathTransform(pts, SIZE2);
+    const a = toScreen(t, pts[0]!), b = toScreen(t, pts[1]!);
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    expect(Math.hypot(mid.x - a.x, mid.y - a.y)).toBeGreaterThan(100); // genuinely far
+    expect(nearestIndex(pts, t, mid.x, mid.y)).not.toBeNull();
+  });
+
+  it('still rejects a cursor well off the line', () => {
+    const pts = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
+    const t = pathTransform(pts, SIZE2);
+    const a = toScreen(t, pts[0]!);
+    expect(nearestIndex(pts, t, a.x, a.y + 90)).toBeNull();
+  });
+
+  it('does not depend on how compact the sequence is', () => {
+    // The defect: a compact path is scaled up, spreading its vertices past
+    // the hit radius, so it responded less often than a sprawling one.
+    const compact = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
+    const sprawling = [{ x: 0, y: 0 }, { x: 9, y: 0 }, { x: 9, y: 9 }, { x: 0, y: 9 }];
+    for (const pts of [compact, sprawling]) {
+      const t = pathTransform(pts, SIZE2);
+      const a = toScreen(t, pts[0]!), b = toScreen(t, pts[1]!);
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      expect(nearestIndex(pts, t, mid.x, mid.y), 'midpoint of a segment must hit at any scale').not.toBeNull();
+    }
+  });
+
+  it('reports the nearer endpoint of the segment it hit', () => {
+    const pts = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
+    const t = pathTransform(pts, SIZE2);
+    const a = toScreen(t, pts[0]!), b = toScreen(t, pts[1]!);
+    const nearA = { x: a.x + (b.x - a.x) * 0.1, y: a.y };
+    const nearB = { x: a.x + (b.x - a.x) * 0.9, y: a.y };
+    expect(nearestIndex(pts, t, nearA.x, nearA.y)).toBe(0);
+    expect(nearestIndex(pts, t, nearB.x, nearB.y)).toBe(1);
   });
 });

@@ -40,19 +40,51 @@ export function toScreen(t: PathTransform, p: Pt): Pt {
 }
 
 /**
- * Nearest point to a screen coordinate, or null if nothing is within
- * maxDist pixels. O(n) - fine for a click, and fine for rAF-throttled hover
- * up to roughly 50k points. Bucket only if a specific view measurably drags.
+ * Nearest drawn point to a screen coordinate, or null if the cursor is more
+ * than maxDist pixels from the path.
+ *
+ * Distance is measured to the *segment*, not to the vertices. Measuring to
+ * vertices makes hit-testing depend on the scale factor, and the scale factor
+ * depends on how compact the sequence is: a Kolakoski turtle walk spans about
+ * 9 units and so is blown up to ~60px per step, putting the middle of every
+ * segment 30px from either end, while its own permutation surrogate sprawls
+ * over 13 units, is scaled to ~42px per step, and lands inside a 24px radius.
+ * The result was a cursor that reported reliably on the shuffled panel and
+ * only intermittently on the real one, which is exactly backwards from what
+ * the eye expects: you are pointing at a line, not at its corners.
+ *
+ * Returns the index of the nearer endpoint of the closest segment, so callers
+ * keep receiving a point index.
+ *
+ * O(n), which is fine for a click and for rAF-throttled hover up to roughly
+ * 50k points. Bucket only if a specific view measurably drags.
  */
 export function nearestIndex(
-  pts: Pt[], t: PathTransform, x: number, y: number, maxDist = 24,
+  pts: Pt[], t: PathTransform, x: number, y: number, maxDist = 16,
 ): number | null {
+  if (pts.length === 0) return null;
+  if (pts.length === 1) {
+    const only = toScreen(t, pts[0]!);
+    return Math.hypot(only.x - x, only.y - y) <= maxDist ? 0 : null;
+  }
+
   let best = -1, bestD2 = maxDist * maxDist;
-  for (let i = 0; i < pts.length; i++) {
-    const s = toScreen(t, pts[i]!);
-    const dx = s.x - x, dy = s.y - y;
-    const d2 = dx * dx + dy * dy;
-    if (d2 <= bestD2) { bestD2 = d2; best = i; }
+  let prev = toScreen(t, pts[0]!);
+  for (let i = 1; i < pts.length; i++) {
+    const cur = toScreen(t, pts[i]!);
+    const dx = cur.x - prev.x, dy = cur.y - prev.y;
+    const len2 = dx * dx + dy * dy;
+    // Projection of the cursor onto the segment, clamped to its extent so a
+    // point beyond either end measures to that end rather than to the
+    // infinite line.
+    const u = len2 === 0 ? 0 : Math.min(1, Math.max(0, ((x - prev.x) * dx + (y - prev.y) * dy) / len2));
+    const ex = prev.x + u * dx - x, ey = prev.y + u * dy - y;
+    const d2 = ex * ex + ey * ey;
+    if (d2 <= bestD2) {
+      bestD2 = d2;
+      best = u < 0.5 ? i - 1 : i;
+    }
+    prev = cur;
   }
   return best === -1 ? null : best;
 }
