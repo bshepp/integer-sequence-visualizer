@@ -39,6 +39,18 @@ experimental apparatus for answering it.
   the canvas's accessible description.
 - **Cursor readout**: hover to identify the term, digit, bin, or lag under the
   pointer; click a term to mark its counterpart in the null model.
+- **Render controls**: line width, join, cap, and a colour mode including
+  `none`, which removes hue entirely so any structure still visible cannot be
+  a palette artifact. Style is part of the shared URL.
+- **Superimpose**: draw the real sequence over its own null in one frame,
+  offered only where position carries information (grids place term *n* by
+  index, so an overlay would simply overwrite).
+- **Export**: PNG with the OEIS credit drawn into the bitmap, plus CSV and
+  JSON carrying it in a header — attribution has to survive leaving the page.
+  Terms export at full BigInt precision.
+- **The numbers behind the picture**: a data table of index and exact term,
+  which doubles as the textual equivalent of the canvas for screen-reader
+  users.
 
 ## Develop
 
@@ -102,6 +114,8 @@ Two limitations follow directly from this approach, both by design:
 - Spec: [`docs/superpowers/specs/2026-08-05-oeis-visualizer-design.md`](docs/superpowers/specs/2026-08-05-oeis-visualizer-design.md)
 - Implementation plan: [`docs/superpowers/plans/2026-08-05-oeis-visualizer.md`](docs/superpowers/plans/2026-08-05-oeis-visualizer.md)
 - Origin thread: [`docs/seqfan-ncurve-thread.md`](docs/seqfan-ncurve-thread.md)
+- Does line shape matter? [`docs/line-shape-answer.md`](docs/line-shape-answer.md)
+  — measured: no, by two to three orders of magnitude.
 
 ## Architecture (one paragraph)
 
