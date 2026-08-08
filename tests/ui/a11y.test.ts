@@ -108,3 +108,65 @@ describe('sequence panel controls are all named', () => {
     }
   });
 });
+
+describe('sequence panel tabs follow the ARIA tab pattern', () => {
+  const build = () => {
+    const { el } = buildSequencePanel({ onSequence: () => {}, onError: () => {} });
+    document.body.appendChild(el);
+    return el;
+  };
+
+  it('marks up a tablist with tabs and panels', () => {
+    const el = build();
+    expect(el.querySelector('[role="tablist"]')).not.toBeNull();
+    expect(el.querySelectorAll('[role="tab"]')).toHaveLength(3);
+    expect(el.querySelectorAll('[role="tabpanel"]')).toHaveLength(3);
+  });
+
+  it('each tab points at the panel it controls', () => {
+    const el = build();
+    for (const tab of el.querySelectorAll<HTMLElement>('[role="tab"]')) {
+      const panel = el.querySelector(`#${tab.getAttribute('aria-controls')}`);
+      expect(panel, `tab "${tab.textContent}" controls nothing`).not.toBeNull();
+      expect(panel!.getAttribute('aria-labelledby')).toBe(tab.id);
+    }
+  });
+
+  it('exactly one tab is selected, and only it is in the tab order', () => {
+    const el = build();
+    const tabs = [...el.querySelectorAll<HTMLElement>('[role="tab"]')];
+    expect(tabs.filter((t) => t.getAttribute('aria-selected') === 'true')).toHaveLength(1);
+    expect(tabs.filter((t) => t.tabIndex === 0)).toHaveLength(1);
+    expect(tabs.filter((t) => t.tabIndex === -1)).toHaveLength(2);
+  });
+
+  it('ArrowRight moves selection to the next tab and wraps', () => {
+    const el = build();
+    const tabs = [...el.querySelectorAll<HTMLElement>('[role="tab"]')];
+    tabs[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(tabs[1]!.getAttribute('aria-selected')).toBe('true');
+    tabs[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    tabs[2]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(tabs[0]!.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('ArrowLeft wraps backwards, Home and End jump to the ends', () => {
+    const el = build();
+    const tabs = [...el.querySelectorAll<HTMLElement>('[role="tab"]')];
+    tabs[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    expect(tabs[2]!.getAttribute('aria-selected')).toBe('true');
+    tabs[2]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+    expect(tabs[0]!.getAttribute('aria-selected')).toBe('true');
+    tabs[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    expect(tabs[2]!.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('selecting a tab shows exactly one panel', () => {
+    const el = build();
+    const tabs = [...el.querySelectorAll<HTMLElement>('[role="tab"]')];
+    tabs[1]!.click();
+    const visible = [...el.querySelectorAll<HTMLElement>('[role="tabpanel"]')].filter((p) => !p.hidden);
+    expect(visible).toHaveLength(1);
+    expect(visible[0]!.getAttribute('aria-labelledby')).toBe(tabs[1]!.id);
+  });
+});

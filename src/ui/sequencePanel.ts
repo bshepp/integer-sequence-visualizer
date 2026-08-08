@@ -10,7 +10,15 @@ interface Handlers {
   onError(msg: string): void;
 }
 
+// Panel instances get distinct id prefixes. Only one panel exists in the
+// running app, but hardcoded ids like "seqpane-0" silently collide the moment
+// two coexist in one document -- and duplicate ids break aria-controls /
+// aria-labelledby resolution, which is the exact wiring this pattern depends
+// on. Cheap to make correct; expensive to debug later.
+let panelSeq = 0;
+
 export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setInfo(seq: Sequence): void } {
+  const uid = `sp${++panelSeq}`;
   const el = document.createElement('div');
   el.className = 'sequence-panel';
 
@@ -21,27 +29,67 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     return label;
   }
 
-  // --- tabs ---
+  // --- tabs (WAI-ARIA tab pattern) ---
   el.appendChild(sectionLabel('Load a sequence'));
   const tabBar = document.createElement('div');
   tabBar.className = 'tab-bar';
+  tabBar.setAttribute('role', 'tablist');
+  tabBar.setAttribute('aria-label', 'How to load a sequence');
+
   const panes: Record<string, HTMLElement> = {};
-  for (const name of ['A-number', 'Search', 'Custom']) {
+  const tabNames = ['A-number', 'Search', 'Custom'];
+  const tabs: HTMLButtonElement[] = [];
+
+  function selectTab(index: number, moveFocus: boolean): void {
+    tabNames.forEach((name, i) => {
+      const chosen = i === index;
+      const tab = tabs[i]!;
+      tab.setAttribute('aria-selected', String(chosen));
+      // Roving tabindex: only the selected tab is reachable by Tab, so the
+      // whole tablist is one stop rather than three — arrow keys move within.
+      tab.tabIndex = chosen ? 0 : -1;
+      tab.classList.toggle('active', chosen);
+      panes[name]!.hidden = !chosen;
+    });
+    if (moveFocus) tabs[index]!.focus();
+  }
+
+  tabNames.forEach((name, i) => {
     const btn = document.createElement('button');
     btn.className = 'tab-button';
+    btn.type = 'button';
     btn.textContent = name;
-    btn.addEventListener('click', () => {
-      for (const [k, pane] of Object.entries(panes)) pane.hidden = k !== name;
-      tabBar.querySelectorAll('.tab-button').forEach((b) => b.classList.toggle('active', b === btn));
+    btn.id = `${uid}-tab-${i}`;
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-controls', `${uid}-pane-${i}`);
+    btn.addEventListener('click', () => selectTab(i, false));
+    btn.addEventListener('keydown', (e) => {
+      const last = tabNames.length - 1;
+      let next: number | null = null;
+      if (e.key === 'ArrowRight') next = i === last ? 0 : i + 1;
+      else if (e.key === 'ArrowLeft') next = i === 0 ? last : i - 1;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = last;
+      if (next === null) return;
+      e.preventDefault();
+      selectTab(next, true);
     });
-    if (name === 'A-number') btn.classList.add('active');
     tabBar.appendChild(btn);
+    tabs.push(btn);
+
     const pane = document.createElement('div');
     pane.className = 'tab-pane';
-    pane.hidden = name !== 'A-number';
+    pane.id = `${uid}-pane-${i}`;
+    pane.setAttribute('role', 'tabpanel');
+    pane.setAttribute('aria-labelledby', btn.id);
+    // Focusable so a keyboard user reaches the panel's content directly after
+    // the tablist, per the ARIA authoring practices.
+    pane.tabIndex = 0;
     panes[name] = pane;
-  }
+  });
+
   el.appendChild(tabBar);
+  selectTab(0, false);
 
   const load = (p: Promise<Sequence>) =>
     p.then(handlers.onSequence).catch((e) => handlers.onError(e instanceof Error ? e.message : String(e)));
