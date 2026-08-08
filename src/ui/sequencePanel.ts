@@ -22,8 +22,10 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
   const el = document.createElement('div');
   el.className = 'sequence-panel';
 
+  // A real heading, not a styled div: these are the only landmarks in the
+  // sidebar, and without them there is no structure to navigate by.
   function sectionLabel(text: string): HTMLElement {
-    const label = document.createElement('div');
+    const label = document.createElement('h2');
     label.className = 'section-label';
     label.textContent = text;
     return label;
@@ -116,6 +118,7 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     btn.textContent = 'Search';
     const status = document.createElement('div');
     status.className = 'search-status';
+    status.setAttribute('role', 'status');
     const results = document.createElement('ul');
     results.className = 'search-results';
     // The search index is tens of MB uncompressed and is fetched at most
@@ -133,6 +136,9 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
         .then((hits) => {
           indexLoaded = true;
           results.replaceChildren();
+          // Announce the outcome; without this a screen-reader user gets a
+          // silently repopulated list and no sign anything happened.
+          status.textContent = `${hits.length} match${hits.length === 1 ? '' : 'es'}`;
           if (hits.length === 0) { handlers.onError('No matches.'); return; }
           for (const hit of hits.slice(0, 12)) {
             const li = document.createElement('li');
@@ -147,7 +153,9 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
         .finally(() => {
           if (firstLoad) {
             btn.disabled = false;
-            status.textContent = '';
+            // Only clear the "Loading search index…" placeholder if the
+            // result handler did not already replace it with a count.
+            if (status.textContent === 'Loading search index…') status.textContent = '';
           }
         });
     };
@@ -173,8 +181,14 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     formula.placeholder = 'Formula in n, e.g. n*n + n + 41';
     const formulaErr = document.createElement('div');
     formulaErr.className = 'formula-error';
+    formulaErr.id = `${uid}-formula-error`;
+    formulaErr.setAttribute('aria-live', 'polite');
+    formula.setAttribute('aria-describedby', formulaErr.id);
+    formula.setAttribute('aria-invalid', 'false');
     formula.addEventListener('input', () => {
-      formulaErr.textContent = formula.value ? validateFormula(formula.value) ?? '' : '';
+      const message = formula.value ? validateFormula(formula.value) ?? '' : '';
+      formulaErr.textContent = message;
+      formula.setAttribute('aria-invalid', String(message.length > 0));
     });
     const count = document.createElement('input');
     count.type = 'number';

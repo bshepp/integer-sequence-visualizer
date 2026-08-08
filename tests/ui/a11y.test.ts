@@ -170,3 +170,41 @@ describe('sequence panel tabs follow the ARIA tab pattern', () => {
     expect(visible[0]!.getAttribute('aria-labelledby')).toBe(tabs[1]!.id);
   });
 });
+
+describe('sequence panel structure and status', () => {
+  const build = () => {
+    const { el } = buildSequencePanel({ onSequence: () => {}, onError: () => {} });
+    document.body.appendChild(el);
+    return el;
+  };
+
+  it('section labels are real headings', () => {
+    const el = build();
+    const headings = [...el.querySelectorAll('h2')].map((h) => h.textContent);
+    expect(headings).toEqual(expect.arrayContaining(['Load a sequence', 'Gallery', 'Loaded']));
+  });
+
+  it('search status is a live region', () => {
+    const el = build();
+    expect(el.querySelector('.search-status')!.getAttribute('role')).toBe('status');
+  });
+
+  it('formula errors are announced and mark the field invalid', () => {
+    const el = build();
+    const err = el.querySelector('.formula-error')!;
+    expect(err.getAttribute('aria-live')).toBe('polite');
+
+    const formula = el.querySelector<HTMLInputElement>('input[placeholder^="Formula"]')!;
+    expect(formula.getAttribute('aria-describedby')).toBe(err.id);
+
+    formula.value = 'n +';
+    formula.dispatchEvent(new Event('input'));
+    expect(formula.getAttribute('aria-invalid')).toBe('true');
+    expect(err.textContent!.length).toBeGreaterThan(0);
+
+    formula.value = 'n*n';
+    formula.dispatchEvent(new Event('input'));
+    expect(formula.getAttribute('aria-invalid')).toBe('false');
+    expect(err.textContent).toBe('');
+  });
+});

@@ -159,13 +159,16 @@ describe('buildSequencePanel — search index loading UX', () => {
     expect(status.textContent).toMatch(/loading/i);
     await new Promise((r) => setTimeout(r, 20));
     expect(btn.disabled).toBe(false);
-    expect(status.textContent).toBe('');
+    // The loading placeholder is replaced by the result count, which the
+    // status element announces as a live region — see tests/ui/a11y.test.ts.
+    expect(status.textContent).not.toMatch(/loading/i);
+    expect(status.textContent).toMatch(/1 match/);
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     input.value = 'fibonacci';
     btn.click(); // second search: index already cached — no loading phase this time
     expect(btn.disabled).toBe(false);
-    expect(status.textContent).toBe('');
+    expect(status.textContent).not.toMatch(/loading/i);
     await new Promise((r) => setTimeout(r, 20));
     expect(fetchMock).toHaveBeenCalledTimes(1); // still just the one index fetch
   });

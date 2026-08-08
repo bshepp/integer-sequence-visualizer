@@ -175,3 +175,4 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
   overflow: hidden; white-space: nowrap;
 }
 .a11y-field { display: contents; }
+.section-label { font-weight: 400; }
