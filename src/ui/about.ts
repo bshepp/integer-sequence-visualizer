@@ -99,12 +99,12 @@ export function buildAbout(opts: AboutOptions): HTMLElement {
 
   body.append(
     section('The question', 'about-question'),
-    PARA('In August 2026, George Whale introduced NCurve on the SeqFan mailing list - an app that draws OEIS sequences as polyarc curves. He asked whether such visualizations tell us, at a glance, anything useful or significant about the structure and character of the underlying sequences. Nobody answered. This site is an attempt to.'),
+    PARA('In August 2026, George Whale introduced NCurve on the SeqFan mailing list. It is an app that draws OEIS sequences as polyarc curves. He asked whether such visualizations tell us, at a glance, anything useful or significant about the structure and character of the underlying sequences. Nobody answered. This site is an attempt to.'),
     PARA('The difficulty is that a drawing of a sequence is also a drawing of the drawing method. A square spiral imposes a spiral; a cumulative walk imposes drift. Some of what you see is in the numbers and some of it was put there by the technique, and staring harder does not separate them.'),
 
     section('The method', 'about-method'),
     PARA('Every rendering here can be placed beside a null model of itself: the same terms in a random order, the same steps between terms reordered, or fresh numbers matched to the same trend and spread. If a pattern survives having the sequence scrambled underneath it, the technique produced the pattern rather than the numbers.'),
-    PARA('That test is necessary but not sufficient, and the gallery includes a deliberate counterexample: a(n) = n on a spiral produces striking structure that the null model endorses, because shuffling really does destroy it - yet every sequence climbing by a constant draws the same picture, so it distinguishes nothing. A null model tells you whether a pattern survived a particular scrambling. It cannot tell you whether the pattern is worth anything.'),
+    PARA('That test is necessary but not sufficient, and the gallery includes a deliberate counterexample: a(n) = n on a spiral produces striking structure that the null model endorses, because shuffling really does destroy it. Yet every sequence climbing by a constant draws the same picture, so it distinguishes nothing. A null model tells you whether a pattern survived a particular scrambling. It cannot tell you whether the pattern is worth anything.'),
   );
 
   const citeHead = section('Citations', 'about-citations');
@@ -130,7 +130,7 @@ export function buildAbout(opts: AboutOptions): HTMLElement {
 
   body.append(
     section('Credit', 'about-credit'),
-    PARA('The SeqFan thread that started this is archived in the repository. From it: George Whale built NCurve and asked the question. Bill McEachen went looking through the sequences, gave eleven of them names - French curve, pie crust, propeller, tire, saw blade, record disc, zipper, Slinky - and highlighted A019488, a find of Neil Sloane\'s; all eleven are preset in the sidebar under his names. Jean-Paul Allouche supplied the 1980s references above.'),
+    PARA('The SeqFan thread that started this is archived in the repository. From it: George Whale built NCurve and asked the question. Bill McEachen went looking through the sequences, gave eleven of them names (French curve, pie crust, propeller, tire, saw blade, record disc, zipper, Slinky) and highlighted A019488, a find of Neil Sloane\'s; all eleven are preset in the sidebar under his names. Jean-Paul Allouche supplied the 1980s references above.'),
     PARA('Nothing here is claimed on their behalf, and none of them has endorsed this site. They are credited because the work descends from theirs.'),
   );
 
@@ -141,7 +141,7 @@ export function buildAbout(opts: AboutOptions): HTMLElement {
 
   body.append(
     section('How it was built', 'about-build'),
-    PARA('This site was written with substantial AI assistance - Anthropic\'s Claude, specifically the Fable 5, Sonnet 5 and Opus 5 models, which produced most of the code and much of the analysis under direction.'),
+    PARA('This site was written with substantial AI assistance from Anthropic\'s Claude, specifically the Fable 5, Sonnet 5 and Opus 5 models, which produced most of the code and much of the analysis under direction.'),
     PARA('Since the site makes empirical claims, that seems worth stating plainly rather than leaving to be discovered. The claims do not rest on trusting any of it: every measurement quoted on the site is computed by code in the public repository and checked by a test that recomputes it, so a claim that stopped reproducing would fail the build. Corrections are welcome.'),
   );
 

@@ -156,7 +156,7 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
 
   const stripLabel = document.createElement('h2');
   stripLabel.className = 'landing-strip-label';
-  stripLabel.textContent = 'More examples - click any to open it in the engine';
+  stripLabel.textContent = 'More examples: click any to open it in the engine';
 
   const strip = document.createElement('div');
   strip.className = 'gallery-strip';
