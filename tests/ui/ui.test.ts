@@ -66,13 +66,23 @@ describe('buildSequencePanel', () => {
     expect(el.querySelectorAll('.preset-button').length).toBe(PRESETS.length);
   });
 
-  it('setInfo shows name and b-file button for OEIS sequences', () => {
+  it('setInfo shows the name, and enables the b-file fetch only for OEIS sequences', () => {
+    // The b-file control is a permanent part of the "Load a sequence" section
+    // rather than something that appears and vanishes with the info card, so
+    // the contract is enabled/disabled rather than present/absent.
     const panel = buildSequencePanel({ onSequence: () => {}, onError: () => {} });
+    const btn = () => panel.el.querySelector<HTMLButtonElement>('.bfile-button')!;
+
+    expect(btn(), 'b-file control should exist before anything is loaded').not.toBeNull();
+    expect(btn().disabled).toBe(true);
+
     panel.setInfo({ terms: [1n], aNumber: 'A000045', name: 'Fibonacci numbers', offset: 0, source: 'oeis' });
     expect(panel.el.textContent).toContain('Fibonacci');
-    expect(panel.el.querySelector('.bfile-button')).not.toBeNull();
+    expect(btn().disabled).toBe(false);
+
     panel.setInfo({ terms: [1n], name: 'n*n', offset: 0, source: 'formula' });
-    expect(panel.el.querySelector('.bfile-button')).toBeNull();
+    expect(btn().disabled).toBe(true);
+    expect(btn().title).toMatch(/OEIS/i);
   });
 
   it('the OEIS A-number link opens with rel="noopener noreferrer" (task FR, M10)', () => {

@@ -176,6 +176,28 @@ export function mountApp(root: HTMLElement): void {
   picker.setAttribute('aria-label', 'Visualization technique');
   topbar.appendChild(picker);
 
+  // Style is set-once-and-forget for most sessions, and six always-visible
+  // controls cost a whole wrapped row of the topbar -- measured at 151px of
+  // chrome, leaving the canvas only 61% of the viewport on a short screen.
+  // Behind a disclosure it costs one button.
+  const styleUi = buildStyleControls(style, () => redraw());
+  styleUi.el.hidden = true;
+  styleUi.el.id = `${uid}-style`;
+
+  const styleToggle = document.createElement('button');
+  styleToggle.className = 'style-toggle';
+  styleToggle.type = 'button';
+  styleToggle.textContent = 'Style';
+  styleToggle.setAttribute('aria-expanded', 'false');
+  styleToggle.setAttribute('aria-controls', styleUi.el.id);
+  styleToggle.addEventListener('click', () => {
+    styleUi.el.hidden = !styleUi.el.hidden;
+    styleToggle.setAttribute('aria-expanded', String(!styleUi.el.hidden));
+    styleToggle.classList.toggle('style-toggle--open', !styleUi.el.hidden);
+    redraw();
+  });
+  topbar.appendChild(styleUi.el);
+
   const explain = buildExplainPanel();
   const explainBtn = document.createElement('button');
   explainBtn.className = 'explain-button';
@@ -189,6 +211,10 @@ export function mountApp(root: HTMLElement): void {
     );
   });
   topbar.appendChild(explainBtn);
+  // Style sits between the (i) button and the visualizer's own parameters:
+  // it opens a second row of controls, so it reads as a peer of the knobs
+  // rather than as a trailing afterthought.
+  topbar.appendChild(styleToggle);
 
   // Parameters sit on the picker row, immediately after the (i) button, so the
   // knobs you actually turn are next to the thing they belong to.
@@ -211,28 +237,7 @@ export function mountApp(root: HTMLElement): void {
   }
   rebuildParams();
 
-  // Style is set-once-and-forget for most sessions, and six always-visible
-  // controls cost a whole wrapped row of the topbar -- measured at 151px of
-  // chrome, leaving the canvas only 61% of the viewport on a short screen.
-  // Behind a disclosure it costs one button.
-  const styleUi = buildStyleControls(style, () => redraw());
-  styleUi.el.hidden = true;
-  styleUi.el.id = `${uid}-style`;
 
-  const styleToggle = document.createElement('button');
-  styleToggle.className = 'style-toggle';
-  styleToggle.type = 'button';
-  styleToggle.textContent = 'Style';
-  styleToggle.setAttribute('aria-expanded', 'false');
-  styleToggle.setAttribute('aria-controls', styleUi.el.id);
-  styleToggle.addEventListener('click', () => {
-    styleUi.el.hidden = !styleUi.el.hidden;
-    styleToggle.setAttribute('aria-expanded', String(!styleUi.el.hidden));
-    styleToggle.classList.toggle('style-toggle--open', !styleUi.el.hidden);
-    redraw();
-  });
-  topbar.appendChild(styleToggle);
-  topbar.appendChild(styleUi.el);
 
   const canvasWrap = document.createElement('div');
   canvasWrap.className = 'canvas-wrap';

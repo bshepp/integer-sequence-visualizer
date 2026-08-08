@@ -210,6 +210,61 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     el.appendChild(pane);
   }
 
+  // --- b-file fetch, part of "Load a sequence" rather than of the info card ---
+  // It belongs with loading, not with reporting what is loaded, and it is the
+  // single most valuable action in the panel: the stored snapshot caps terms
+  // per sequence, so the default view is a short prefix, and short prefixes
+  // are where these pictures are least interesting.
+  //
+  // Built once and rebound by setInfo rather than recreated per sequence, so
+  // it can sit above the info card and keep a stable identity for its label.
+  let loadedSeq: Sequence | null = null;
+
+  const bfileBox = document.createElement('div');
+  bfileBox.className = 'bfile-box';
+
+  const bfileBtn = document.createElement('button');
+  bfileBtn.className = 'bfile-button';
+  bfileBtn.type = 'button';
+  bfileBtn.textContent = 'Load all terms (b-file)';
+
+  const bfileCap = document.createElement('input');
+  bfileCap.type = 'number';
+  bfileCap.value = '10000';
+  bfileCap.className = 'bfile-cap';
+
+  const bfileHint = document.createElement('p');
+  bfileHint.className = 'bfile-hint';
+  bfileHint.textContent = 'Most sequences only get interesting with more terms — this fetches the full list from OEIS.';
+
+  bfileBtn.addEventListener('click', () => {
+    const seq = loadedSeq;
+    if (!seq?.aNumber) return;
+    bfileBtn.disabled = true;
+    // Number('') === 0 for a cleared field, and parseBFile(text, 0) used to
+    // silently return a one-term sequence instead of erroring — guard here too
+    // so the common "cleared the input, clicked load" slip doesn't even reach
+    // that path. Math.max(1, …) only catches that specific case: non-numeric
+    // garbage still coerces to NaN (Math.max with NaN is NaN), which
+    // parseBFile's own Number.isFinite guard then rejects with a banner
+    // instead of a silent 1-term result.
+    fetchBFile(seq.aNumber, Math.max(1, Number(bfileCap.value)))
+      .then((terms) => handlers.onSequence(withTerms(seq, terms)))
+      .catch((e) => handlers.onError(e instanceof Error ? e.message : String(e)))
+      .finally(() => { syncBfile(); });
+  });
+
+  function syncBfile(): void {
+    const available = loadedSeq?.source === 'oeis' && Boolean(loadedSeq.aNumber);
+    bfileBtn.disabled = !available;
+    bfileCap.disabled = !available;
+    bfileBtn.title = available ? '' : 'Load an OEIS sequence first';
+  }
+
+  bfileBox.append(bfileBtn, labelledControl('Maximum terms to fetch', bfileCap), bfileHint);
+  el.appendChild(bfileBox);
+  syncBfile();
+
   // presets shelf
   el.appendChild(sectionLabel('Gallery'));
   const shelf = document.createElement('div');
@@ -231,6 +286,8 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
   el.appendChild(info);
 
   function setInfo(seq: Sequence): void {
+    loadedSeq = seq;
+    syncBfile();
     info.replaceChildren();
     const name = document.createElement('div');
     name.className = 'info-name';
@@ -248,36 +305,6 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     }
     meta.append(` · ${seq.terms.length} terms · ${seq.source}`);
     info.appendChild(meta);
-    if (seq.source === 'oeis' && seq.aNumber) {
-      const cap = document.createElement('input');
-      cap.type = 'number';
-      cap.value = '10000';
-      cap.className = 'bfile-cap';
-      const btn = document.createElement('button');
-      btn.className = 'bfile-button';
-      btn.textContent = 'Load all terms (b-file)';
-      btn.addEventListener('click', () => {
-        btn.disabled = true;
-        // Number('') === 0 for a cleared field, and parseBFile(text, 0) used
-        // to silently return a one-term sequence instead of erroring — guard
-        // here too so the common "cleared the input, clicked load" slip
-        // doesn't even reach that path. Math.max(1, …) only catches that
-        // specific case: non-numeric garbage still coerces to NaN (Math.max
-        // with NaN is NaN), which parseBFile's own `Number.isFinite` guard
-        // then rejects with a banner instead of a silent 1-term result.
-        fetchBFile(seq.aNumber!, Math.max(1, Number(cap.value)))
-          .then((terms) => handlers.onSequence(withTerms(seq, terms)))
-          .catch((e) => handlers.onError(e instanceof Error ? e.message : String(e)))
-          .finally(() => { btn.disabled = false; });
-      });
-      const hint = document.createElement('p');
-      hint.className = 'bfile-hint';
-      // The stored snapshot caps terms per sequence, so the default view is a
-      // short prefix -- and short prefixes are where these pictures are least
-      // interesting. Worth saying out loud rather than hoping it is discovered.
-      hint.textContent = 'Most sequences only get interesting with more terms — this fetches the full list from OEIS.';
-      info.append(btn, labelledControl('Maximum terms to fetch', cap), hint);
-    }
   }
 
   return { el, setInfo };

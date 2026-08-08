@@ -51,7 +51,22 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .info-card { font-size: 13px; }
 .info-name { font-weight: 600; margin-bottom: 4px; }
 .info-meta { color: var(--muted); margin-bottom: 8px; }
-.bfile-cap { width: 80px; margin-left: 6px; }
+.bfile-box { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+/* Sized like the tab-pane controls above it, but deliberately the accent
+   colour: this is the action that makes the pictures worth looking at, and it
+   should not read as one more grey button. Accent on --bg is ~7:1. */
+.bfile-button {
+  background: var(--accent); color: var(--bg);
+  border: 1px solid var(--accent); border-radius: 4px;
+  padding: 6px; cursor: pointer; font: inherit; font-weight: 600;
+}
+.bfile-button:hover:not(:disabled) { filter: brightness(1.12); }
+.bfile-button:disabled { opacity: 0.4; cursor: not-allowed; }
+.bfile-cap {
+  width: 100%; background: #24262c; color: var(--text);
+  border: 1px solid #3a3d44; border-radius: 4px; padding: 6px; font: inherit;
+}
+.bfile-cap:disabled { opacity: 0.4; cursor: not-allowed; }
 .param-controls { display: flex; gap: 14px; flex-wrap: wrap; }
 .param-field { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
 .param-value { min-width: 2.5em; color: var(--text); }
@@ -100,12 +115,16 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
   flex: 1 1 120px; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/* Inverted against the dark chrome so it reads as a distinct control rather
+   than another grey chip. #e6e6e6 on #14161a is 14.5:1 -- far past the 4.5:1
+   AA threshold, and the same pairing inverts cleanly for a light theme. */
 .style-toggle {
-  background: #24262c; color: var(--muted); border: 1px solid #3a3d44;
-  border-radius: 4px; padding: 4px 10px; cursor: pointer; font: inherit;
-  font-size: 12px; flex: none;
+  background: var(--text); color: var(--bg); border: 1px solid var(--text);
+  border-radius: 4px; padding: 4px 12px; cursor: pointer; font: inherit;
+  font-size: 12px; font-weight: 600; flex: none;
 }
-.style-toggle--open { color: var(--accent); border-color: var(--accent); }
+.style-toggle:hover { border-color: var(--accent); }
+.style-toggle--open { background: var(--accent); border-color: var(--accent); color: var(--bg); }
 .explain-panel {
   position: absolute; z-index: 5; top: 12px; right: 12px; max-width: 380px;
   background: var(--panel); border: 1px solid #3a3d44; border-radius: 8px;
