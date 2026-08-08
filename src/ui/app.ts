@@ -190,12 +190,14 @@ export function mountApp(root: HTMLElement): void {
   });
   topbar.appendChild(explainBtn);
 
+  // Parameters sit on the picker row, immediately after the (i) button, so the
+  // knobs you actually turn are next to the thing they belong to.
+  const paramsHost = document.createElement('div');
+  topbar.appendChild(paramsHost);
+
   const vizShort = document.createElement('p');
   vizShort.className = 'viz-short';
   topbar.appendChild(vizShort);
-
-  const paramsHost = document.createElement('div');
-  topbar.appendChild(paramsHost);
   function rebuildParams(): void {
     const current = getVisualizer(state.vizId);
     vizShort.textContent = current.explain.short;
@@ -209,7 +211,27 @@ export function mountApp(root: HTMLElement): void {
   }
   rebuildParams();
 
+  // Style is set-once-and-forget for most sessions, and six always-visible
+  // controls cost a whole wrapped row of the topbar -- measured at 151px of
+  // chrome, leaving the canvas only 61% of the viewport on a short screen.
+  // Behind a disclosure it costs one button.
   const styleUi = buildStyleControls(style, () => redraw());
+  styleUi.el.hidden = true;
+  styleUi.el.id = `${uid}-style`;
+
+  const styleToggle = document.createElement('button');
+  styleToggle.className = 'style-toggle';
+  styleToggle.type = 'button';
+  styleToggle.textContent = 'Style';
+  styleToggle.setAttribute('aria-expanded', 'false');
+  styleToggle.setAttribute('aria-controls', styleUi.el.id);
+  styleToggle.addEventListener('click', () => {
+    styleUi.el.hidden = !styleUi.el.hidden;
+    styleToggle.setAttribute('aria-expanded', String(!styleUi.el.hidden));
+    styleToggle.classList.toggle('style-toggle--open', !styleUi.el.hidden);
+    redraw();
+  });
+  topbar.appendChild(styleToggle);
   topbar.appendChild(styleUi.el);
 
   const canvasWrap = document.createElement('div');
@@ -313,6 +335,18 @@ export function mountApp(root: HTMLElement): void {
   });
   tableToggle.setAttribute('aria-expanded', 'false');
   tableToggle.setAttribute('aria-controls', dataTable.el.id);
+
+  mkExport('copy-link', 'Copy link', () => {
+    // The URL encodes the whole view as base64, so selecting it out of the
+    // address bar is genuinely awkward -- which is the thing people do most.
+    const url = location.href;
+    const done = () => showNotice('Link copied — it reproduces this exact view.');
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(done).catch(() => showError('Could not copy the link.'));
+    } else {
+      showNotice(url);
+    }
+  });
 
   const feedback = document.createElement('a');
   feedback.className = 'feedback-link';
@@ -713,7 +747,27 @@ export function mountApp(root: HTMLElement): void {
     root.appendChild(landingEl);
   }
 
-  window.addEventListener('resize', redraw);
+  // Redraw is synchronous and can take a noticeable moment on a long sequence
+  // (a 2001-term b-file's digit walk is 418,487 points), so a drag-resize
+  // otherwise looks frozen. Show the indicator immediately, then coalesce the
+  // actual redraws to one per frame-ish.
+  const busy = document.createElement('div');
+  busy.className = 'busy';
+  busy.hidden = true;
+  busy.setAttribute('role', 'status');
+  busy.textContent = 'Rendering…';
+  canvasWrap.appendChild(busy);
+
+  let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+  window.addEventListener('resize', () => {
+    busy.hidden = false;
+    if (resizeTimer !== null) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      resizeTimer = null;
+      redraw();
+      busy.hidden = true;
+    }, 120);
+  });
   window.addEventListener('hashchange', () => {
     // Ignore echoes of our own syncUrl writes. Per spec, history.replaceState
     // shouldn't fire hashchange at all, but that's not guaranteed across

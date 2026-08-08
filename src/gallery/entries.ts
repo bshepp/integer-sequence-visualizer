@@ -1,5 +1,5 @@
 import type { GalleryEntry } from './types';
-import { kolakoski, fibonacci, naturals, primes, recaman, oeisSeq } from './sequences';
+import { kolakoski, fibonacci, naturals, primes, recaman, thueMorse, ruler, norgard, oeisSeq } from './sequences';
 
 const N = 600;
 
@@ -99,6 +99,52 @@ export const GALLERY: GalleryEntry[] = [
     verdict: 'open',
     caption: 'The same sequence on a spiral, where the difference is far harder to see.',
     body: 'This is the hero sequence again, drawn as an Ulam spiral instead of a walk. The grid places each term by index rather than accumulating, so a shuffle moves colours around without changing the overall texture much — the difference is real but nothing like as visible. Use the flip button to swap between the real sequence and its shuffle, and click a cell first so the marker follows that same term across the flip. Worth comparing against the hero: the technique you choose decides how much a null model can show you.',
+  },
+  {
+    id: 'thue-morse',
+    title: 'A different sequence, the same verdict',
+    sequence: oeisSeq('A010060', 'Thue-Morse sequence', thueMorse(N)),
+    state: {
+      seqRef: { kind: 'oeis', aNumber: 'A010060' },
+      vizId: 'turtle', params: { angle: 90, k: 4 },
+      mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
+    },
+    verdict: 'real',
+    caption: 'Built by a completely different rule than Kolakoski, and just as far outside the null.',
+    body: 'Thue-Morse takes the parity of the number of 1 bits in n. It is overlap-free and strongly self-similar, and like Kolakoski it uses only two values — but it is built by an entirely unrelated construction. Measured the same way, 66.8% of its adjacent pairs differ against a null band of 46.4% to 53.9%. Two sequences with nothing in common mechanically land in the same place, which is a hint that what the test detects is regular alternation itself rather than anything specific to either rule.',
+    evidence: {
+      statistic: 'switchRate',
+      measured: 0.667779632721202,
+      bandLo: 0.46410684474123537,
+      bandHi: 0.5392320534223706,
+      surrogate: 'permutation', n: 200, seed: 1,
+    },
+  },
+  {
+    id: 'ruler',
+    title: 'A sequence you can hear',
+    sequence: oeisSeq('A001511', 'The ruler sequence', ruler(N)),
+    state: {
+      seqRef: { kind: 'oeis', aNumber: 'A001511' },
+      vizId: 'modgrid', params: { modulus: 8, columns: 32 },
+      mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
+    },
+    verdict: 'open',
+    caption: 'The markings on a ruler, written out as numbers.',
+    body: 'a(n) counts how many times 2 divides n, plus one — which is exactly the height of the tick marks on an imperial ruler. Laid out in a grid whose width is a power of two, the doubling structure lines up into columns. Try changing the column count to something that is not a power of two and watch the pattern break: that is the layout and the sequence interacting, and telling them apart is the whole exercise.',
+  },
+  {
+    id: 'norgard',
+    title: 'A sequence written as music',
+    sequence: oeisSeq('A004718', "Per Norgard's infinity series", norgard(N)),
+    state: {
+      seqRef: { kind: 'oeis', aNumber: 'A004718' },
+      vizId: 'scatter', params: { scale: 'linear' },
+      mode: 'over', surrogate: 'difference', seed: 1, ensembleN: 200,
+    },
+    verdict: 'open',
+    caption: 'Composed before it was catalogued — the infinity series Per Norgard built symphonies from.',
+    body: "Defined by a(2n) = -a(n) and a(2n+1) = a(n) + 1, this is the Danish composer Per Norgard's infinity series, which he used as a compositional structure from the 1960s onward — his Symphony No. 2 is built on it. It is self-similar at every scale of two. Shown superimposed over a difference surrogate, which keeps the same step sizes but reorders them, so the question is whether the arrangement of its intervals matters or only their sizes.",
   },
 ];
 

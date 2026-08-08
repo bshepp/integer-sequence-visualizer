@@ -93,7 +93,19 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
   border: 1px solid #3a3d44; cursor: pointer;
   font: 600 13px/1 system-ui; flex: none;
 }
-.viz-short { margin: 0; color: var(--muted); font-size: 12px; flex-basis: 100%; }
+/* Shares the picker row and truncates rather than claiming a row of its own:
+   flex-basis:100% here was half of the 151px topbar. */
+.viz-short {
+  margin: 0; color: var(--muted); font-size: 12px;
+  flex: 1 1 120px; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.style-toggle {
+  background: #24262c; color: var(--muted); border: 1px solid #3a3d44;
+  border-radius: 4px; padding: 4px 10px; cursor: pointer; font: inherit;
+  font-size: 12px; flex: none;
+}
+.style-toggle--open { color: var(--accent); border-color: var(--accent); }
 .explain-panel {
   position: absolute; z-index: 5; top: 12px; right: 12px; max-width: 380px;
   background: var(--panel); border: 1px solid #3a3d44; border-radius: 8px;
@@ -191,6 +203,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .sweep-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; color: var(--muted); font-size: 13px; }
 .sweep-param { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 5px; font: inherit; }
 .style-controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--muted); flex-basis: 100%; }
+.style-controls[hidden] { display: none; }
 .style-controls select { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 3px; font: inherit; }
 .style-controls input[type="range"] { width: 80px; }
 .style-controls input:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -205,3 +218,11 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .data-table th, .data-table td { text-align: left; padding: 2px 14px; border-bottom: 1px solid #24262c; }
 .data-table thead th { position: sticky; top: 0; background: var(--panel); color: var(--muted); }
 .data-table tbody th { color: var(--muted); font-weight: 400; }
+.busy {
+  position: absolute; top: 10px; left: 10px; z-index: 4;
+  background: rgba(20,22,26,0.9); color: var(--muted);
+  border: 1px solid #3a3d44; border-radius: 4px;
+  padding: 4px 10px; font-size: 12px; pointer-events: none;
+}
+.busy[hidden] { display: none; }
+.bfile-hint { margin: 6px 0 0; font-size: 11px; line-height: 1.4; color: var(--accent); }

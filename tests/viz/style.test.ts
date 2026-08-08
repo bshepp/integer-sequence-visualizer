@@ -110,10 +110,16 @@ describe('visualizers honour RenderStyle', () => {
     }
   });
 
-  it('defaults reproduce the previous appearance', () => {
+  it('falls back to DEFAULT_STYLE when no style params are supplied', () => {
     const { ctx, sets } = recordingCtx();
     turtleViz.render(mk(20), defaultParams(turtleViz.params), ctx, { width: 300, height: 300 });
-    // The value strokePath hard-coded before the style layer existed.
-    expect(sets.lineWidth).toContain(1.25);
+    expect(sets.lineWidth).toContain(DEFAULT_STYLE.lineWidth);
+  });
+
+  it('the default stroke is fine, but not the thinnest available', () => {
+    // A hairline shows path structure a fatter stroke fills in; pinned at the
+    // floor it would disappear on some displays.
+    expect(DEFAULT_STYLE.lineWidth).toBeLessThan(1.25);
+    expect(DEFAULT_STYLE.lineWidth).toBeGreaterThan(0.25);
   });
 });

@@ -14,7 +14,9 @@ export interface RenderStyle {
 }
 
 export const DEFAULT_STYLE: RenderStyle = {
-  lineWidth: 1.25,
+  // Deliberately fine: a hairline shows path structure that a fatter stroke
+  // fills in. Adjustable up to 12 for presentation renders.
+  lineWidth: 0.75,
   lineJoin: 'miter',
   lineCap: 'butt',
   colorMode: 'spectrum',

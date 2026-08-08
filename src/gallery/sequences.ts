@@ -56,6 +56,41 @@ export function recaman(n: number): bigint[] {
   return out.map(BigInt);
 }
 
+/**
+ * A010060: Thue-Morse. a(n) = parity of the number of 1 bits in n.
+ * Overlap-free and strongly self-similar — a good second "real" case,
+ * structurally different from Kolakoski but two-valued in the same way.
+ */
+export function thueMorse(n: number): bigint[] {
+  const out: bigint[] = [];
+  for (let i = 0; i < n; i++) {
+    let bits = 0;
+    for (let v = i; v > 0; v >>= 1) bits ^= v & 1;
+    out.push(BigInt(bits));
+  }
+  return out;
+}
+
+/** A001511: the ruler sequence — 1 + the 2-adic valuation of n, from n = 1. */
+export function ruler(n: number): bigint[] {
+  const out: bigint[] = [];
+  for (let i = 1; i <= n; i++) {
+    let v = 0, x = i;
+    while (x % 2 === 0) { x /= 2; v++; }
+    out.push(BigInt(v + 1));
+  }
+  return out;
+}
+
+/** A004718: Per Nørgård's "infinity series". a(2n) = -a(n), a(2n+1) = a(n)+1. */
+export function norgard(n: number): bigint[] {
+  const out: bigint[] = [0n];
+  for (let i = 1; i < n; i++) {
+    out.push(i % 2 === 0 ? -out[i / 2]! : out[(i - 1) / 2]! + 1n);
+  }
+  return out;
+}
+
 export function oeisSeq(aNumber: string, name: string, terms: bigint[]): Sequence {
   return { terms, aNumber, name, offset: 0, source: 'oeis' };
 }

@@ -270,7 +270,13 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
           .catch((e) => handlers.onError(e instanceof Error ? e.message : String(e)))
           .finally(() => { btn.disabled = false; });
       });
-      info.append(btn, labelledControl('Maximum terms to fetch', cap));
+      const hint = document.createElement('p');
+      hint.className = 'bfile-hint';
+      // The stored snapshot caps terms per sequence, so the default view is a
+      // short prefix -- and short prefixes are where these pictures are least
+      // interesting. Worth saying out loud rather than hoping it is discovered.
+      hint.textContent = 'Most sequences only get interesting with more terms — this fetches the full list from OEIS.';
+      info.append(btn, labelledControl('Maximum terms to fetch', cap), hint);
     }
   }
 
