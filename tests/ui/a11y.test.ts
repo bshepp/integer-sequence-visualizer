@@ -303,3 +303,22 @@ describe('modal layers contain focus completely', () => {
     expect(escapees.map((e) => e.className), 'focusable outside the sweep dialog').toEqual([]);
   });
 });
+
+describe('#gallery is a working link, not just a startup route', () => {
+  it('reopens the landing after it has been dismissed', () => {
+    // jsdom shares one location across the file; a prior test's engine hash
+    // would otherwise mean the landing never mounts here in the first place.
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+
+    root.querySelector<HTMLButtonElement>('.landing-open')!.click();
+    expect(root.querySelector('.landing')).toBeNull();
+
+    // Same-document navigation to the reserved hash must bring it back.
+    location.hash = '#gallery';
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+    expect(root.querySelector('.landing')).not.toBeNull();
+  });
+});

@@ -524,8 +524,16 @@ export function mountApp(root: HTMLElement): void {
   // the 600-term walk the visitor just clicked for an 80-term one. Same
   // A-number, same attribution, just the fuller term list they were shown.
   function applyHash(hash: string, presetSeq?: Sequence): void {
-    // Navigating to a real engine state closes the landing if it is still up.
-    if (!shouldShowLanding(hash)) dismissLanding(false);
+    if (shouldShowLanding(hash)) {
+      // Explicitly navigating to #gallery is a deliberate request to see it,
+      // so it overrides the session's "already dismissed" flag. That flag
+      // exists to stop the landing re-mounting after an incidental redraw --
+      // a parameter tweak or a resize -- not to make the link a dead end.
+      landingDismissed = false;
+      showLanding();
+      return;
+    }
+    dismissLanding(false);
     const decoded = decodeState(hash);
     if (decoded) {
       // Seed currentRef immediately: the redraw() below runs syncUrl before

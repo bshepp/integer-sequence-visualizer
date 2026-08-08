@@ -137,6 +137,40 @@ OEIS's `names.gz`/`stripped.gz` bulk downloads and are hosted and
 redistributed under that same **CC BY-SA 4.0** license, same as any other
 OEIS sequence data this app displays.
 
+## Accessibility
+
+The interface targets **WCAG 2.1 AA / Section 508**.
+
+- Every control has a programmatic label; `placeholder` is never used as an
+  accessible name.
+- The sequence-panel tabs implement the WAI-ARIA tab pattern with roving
+  tabindex and Left/Right/Home/End navigation.
+- Errors and notices are delivered through persistent live regions -- an
+  assertive one for errors, a polite one for notices -- created at startup
+  rather than when the first message arrives, since a live region inserted
+  already populated is frequently never announced.
+- The landing overlay and the sweep dialog mark everything behind them
+  `inert`, removing it from both the tab order and the accessibility tree;
+  focus moves in on open and returns to the opener on close.
+- A skip link bypasses the sidebar, which otherwise puts the load panel plus
+  ~20 preset buttons ahead of the visualization.
+- Canvases carry `role="img"` and a description drawn from the visualizer's
+  own `explain.long` text; decorative thumbnails are `aria-hidden`.
+- `prefers-reduced-motion` is honoured; nothing auto-animates.
+- Colour contrast was measured across every foreground/background pair in the
+  theme. The lowest is 5.75:1 against a 4.5:1 AA threshold for normal text,
+  so the palette needed no changes.
+
+`tests/ui/a11y.test.ts` enforces the structural half of this: accessible
+names on every control, no positive `tabindex`, click targets that are real
+buttons or links, exactly one live region of each urgency, and that nothing
+outside a modal layer stays reachable while it is open.
+
+**Known gap:** the canvas renderings convey information visually that has no
+full textual equivalent. The cursor readout names whatever is under the
+pointer and `explain.long` describes what the view draws, but there is no
+tabular view of the underlying terms. That is the obvious next step.
+
 ## Deploy
 
 ### Social preview card
