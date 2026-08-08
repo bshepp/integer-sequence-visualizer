@@ -238,7 +238,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .data-table thead th { position: sticky; top: 0; background: var(--panel); color: var(--muted); }
 .data-table tbody th { color: var(--muted); font-weight: 400; }
 .busy {
-  position: absolute; top: 10px; left: 10px; z-index: 4;
+  position: absolute; bottom: 10px; right: 10px; z-index: 4;
   background: rgba(20,22,26,0.9); color: var(--muted);
   border: 1px solid #3a3d44; border-radius: 4px;
   padding: 4px 10px; font-size: 12px; pointer-events: none;

@@ -18,7 +18,7 @@ import { sequenceFromFormula } from '../sequence/formula';
 import { buildExplainPanel } from './explainPanel';
 import { SURROGATE_EXPLAIN } from '../nullmodel/surrogates';
 import { buildReadout, describeHit, drawMarker, correspondingIndex } from './readout';
-import { hitIndex } from '../viz/hit';
+import { hitIndex, type Hit } from '../viz/hit';
 import type { Size } from '../viz/types';
 import { buildLanding, shouldShowLanding, routeFor, GALLERY_HASH, ABOUT_HASH } from './landing';
 import { buildAbout } from './about';
@@ -287,12 +287,29 @@ export function mountApp(root: HTMLElement): void {
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
 
-  function hitAt(pt: { x: number; y: number }) {
+  /**
+   * What is under the pointer, and which panel it belongs to.
+   *
+   * In side-by-side the right half draws a *different* sequence, so it gets
+   * hit-tested against that surrogate rather than being ignored (which is what
+   * it used to do) or — much worse — reported using real-sequence indices.
+   */
+  function hitAt(pt: { x: number; y: number }): { hit: Hit; seq: Sequence; panel: 'real' | 'null' } | null {
     const viz = getVisualizer(state.vizId);
     if (!state.seq || !viz.locate) return null;
     const { size, panelW } = hitGeometry();
-    if (comparison.mode === 'side' && pt.x > size.width / 2) return null;
-    return viz.locate(new SequenceView(state.seq), state.params, { width: panelW, height: size.height }, pt.x, pt.y);
+
+    let x = pt.x;
+    let seq: Sequence = state.seq;
+    let panel: 'real' | 'null' = 'real';
+    if (comparison.mode === 'side' && pt.x > size.width / 2) {
+      x = pt.x - (size.width / 2 + 1);
+      seq = surrogateSequence(state.seq, comparison.surrogate, comparison.seed);
+      panel = 'null';
+    }
+
+    const hit = viz.locate(new SequenceView(seq), state.params, { width: panelW, height: size.height }, x, pt.y);
+    return hit ? { hit, seq, panel } : null;
   }
 
   let hoverPending = false;
@@ -305,15 +322,20 @@ export function mountApp(root: HTMLElement): void {
     requestAnimationFrame(() => {
       hoverPending = false;
       if (!state.seq) { readout.set(null); return; }
-      const hit = hitAt(pt);
-      readout.set(hit ? describeHit(hit, new SequenceView(state.seq)) : null);
+      const found = hitAt(pt);
+      readout.set(found
+        ? `${found.panel === 'null' ? `${comparison.surrogate} null · ` : ''}${describeHit(found.hit, new SequenceView(found.seq))}`
+        : null);
     });
   });
   canvas.addEventListener('pointerleave', () => readout.set(null));
 
   canvas.addEventListener('click', (e) => {
     if (!state.seq) return;
-    const idx = hitIndex(hitAt(canvasPoint(e)));
+    const found = hitAt(canvasPoint(e));
+    // Pin only from the real panel: a surrogate index moves when the seed
+    // changes, so pinning one would silently point somewhere else later.
+    const idx = found && found.panel === 'real' ? hitIndex(found.hit) : null;
     // Clicking the same term again clears the pin.
     pinnedIndex = idx !== null && idx === pinnedIndex ? null : idx;
     redraw();
@@ -486,7 +508,8 @@ export function mountApp(root: HTMLElement): void {
       }
       ctx.fillStyle = '#9aa0aa';
       ctx.font = '12px system-ui';
-      ctx.fillText(label, 10, h - 10);
+      // Top of the panel: the cursor readout owns the bottom-left corner.
+      ctx.fillText(label, 10, 16);
       ctx.restore();
     };
 
@@ -527,7 +550,7 @@ export function mountApp(root: HTMLElement): void {
       viz.render(view, { ...state.params, ...styleToParams(style) }, ctx, { width, height });
       ctx.fillStyle = '#9aa0aa';
       ctx.font = '12px system-ui';
-      ctx.fillText(`real (colour) over ${comparison.surrogate} null (grey)`, 10, height - 10);
+      ctx.fillText(`real (colour) over ${comparison.surrogate} null (grey)`, 10, 16);
       if (pinnedIndex !== null && viz.position) {
         const p = viz.position(view, state.params, { width, height }, pinnedIndex);
         if (p) drawMarker(ctx, p, '#f7768e');

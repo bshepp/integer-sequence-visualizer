@@ -109,7 +109,9 @@ describe('buildSequencePanel', () => {
   it('groups the sidebar into labeled sections without disturbing existing structure', () => {
     const { el } = buildSequencePanel({ onSequence: () => {}, onError: () => {} });
     const labels = Array.from(el.querySelectorAll('.section-label')).map((n) => n.textContent);
-    expect(labels).toEqual(['Load a sequence', 'Gallery', 'Loaded']);
+    // "Loaded" sits directly under what loaded it, rather than below a shelf
+    // of two dozen presets that pushes it off a short screen.
+    expect(labels).toEqual(['Load a sequence', 'Loaded', 'Gallery']);
     // Regression guard: section labels must not have displaced the elements
     // existing tests and app.ts rely on.
     expect(el.querySelectorAll('.tab-button').length).toBe(3);

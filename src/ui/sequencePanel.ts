@@ -265,6 +265,12 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
   el.appendChild(bfileBox);
   syncBfile();
 
+  // info card
+  el.appendChild(sectionLabel('Loaded'));
+  const info = document.createElement('div');
+  info.className = 'info-card';
+  el.appendChild(info);
+
   // presets shelf
   el.appendChild(sectionLabel('Gallery'));
   const shelf = document.createElement('div');
@@ -278,12 +284,6 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     shelf.appendChild(b);
   }
   el.appendChild(shelf);
-
-  // info card
-  el.appendChild(sectionLabel('Loaded'));
-  const info = document.createElement('div');
-  info.className = 'info-card';
-  el.appendChild(info);
 
   function setInfo(seq: Sequence): void {
     loadedSeq = seq;
