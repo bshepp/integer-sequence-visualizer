@@ -150,3 +150,48 @@ describe('inert control fixes', () => {
     expect(bar.el.querySelector<HTMLSelectElement>('.surrogate-select')!.disabled).toBe(true);
   });
 });
+
+import { supportsSuperimpose } from '../../src/ui/comparison';
+import { turtleViz } from '../../src/viz/turtle';
+import { ulamViz } from '../../src/viz/ulamSpiral';
+import { scatterViz } from '../../src/viz/scatter';
+import { modGridViz } from '../../src/viz/modGrid';
+
+describe('superimpose availability', () => {
+  it('is offered for trajectory and basic views', () => {
+    expect(supportsSuperimpose(turtleViz)).toBe(true);
+    expect(supportsSuperimpose(scatterViz)).toBe(true);
+  });
+
+  it('is refused for grid views, where cells would simply overwrite', () => {
+    // A grid places cell i at a position fixed by i, so drawing the null on
+    // top replaces the real colours rather than overlaying anything.
+    expect(supportsSuperimpose(ulamViz)).toBe(false);
+    expect(supportsSuperimpose(modGridViz)).toBe(false);
+  });
+
+  it('offers "over" in the mode dropdown', () => {
+    const bar = buildComparisonBar(defaultComparison(), () => {});
+    const modes = [...bar.el.querySelectorAll<HTMLOptionElement>('.mode-select option')].map((o) => o.value);
+    expect(modes).toContain('over');
+  });
+
+  it('disables "over" and falls back when the visualizer cannot support it', () => {
+    const state = defaultComparison();
+    state.mode = 'over';
+    const bar = buildComparisonBar(state, () => {});
+    bar.update(true, false);
+    const opt = bar.el.querySelector<HTMLOptionElement>('.mode-select option[value="over"]')!;
+    expect(opt.disabled).toBe(true);
+    expect(state.mode).toBe('off');
+  });
+
+  it('leaves "over" selectable when the visualizer does support it', () => {
+    const state = defaultComparison();
+    state.mode = 'over';
+    const bar = buildComparisonBar(state, () => {});
+    bar.update(true, true);
+    expect(bar.el.querySelector<HTMLOptionElement>('.mode-select option[value="over"]')!.disabled).toBe(false);
+    expect(state.mode).toBe('over');
+  });
+});

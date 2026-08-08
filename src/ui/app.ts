@@ -8,7 +8,7 @@ import { minMax } from '../viz/mathUtils';
 import { buildParamControls } from './paramControls';
 import { buildSequencePanel } from './sequencePanel';
 import { initMessages, showError, showNotice } from './messages';
-import { defaultComparison, surrogateSequence, drawEnsembleChart, buildComparisonBar } from './comparison';
+import { defaultComparison, surrogateSequence, drawEnsembleChart, buildComparisonBar, supportsSuperimpose } from './comparison';
 import { startEnsembleWorker, type EnsembleJob } from '../nullmodel/ensemble';
 import type { Bands } from '../nullmodel/bands';
 import { buildSweepView } from './sweep';
@@ -26,7 +26,7 @@ import { DEFAULT_STYLE, styleToParams, styleFromParams, type RenderStyle } from 
 import { heroEntry } from '../gallery/entries';
 import type { GalleryEntry } from '../gallery/types';
 
-const MODES = ['off', 'side', 'flip', 'ensemble'];
+const MODES = ['off', 'side', 'over', 'flip', 'ensemble'];
 const SURROGATES = ['permutation', 'difference', 'matched'];
 
 export function mountApp(root: HTMLElement): void {
@@ -123,7 +123,7 @@ export function mountApp(root: HTMLElement): void {
     state.seq = seq;
     currentRef = refFor(seq);
     panel.setInfo(seq);
-    bar.update(Boolean(getVisualizer(state.vizId).statistics));
+    bar.update(Boolean(getVisualizer(state.vizId).statistics), supportsSuperimpose(getVisualizer(state.vizId)));
     redraw();
   }
 
@@ -159,7 +159,7 @@ export function mountApp(root: HTMLElement): void {
     state.vizId = picker.value;
     state.params = defaultParams(getVisualizer(state.vizId).params);
     rebuildParams();
-    bar.update(Boolean(getVisualizer(state.vizId).statistics));
+    bar.update(Boolean(getVisualizer(state.vizId).statistics), supportsSuperimpose(getVisualizer(state.vizId)));
     redraw();
   });
   picker.setAttribute('aria-label', 'Visualization technique');
@@ -267,7 +267,7 @@ export function mountApp(root: HTMLElement): void {
 
   const bar = buildComparisonBar(comparison, redraw);
   main.insertBefore(bar.el, canvasWrap);
-  bar.update(Boolean(getVisualizer(state.vizId).statistics));
+  bar.update(Boolean(getVisualizer(state.vizId).statistics), supportsSuperimpose(getVisualizer(state.vizId)));
 
   const sweepBtn = document.createElement('button');
   sweepBtn.textContent = 'Sweep…';
@@ -399,6 +399,23 @@ export function mountApp(root: HTMLElement): void {
             : 'index-for-index (this null does not preserve terms)',
           width / 2 + 11, height - 26,
         );
+      }
+    } else if (comparison.mode === 'over') {
+      const surr = surrogateSequence(state.seq, comparison.surrogate, comparison.seed);
+      // Null underneath in flat grey, real on top in full colour: the eye
+      // should read the real sequence as figure and the null as ground.
+      const nullStyle = { ...style, colorMode: 'none' as const };
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      viz.render(new SequenceView(surr), { ...state.params, ...styleToParams(nullStyle) }, ctx, { width, height });
+      ctx.restore();
+      viz.render(view, { ...state.params, ...styleToParams(style) }, ctx, { width, height });
+      ctx.fillStyle = '#9aa0aa';
+      ctx.font = '12px system-ui';
+      ctx.fillText(`real (colour) over ${comparison.surrogate} null (grey)`, 10, height - 10);
+      if (pinnedIndex !== null && viz.position) {
+        const p = viz.position(view, state.params, { width, height }, pinnedIndex);
+        if (p) drawMarker(ctx, p, '#f7768e');
       }
     } else if (comparison.mode === 'flip') {
       const shown = comparison.showSurrogate
@@ -572,7 +589,7 @@ export function mountApp(root: HTMLElement): void {
         styleUi.refresh();
       }
       bar.refresh();
-      bar.update(Boolean(getVisualizer(state.vizId).statistics));
+      bar.update(Boolean(getVisualizer(state.vizId).statistics), supportsSuperimpose(getVisualizer(state.vizId)));
     }
     redraw();
 

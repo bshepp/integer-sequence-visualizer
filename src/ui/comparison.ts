@@ -2,10 +2,20 @@ import type { Sequence } from '../sequence/sequence';
 import { withTerms } from '../sequence/oeisClient';
 import { makeSurrogate, type SurrogateType } from '../nullmodel/surrogates';
 import type { Bands } from '../nullmodel/bands';
-import type { Size } from '../viz/types';
+import type { Size, Visualizer } from '../viz/types';
 import { minMax } from '../viz/mathUtils';
 
-export type ComparisonMode = 'off' | 'side' | 'flip' | 'ensemble';
+export type ComparisonMode = 'off' | 'side' | 'over' | 'flip' | 'ensemble';
+
+/**
+ * Superimposing only means something where position carries information.
+ * Grid and spiral layouts place term i at a position fixed by i alone, so
+ * drawing the null on top overwrites the real cells rather than overlaying
+ * them — it would look like a comparison while showing only the surrogate.
+ */
+export function supportsSuperimpose(viz: Visualizer): boolean {
+  return viz.family === 'trajectory' || viz.family === 'basic';
+}
 
 export interface ComparisonState {
   mode: ComparisonMode;
@@ -148,7 +158,7 @@ export function drawEnsembleChart(
 export function buildComparisonBar(
   state: ComparisonState,
   onChange: () => void,
-): { el: HTMLElement; update(vizHasStats: boolean): void; refresh(): void } {
+): { el: HTMLElement; update(vizHasStats: boolean, vizSupportsOver?: boolean): void; refresh(): void } {
   const el = document.createElement('div');
   el.className = 'comparison-bar';
 
@@ -204,7 +214,7 @@ export function buildComparisonBar(
     flipBtn.classList.toggle('flip-button--active', state.mode === 'flip');
   }
 
-  const modeSel = mkSelect('mode-select', ['off', 'side', 'flip', 'ensemble'], state.mode,
+  const modeSel = mkSelect('mode-select', ['off', 'side', 'over', 'flip', 'ensemble'], state.mode,
     (v) => {
       state.mode = v as ComparisonMode;
       syncMode();
@@ -249,10 +259,12 @@ export function buildComparisonBar(
 
   return {
     el,
-    update(vizHasStats: boolean) {
-      const opt = modeSel.querySelector<HTMLOptionElement>('option[value="ensemble"]')!;
-      opt.disabled = !vizHasStats;
-      if (!vizHasStats && state.mode === 'ensemble') {
+    update(vizHasStats: boolean, vizSupportsOver = true) {
+      const ensembleOpt = modeSel.querySelector<HTMLOptionElement>('option[value="ensemble"]')!;
+      ensembleOpt.disabled = !vizHasStats;
+      const overOpt = modeSel.querySelector<HTMLOptionElement>('option[value="over"]')!;
+      overOpt.disabled = !vizSupportsOver;
+      if ((!vizHasStats && state.mode === 'ensemble') || (!vizSupportsOver && state.mode === 'over')) {
         // Forced back to 'off', so the null-model controls must go inert too.
         state.mode = 'off';
         modeSel.value = 'off';
