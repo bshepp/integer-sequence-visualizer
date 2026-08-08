@@ -163,3 +163,5 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 }
 .landing-hero-button:hover { border-color: var(--accent); }
 .bar-field { display: inline-flex; align-items: center; gap: 6px; }
+.message-region { display: flex; flex-direction: column; gap: 8px; }
+.message-region:empty { display: none; }
