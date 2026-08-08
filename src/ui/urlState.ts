@@ -1,6 +1,7 @@
 import type { Params } from '../viz/types';
 import type { ComparisonMode } from './comparison';
 import type { SurrogateType } from '../nullmodel/surrogates';
+import type { RenderStyle } from '../viz/style';
 
 export type SeqRef =
   | { kind: 'oeis'; aNumber: string }
@@ -19,6 +20,8 @@ export interface UrlState {
   // older/missing key simply decodes as undefined — callers that read it
   // must treat that as "keep the current default", not throw or crash.
   ensembleN?: number;
+  /** Absent on links encoded before the style layer existed. */
+  style?: RenderStyle;
 }
 
 function b64urlEncode(s: string): string {

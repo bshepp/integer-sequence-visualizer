@@ -190,3 +190,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .skip-link:focus { top: 0; }
 .sweep-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; color: var(--muted); font-size: 13px; }
 .sweep-param { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 5px; font: inherit; }
+.style-controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--muted); flex-basis: 100%; }
+.style-controls select { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 3px; font: inherit; }
+.style-controls input[type="range"] { width: 80px; }
+.style-controls input:disabled { opacity: 0.45; cursor: not-allowed; }

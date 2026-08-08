@@ -21,6 +21,8 @@ import { buildReadout, describeHit, drawMarker, correspondingIndex } from './rea
 import { hitIndex } from '../viz/hit';
 import type { Size } from '../viz/types';
 import { buildLanding, shouldShowLanding } from './landing';
+import { buildStyleControls } from './styleControls';
+import { DEFAULT_STYLE, styleToParams, styleFromParams, type RenderStyle } from '../viz/style';
 import { heroEntry } from '../gallery/entries';
 import type { GalleryEntry } from '../gallery/types';
 
@@ -37,6 +39,7 @@ export function mountApp(root: HTMLElement): void {
   };
 
   const comparison = defaultComparison();
+  const style: RenderStyle = { ...DEFAULT_STYLE };
   let currentRef: SeqRef | null = null;
 
   let ensembleCancel: { cancel(): void } | null = null;
@@ -195,6 +198,9 @@ export function mountApp(root: HTMLElement): void {
   }
   rebuildParams();
 
+  const styleUi = buildStyleControls(style, () => redraw());
+  topbar.appendChild(styleUi.el);
+
   const canvasWrap = document.createElement('div');
   canvasWrap.className = 'canvas-wrap';
   main.appendChild(canvasWrap);
@@ -308,7 +314,7 @@ export function mountApp(root: HTMLElement): void {
       const hash = '#' + encodeState({
         seqRef: currentRef, vizId: state.vizId, params: state.params,
         mode: comparison.mode, surrogate: comparison.surrogate, seed: comparison.seed,
-        ensembleN: comparison.ensembleN,
+        ensembleN: comparison.ensembleN, style,
       });
       lastHashWritten = hash;
       history.replaceState(null, '', hash);
@@ -359,7 +365,7 @@ export function mountApp(root: HTMLElement): void {
       ctx.rect(0, 0, w, h);
       ctx.clip();
       try {
-        viz.render(new SequenceView(seq!), state.params, ctx, { width: w, height: h });
+        viz.render(new SequenceView(seq!), { ...state.params, ...styleToParams(style) }, ctx, { width: w, height: h });
       } catch (e) {
         showError(`Render failed: ${e instanceof Error ? e.message : String(e)}`);
       }
@@ -422,7 +428,10 @@ export function mountApp(root: HTMLElement): void {
       // incompatible units into one meaningless band. logScaleOverride is
       // ignored by every other target/visualizer, so it's harmless to always
       // include it here.
-      const paramsWithScale: Params = { ...state.params, logScaleOverride: shouldUseLogScale(view) };
+      const paramsWithScale: Params = {
+        ...state.params, ...styleToParams(style),
+        logScaleOverride: shouldUseLogScale(view),
+      };
       if (state.vizId === 'histogram') {
         // Same cross-draw-sync story as logScaleOverride above, for the bin
         // *domain* rather than the scale: computeHistogram derives lo/hi
@@ -555,6 +564,12 @@ export function mountApp(root: HTMLElement): void {
       // clobbering it with undefined/NaN.
       if (typeof decoded.ensembleN === 'number' && Number.isFinite(decoded.ensembleN)) {
         comparison.ensembleN = decoded.ensembleN;
+      }
+      if (decoded.style) {
+        // Round-tripped through params deliberately: that re-validates and
+        // clamps a style arriving from an untrusted URL.
+        Object.assign(style, styleFromParams(styleToParams(decoded.style)));
+        styleUi.refresh();
       }
       bar.refresh();
       bar.update(Boolean(getVisualizer(state.vizId).statistics));
