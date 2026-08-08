@@ -62,14 +62,14 @@ Task 19a: implemented 046f0fb (header + attribution footer + sidebar section lab
 OEIS LICENSE FACTS (verified from oeis.org EULA, approved 2023-02-24): CC BY-SA 4.0 (NOT CC-BY-NC as controller initially assumed and told the user; correction issued). Attribution must credit "The On-Line Encyclopedia of Integer Sequences" + URL to oeis.org or a specific sequence.
 CORS CHECK: oeis.org sends NO Access-Control-Allow-Origin header -> the /api/* proxy IS required in production (a direct browser call from the deployed origin would be blocked). Note: 19a implementer saw lookups work under `vite preview` — that is the dev-proxy/preview path, not a CORS grant; do not conclude the proxy is optional.
 AWS INFRA CREATED (controller, us-east-1, acct 2903...):
-  ACM cert arn:...certificate/2911383f-28e2-4c3b-a811-f2d1e7dc6077 for ulam.briansheppard.com — ISSUED (DNS validated via Porkbun record id 571598106)
+  ACM cert arn:...certificate/2911383f-28e2-4c3b-a811-f2d1e7dc6077 for ulam.briansheppard.com — ISSUED (DNS-validated via a Porkbun TXT record; record id redacted)
   S3 bucket ulam-briansheppard-com (private, all public access blocked)
   CloudFront function ulam-api-strip-prefix (viewer-request, strips /api prefix) — LIVE
   Cache policy 5b0c5a50-8501-4473-b07e-3186113c468d (24h, all query strings) for /api/*
   OAC EY5BH3CMXVZM2
   Distribution E24RI80DXLMTA4 -> dojnj3vdoexxq.cloudfront.net; origins: s3-ulam (default, CachingOptimized) + oeis-origin (/api/*, origin req policy AllViewerExceptHostHeader so Host is NOT forwarded to oeis.org)
   NO CustomErrorResponses by design — a 404 from a missing b-file must reach the app as a real 404, not index.html
-  Porkbun CNAME ulam -> dojnj3vdoexxq.cloudfront.net (record id 571599574)
+  Porkbun CNAME ulam -> dojnj3vdoexxq.cloudfront.net (record id redacted)
   REMAINING: upload dist/ after BV fix lands, then verify https://ulam.briansheppard.com incl. /api proxy.
 Task BV: fix round 1/5 (1 Critical + 2 Minor addressed, 0 open — logScaleOverride threaded from real sequence into BOTH real-line statistics and EnsembleJob; regression test drives the real runEnsemble pipeline; commits 3f6eb58..e269402). Task BV: complete, review clean.
 Task 19a: complete (commits 3f6eb58..5757244, review clean — OEIS legal attribution verified consistent across footer/README/LICENSE).
