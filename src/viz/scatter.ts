@@ -1,6 +1,7 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { minMax } from './mathUtils';
+import { strokeColorAt, styleFromParams } from './style';
 
 const MARGIN = 28;
 
@@ -73,7 +74,7 @@ export const scatterViz: Visualizer = {
     ctx.lineTo(MARGIN + w, y(0));
     ctx.stroke();
 
-    ctx.fillStyle = '#7aa2f7';
+    ctx.fillStyle = strokeColorAt(styleFromParams(params), 0.5);
     const r = vals.length > 400 ? 1.5 : 3;
     for (let i = 0; i < vals.length; i++) {
       ctx.beginPath();

@@ -2,6 +2,7 @@ import type { SequenceView } from '../sequence/sequence';
 import { signedLogMagnitude } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { shouldUseLogScale, overrideFromParams } from './histogram';
+import { strokeColorAt, styleFromParams } from './style';
 
 const MARGIN = 28;
 
@@ -86,8 +87,9 @@ export const autocorrViz: Visualizer = {
     ctx.lineTo(MARGIN + w, y(0));
     ctx.stroke();
 
-    ctx.strokeStyle = '#7aa2f7';
-    ctx.lineWidth = 1.5;
+    const style = styleFromParams(params);
+    ctx.strokeStyle = strokeColorAt(style, 0.5);
+    ctx.lineWidth = style.lineWidth;
     for (let k = 0; k < r.length; k++) {
       ctx.beginPath();
       ctx.moveTo(x(k), y(0));

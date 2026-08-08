@@ -1,5 +1,6 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
+import { strokeColorAt, styleFromParams } from './style';
 
 /** The one layout render(), position() and locate() all agree on. */
 function layout(n: number, params: Params, size: Size) {
@@ -28,10 +29,13 @@ export const modGridViz: Visualizer = {
   ],
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
     const m = Number(params.modulus);
+    const style = styleFromParams(params);
     const L = layout(seq.length, params, size);
     for (let i = 0; i < seq.length; i++) {
       const r = seq.mod(i, m);
-      ctx.fillStyle = `hsl(${(r / m) * 360}, 65%, ${25 + (r / m) * 45}%)`;
+      ctx.fillStyle = style.colorMode === 'none'
+        ? (r % 2 === 0 ? '#3a3d44' : '#9aa0aa')
+        : strokeColorAt(style, r / m);
       ctx.fillRect(L.ox + (i % L.cols) * L.cell, L.oy + Math.floor(i / L.cols) * L.cell, L.cell, L.cell);
     }
   },

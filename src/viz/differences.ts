@@ -3,6 +3,7 @@ import { signedLogMagnitude } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { shouldUseLogScale, overrideFromParams } from './histogram';
 import { minMax } from './mathUtils';
+import { strokeColorAt, styleFromParams } from './style';
 
 const MARGIN = 28;
 const MAX_SAFE = BigInt(Number.MAX_SAFE_INTEGER);
@@ -98,8 +99,9 @@ export const differencesViz: Visualizer = {
     ctx.lineTo(MARGIN + w, y(0));
     ctx.stroke();
 
-    ctx.strokeStyle = '#7aa2f7';
-    ctx.lineWidth = 1.5;
+    const style = styleFromParams(params);
+    ctx.strokeStyle = strokeColorAt(style, 0.5);
+    ctx.lineWidth = style.lineWidth;
     ctx.beginPath();
     for (let i = 0; i < vals.length; i++) {
       if (i === 0) ctx.moveTo(x(i), y(vals[i]!));

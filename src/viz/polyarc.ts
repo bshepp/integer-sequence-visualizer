@@ -1,6 +1,7 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { strokePath } from './turtle';
+import { styleFromParams } from './style';
 import { pathTransform, toScreen, nearestIndex } from './pathTransform';
 
 /** Arc segments drawn per term. Each term therefore owns 8 path points. */
@@ -51,6 +52,7 @@ export const polyarcViz: Visualizer = {
       }),
       ctx,
       size,
+      styleFromParams(params),
     );
   },
   position(seq: SequenceView, params: Params, size: Size, index: number) {

@@ -2,6 +2,7 @@ import type { SequenceView } from '../sequence/sequence';
 import { signedLogMagnitude } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { minMax } from './mathUtils';
+import { strokeColorAt, styleFromParams } from './style';
 
 const MARGIN = 28;
 const MAX_SAFE = BigInt(Number.MAX_SAFE_INTEGER);
@@ -184,7 +185,7 @@ export const histogramViz: Visualizer = {
     const h = size.height - 2 * MARGIN;
     const maxC = Math.max(minMax(counts).hi, 1);
     const bw = w / counts.length;
-    ctx.fillStyle = '#7aa2f7';
+    ctx.fillStyle = strokeColorAt(styleFromParams(params), 0.5);
     for (let i = 0; i < counts.length; i++) {
       const bh = (counts[i]! / maxC) * h;
       ctx.fillRect(MARGIN + i * bw + 1, MARGIN + h - bh, Math.max(1, bw - 2), bh);

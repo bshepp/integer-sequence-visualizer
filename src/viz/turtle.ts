@@ -1,6 +1,7 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { pathTransform, toScreen, nearestIndex } from './pathTransform';
+import { applyStyle, strokeColorAt, styleFromParams, DEFAULT_STYLE, type RenderStyle } from './style';
 
 export function turtlePath(seq: SequenceView, angleDeg: number, k: number): Array<{ x: number; y: number }> {
   const pts = [{ x: 0, y: 0 }];
@@ -19,15 +20,16 @@ export function strokePath(
   pts: Array<{ x: number; y: number }>,
   ctx: CanvasRenderingContext2D,
   size: Size,
+  style: RenderStyle = DEFAULT_STYLE,
 ): void {
   // The bounding-box maths (and its loop-based min/max, which exists because
   // a 2001-term b-file's digit walk produces 418,487 points — past V8's ~250k
   // spread-argument limit) now lives in pathTransform, so locate() can invert
   // exactly the numbers this draws with.
   const t = pathTransform(pts, size);
-  ctx.lineWidth = 1.25;
+  applyStyle(ctx, style);
   for (let i = 1; i < pts.length; i++) {
-    ctx.strokeStyle = `hsl(${(i / pts.length) * 300}, 70%, 60%)`;
+    ctx.strokeStyle = strokeColorAt(style, i / Math.max(1, pts.length - 1));
     const a = toScreen(t, pts[i - 1]!), b = toScreen(t, pts[i]!);
     ctx.beginPath();
     ctx.moveTo(a.x, a.y);
@@ -50,7 +52,7 @@ export const turtleViz: Visualizer = {
     { kind: 'number', id: 'k', label: 'Mod k', default: 4, min: 2, max: 24, step: 1 },
   ],
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
-    strokePath(turtlePath(seq, Number(params.angle), Number(params.k)), ctx, size);
+    strokePath(turtlePath(seq, Number(params.angle), Number(params.k)), ctx, size, styleFromParams(params));
   },
   position(seq: SequenceView, params: Params, size: Size, index: number) {
     if (index < 0 || index >= seq.length) return null;

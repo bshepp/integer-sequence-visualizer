@@ -1,6 +1,7 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { strokePath } from './turtle';
+import { styleFromParams } from './style';
 import { pathTransform, toScreen, nearestIndex } from './pathTransform';
 
 /**
@@ -43,7 +44,7 @@ export const digitWalkViz: Visualizer = {
     { kind: 'number', id: 'base', label: 'Base', default: 10, min: 2, max: 16, step: 1 },
   ],
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
-    strokePath(digitWalkPath(seq, Number(params.base)), ctx, size);
+    strokePath(digitWalkPath(seq, Number(params.base)), ctx, size, styleFromParams(params));
   },
   position(seq: SequenceView, params: Params, size: Size, index: number) {
     if (index < 0 || index >= seq.length) return null;

@@ -1,14 +1,25 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { spiralLayout } from './gridUtils';
+import { strokeColorAt, styleFromParams, type RenderStyle } from './style';
 
-function cellColor(seq: SequenceView, i: number, colorBy: string, modulus: number, maxLog: number): string {
+function cellColor(
+  seq: SequenceView, i: number, colorBy: string, modulus: number, maxLog: number, style: RenderStyle,
+): string {
+  // 'none' removes colour as a variable entirely, so any structure still
+  // visible cannot be an artifact of the palette — which is the whole reason
+  // the mode exists. It overrides colorBy, since every colorBy is a palette.
+  if (style.colorMode === 'none') {
+    const shade = maxLog > 0 ? (seq.logMagnitude(i) / maxLog) * 45 + 25 : 45;
+    return colorBy === 'magnitude' ? `rgb(${shade * 2.4}, ${shade * 2.4}, ${shade * 2.4})`
+      : seq.mod(i, 2) === 0 ? '#3a3d44' : '#9aa0aa';
+  }
   if (colorBy === 'parity') return seq.mod(i, 2) === 0 ? '#1d2026' : '#7aa2f7';
   if (colorBy === 'magnitude') {
     const l = maxLog > 0 ? (seq.logMagnitude(i) / maxLog) * 60 + 15 : 40;
     return `hsl(220, 60%, ${l}%)`;
   }
-  return `hsl(${(seq.mod(i, modulus) / modulus) * 360}, 65%, 60%)`;
+  return strokeColorAt(style, seq.mod(i, modulus) / modulus);
 }
 
 export const ulamViz: Visualizer = {
@@ -26,11 +37,12 @@ export const ulamViz: Visualizer = {
   ],
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
     const n = seq.length;
+    const style = styleFromParams(params);
     const L = spiralLayout(n, size);
     let maxLog = 0;
     for (let i = 0; i < n; i++) maxLog = Math.max(maxLog, seq.logMagnitude(i));
     for (let i = 0; i < n; i++) {
-      ctx.fillStyle = cellColor(seq, i, String(params.colorBy), Number(params.modulus), maxLog);
+      ctx.fillStyle = cellColor(seq, i, String(params.colorBy), Number(params.modulus), maxLog, style);
       const c = L.coords[i]!;
       // canvas y grows downward; flip so the spiral matches math orientation
       ctx.fillRect(L.ox + (c.x - L.minX) * L.cell, L.oy + (L.maxY - c.y) * L.cell, L.cell, L.cell);
