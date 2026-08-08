@@ -342,25 +342,30 @@ describe('mountApp — sweep button Cancel handling (task FR, M9)', () => {
     history.replaceState(null, '', location.pathname);
   });
 
-  it('Cancel on the parameter prompt aborts the sweep instead of running it on the first parameter', () => {
+  // The original M9 regression was: window.prompt returns null on Cancel, and
+  // `?? default` treated that the same as an empty OK, silently sweeping the
+  // first numeric parameter instead of aborting. That failure mode is now
+  // structurally impossible -- there is no prompt and no cancel step, because
+  // the parameter is chosen from a select inside the dialog. These two tests
+  // pin the replacement behaviour so the prompt cannot quietly return.
+  it('opens the sweep directly, with no window.prompt at all', () => {
     const root = document.createElement('div');
     mountApp(root);
     loadPastedSequence(root, '1,2,3,4,5,6,7,8');
     const picker = root.querySelector<HTMLSelectElement>('.viz-picker')!;
-    picker.value = 'turtle'; // has 2 numeric params (angle, k) -> prompt is shown
+    picker.value = 'turtle'; // two numeric params (angle, k) -- used to prompt
     picker.dispatchEvent(new Event('change'));
 
-    // window.prompt returns null specifically on Cancel (as opposed to ""
-    // for an OK'd-but-emptied field); `?? default` used to treat both the
-    // same, silently running the sweep on the first numeric parameter.
-    vi.spyOn(window, 'prompt').mockReturnValue(null);
+    const promptSpy = vi.spyOn(window, 'prompt');
     const sweepBtn = Array.from(root.querySelectorAll('button')).find((b) => b.textContent === 'Sweep…')!;
     sweepBtn.click();
 
-    expect(root.querySelector('.sweep-overlay')).toBeNull();
+    expect(promptSpy).not.toHaveBeenCalled();
+    expect(root.querySelector('.sweep-overlay')).not.toBeNull();
+    promptSpy.mockRestore();
   });
 
-  it('answering the prompt still opens the sweep overlay for the chosen parameter', () => {
+  it('lets the parameter be chosen inside the dialog, without reopening it', () => {
     const root = document.createElement('div');
     mountApp(root);
     loadPastedSequence(root, '1,2,3,4,5,6,7,8');
@@ -368,11 +373,14 @@ describe('mountApp — sweep button Cancel handling (task FR, M9)', () => {
     picker.value = 'turtle';
     picker.dispatchEvent(new Event('change'));
 
-    vi.spyOn(window, 'prompt').mockReturnValue('k');
-    const sweepBtn = Array.from(root.querySelectorAll('button')).find((b) => b.textContent === 'Sweep…')!;
-    sweepBtn.click();
+    Array.from(root.querySelectorAll('button')).find((b) => b.textContent === 'Sweep…')!.click();
+    const overlay = root.querySelector('.sweep-overlay')!;
+    const paramSelect = overlay.querySelector<HTMLSelectElement>('.sweep-param')!;
+    expect([...paramSelect.options].map((o) => o.value).sort()).toEqual(['angle', 'k']);
 
-    expect(root.querySelector('.sweep-overlay')).not.toBeNull();
+    paramSelect.value = 'k';
+    paramSelect.dispatchEvent(new Event('change'));
+    expect(overlay.querySelector('.sweep-cell')!.textContent).toMatch(/k = /);
   });
 });
 

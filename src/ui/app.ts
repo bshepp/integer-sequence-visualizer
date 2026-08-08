@@ -49,6 +49,14 @@ export function mountApp(root: HTMLElement): void {
 
   root.replaceChildren();
 
+  // First in the DOM so it is the first Tab stop: the sidebar otherwise puts
+  // the load panel plus ~20 preset buttons ahead of the visualization.
+  const skip = document.createElement('a');
+  skip.className = 'skip-link';
+  skip.href = '#main-view';
+  skip.textContent = 'Skip to the visualization';
+  root.appendChild(skip);
+
   const header = document.createElement('header');
   header.className = 'app-header';
   const wordmark = document.createElement('div');
@@ -126,6 +134,9 @@ export function mountApp(root: HTMLElement): void {
   // main column
   const main = document.createElement('main');
   main.className = 'main';
+  main.id = 'main-view';
+  // -1 rather than 0: reachable as a skip target without adding a Tab stop.
+  main.tabIndex = -1;
   layout.appendChild(main);
 
   const topbar = document.createElement('div');
@@ -258,26 +269,14 @@ export function mountApp(root: HTMLElement): void {
     if (!state.seq) { showNotice('Load a sequence first.'); return; }
     const numeric = getVisualizer(state.vizId).params.filter((p) => p.kind === 'number');
     if (numeric.length === 0) { showNotice('This visualizer has no numeric parameters to sweep.'); return; }
-    let paramId: string;
-    if (numeric.length === 1) {
-      paramId = numeric[0]!.id;
-    } else {
-      const answer = window.prompt(`Sweep which parameter? (${numeric.map((p) => p.id).join(', ')})`, numeric[0]!.id);
-      // window.prompt returns null on Cancel specifically (as opposed to ""
-      // for an OK'd-but-emptied field) — `?? default` treated both the same,
-      // so Cancel silently ran the sweep on the first parameter instead of
-      // aborting. Only a real cancellation returns early here.
-      if (answer === null) return;
-      paramId = answer;
-    }
-    if (!numeric.some((p) => p.id === paramId)) { showError(`Unknown parameter "${paramId}".`); return; }
-    // Remember where focus came from: losing it to <body> when a dialog
-    // closes strands keyboard users wherever the document happens to start.
+    // Which parameter to sweep is chosen inside the dialog now. It used to be
+    // a window.prompt() fired before opening, which blocks the renderer, has
+    // no accessible context, and made switching parameters a close-and-reopen.
     const opener = document.activeElement as HTMLElement | null;
     const overlay = buildSweepView({
       seq: state.seq, viz: getVisualizer(state.vizId), baseParams: { ...state.params },
-      paramId, count: 12,
-      onPick(value) { state.params[paramId] = value; rebuildParams(); redraw(); },
+      paramId: numeric[0]!.id, count: 12,
+      onPick(id, value) { state.params[id] = value; rebuildParams(); redraw(); },
       onClose() {
         overlay.remove();
         setEngineInert(false);
@@ -579,7 +578,10 @@ export function mountApp(root: HTMLElement): void {
   // tabs straight off the landing into controls they cannot see. `inert`
   // handles focus and the accessibility tree together.
   function setEngineInert(inert: boolean): void {
-    for (const el of [header, layout, footer]) el.toggleAttribute('inert', inert);
+    // The skip link is a direct child of root rather than of the chrome, so
+    // it has to be listed explicitly — otherwise Tab escapes a modal onto a
+    // link whose target is itself inert, stranding focus.
+    for (const el of [skip, header, layout, footer]) el.toggleAttribute('inert', inert);
   }
 
   function dismissLanding(focusEngine = true): void {

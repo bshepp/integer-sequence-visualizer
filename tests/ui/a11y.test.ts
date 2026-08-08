@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { initMessages, showError, showNotice } from '../../src/ui/messages';
 import { labelledControl } from '../../src/ui/a11y';
 import { buildSequencePanel } from '../../src/ui/sequencePanel';
+import { mountApp } from '../../src/ui/app';
 
 describe('message live regions', () => {
   let container: HTMLElement;
@@ -206,5 +207,99 @@ describe('sequence panel structure and status', () => {
     formula.dispatchEvent(new Event('input'));
     expect(formula.getAttribute('aria-invalid')).toBe('false');
     expect(err.textContent).toBe('');
+  });
+});
+
+describe('skip link', () => {
+  it('is the first focusable element and targets the main region', () => {
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+
+    const skip = root.querySelector<HTMLAnchorElement>('.skip-link');
+    expect(skip, 'no skip link').not.toBeNull();
+    expect(root.firstElementChild).toBe(skip);
+
+    const target = root.querySelector<HTMLElement>('#main-view');
+    expect(target, 'skip link points at nothing').not.toBeNull();
+    expect(skip!.getAttribute('href')).toBe('#main-view');
+    // Must be focusable, or the browser scrolls without moving focus.
+    expect(target!.tabIndex).toBe(-1);
+  });
+});
+
+describe('whole-app accessibility conformance', () => {
+  const mount = () => {
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    return root;
+  };
+
+  it('every control in the mounted app has an accessible name', () => {
+    const root = mount();
+    for (const c of root.querySelectorAll<HTMLElement>('input, textarea, select')) {
+      expect(accessibleName(c, root).trim().length, `${c.className} unnamed`).toBeGreaterThan(0);
+    }
+    for (const b of root.querySelectorAll<HTMLButtonElement>('button')) {
+      const name = (b.getAttribute('aria-label') ?? b.textContent ?? '').trim();
+      expect(name.length, `button.${b.className} unnamed`).toBeGreaterThan(0);
+    }
+  });
+
+  it('uses no positive tabindex anywhere', () => {
+    // A positive tabindex reorders the whole document's tab sequence and is
+    // almost always a bug.
+    const root = mount();
+    for (const el of root.querySelectorAll<HTMLElement>('[tabindex]')) {
+      expect(el.tabIndex, `${el.className} has a positive tabindex`).toBeLessThanOrEqual(0);
+    }
+  });
+
+  it('routes every click target through a real interactive element', () => {
+    const root = mount();
+    for (const sel of ['.gallery-thumb', '.preset-button', '.tab-button', '.landing-open', '.landing-hero-button']) {
+      for (const el of root.querySelectorAll(sel)) {
+        expect(['BUTTON', 'A'], `${sel} is a ${el.tagName}`).toContain(el.tagName);
+      }
+    }
+  });
+
+  it('exposes exactly one live region of each urgency', () => {
+    const root = mount();
+    expect(root.querySelectorAll('.messages [role="alert"]')).toHaveLength(1);
+    expect(root.querySelectorAll('.messages [aria-live="polite"]')).toHaveLength(1);
+  });
+});
+
+describe('modal layers contain focus completely', () => {
+  const FOCUSABLE =
+    'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+  const reachable = (root: HTMLElement) =>
+    [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => !el.closest('[inert]'));
+
+  it('nothing outside the landing is reachable while it is up', () => {
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    expect(root.querySelector('.landing')).not.toBeNull();
+    const escapees = reachable(root).filter((el) => !el.closest('.landing'));
+    expect(escapees.map((e) => e.className), 'focusable outside the landing').toEqual([]);
+  });
+
+  it('nothing outside the sweep dialog is reachable while it is open', () => {
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    root.querySelector<HTMLButtonElement>('.landing-open')!.click();
+
+    const picker = root.querySelector<HTMLSelectElement>('.viz-picker')!;
+    picker.value = 'turtle';
+    picker.dispatchEvent(new Event('change'));
+    Array.from(root.querySelectorAll('button')).find((b) => b.textContent === 'Sweep…')!.click();
+
+    expect(root.querySelector('.sweep-overlay')).not.toBeNull();
+    const escapees = reachable(root).filter((el) => !el.closest('.sweep-overlay'));
+    expect(escapees.map((e) => e.className), 'focusable outside the sweep dialog').toEqual([]);
   });
 });

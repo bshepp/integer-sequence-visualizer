@@ -180,3 +180,13 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 }
 .a11y-field { display: contents; }
 .section-label { font-weight: 400; }
+.skip-link {
+  position: absolute; left: 8px; top: -60px; z-index: 40;
+  background: var(--accent); color: #14161a;
+  padding: 8px 14px; border-radius: 0 0 6px 6px;
+  text-decoration: none; font-weight: 600;
+  transition: top 0.15s;
+}
+.skip-link:focus { top: 0; }
+.sweep-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; color: var(--muted); font-size: 13px; }
+.sweep-param { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 5px; font: inherit; }

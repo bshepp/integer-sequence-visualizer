@@ -37,7 +37,7 @@ describe('buildSweepView', () => {
     const cells = el.querySelectorAll('.sweep-cell');
     expect(cells.length).toBeGreaterThanOrEqual(2);
     (cells[0] as HTMLElement).click();
-    expect(onPick).toHaveBeenCalledWith(1); // angle spec min is 1
+    expect(onPick).toHaveBeenCalledWith('angle', 1); // angle spec min is 1
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -61,7 +61,7 @@ const sweepSeq: Sequence = {
   name: 't', offset: 0, source: 'paste',
 };
 
-const mkSweep = (onPick: (v: number) => void = () => {}, onClose: () => void = () => {}) =>
+const mkSweep = (onPick: (id: string, v: number) => void = () => {}, onClose: () => void = () => {}) =>
   buildSweepView({
     seq: sweepSeq, viz: turtleViz, baseParams: defaultParams(turtleViz.params),
     paramId: 'k', count: 6, onPick, onClose,
@@ -88,7 +88,7 @@ describe('sweep overlay accessibility', () => {
   it('picking a cell reports its value and closes', () => {
     const picked: number[] = [];
     let closed = 0;
-    const el = mkSweep((v) => picked.push(v), () => { closed++; });
+    const el = mkSweep((_id, v) => picked.push(v), () => { closed++; });
     el.querySelector<HTMLButtonElement>('.sweep-cell')!.click();
     expect(picked).toHaveLength(1);
     expect(closed).toBe(1);
@@ -108,5 +108,36 @@ describe('sweep overlay accessibility', () => {
     const canvases = el.querySelectorAll('canvas');
     expect(canvases.length).toBeGreaterThan(0);
     for (const c of canvases) expect(c.getAttribute('aria-hidden')).toBe('true');
+  });
+});
+
+describe('sweep parameter selection lives in the dialog', () => {
+  it('offers every numeric parameter and never calls window.prompt', () => {
+    const promptSpy = vi.spyOn(window, 'prompt');
+    const el = mkSweep();
+    const picker = el.querySelector<HTMLSelectElement>('.sweep-param')!;
+    // turtle has two numeric params: angle and k.
+    expect([...picker.options].map((o) => o.value).sort()).toEqual(['angle', 'k']);
+    expect(promptSpy).not.toHaveBeenCalled();
+    promptSpy.mockRestore();
+  });
+
+  it('the parameter select is labelled', () => {
+    const el = mkSweep();
+    const picker = el.querySelector<HTMLSelectElement>('.sweep-param')!;
+    const label = el.querySelector<HTMLLabelElement>(`label[for="${picker.id}"]`);
+    expect(label, 'sweep parameter select has no label').not.toBeNull();
+    expect(label!.textContent).toMatch(/parameter/i);
+  });
+
+  it('switching parameter re-renders the grid and reports the new id on pick', () => {
+    const picks: Array<[string, number]> = [];
+    const el = mkSweep((id, v) => picks.push([id, v]));
+    const picker = el.querySelector<HTMLSelectElement>('.sweep-param')!;
+    picker.value = 'angle';
+    picker.dispatchEvent(new Event('change'));
+    expect(el.querySelector('.sweep-cell')!.textContent).toMatch(/angle = /);
+    el.querySelector<HTMLButtonElement>('.sweep-cell')!.click();
+    expect(picks[0]![0]).toBe('angle');
   });
 });
