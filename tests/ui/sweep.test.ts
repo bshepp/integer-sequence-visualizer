@@ -53,3 +53,60 @@ describe('buildSweepView', () => {
     expect(onPick).not.toHaveBeenCalled();
   });
 });
+
+import type { Sequence } from '../../src/sequence/sequence';
+
+const sweepSeq: Sequence = {
+  terms: Array.from({ length: 40 }, (_, i) => BigInt(i % 5)),
+  name: 't', offset: 0, source: 'paste',
+};
+
+const mkSweep = (onPick: (v: number) => void = () => {}, onClose: () => void = () => {}) =>
+  buildSweepView({
+    seq: sweepSeq, viz: turtleViz, baseParams: defaultParams(turtleViz.params),
+    paramId: 'k', count: 6, onPick, onClose,
+  });
+
+describe('sweep overlay accessibility', () => {
+  it('is a labelled modal dialog', () => {
+    const el = mkSweep();
+    expect(el.getAttribute('role')).toBe('dialog');
+    expect(el.getAttribute('aria-modal')).toBe('true');
+    expect(el.getAttribute('aria-label')).toMatch(/sweep/i);
+  });
+
+  it('every cell is a button named for its value', () => {
+    const el = mkSweep();
+    const cells = el.querySelectorAll<HTMLButtonElement>('.sweep-cell');
+    expect(cells.length).toBeGreaterThan(1);
+    for (const c of cells) {
+      expect(c.tagName).toBe('BUTTON');
+      expect((c.textContent ?? '').trim()).toMatch(/k = \d+/);
+    }
+  });
+
+  it('picking a cell reports its value and closes', () => {
+    const picked: number[] = [];
+    let closed = 0;
+    const el = mkSweep((v) => picked.push(v), () => { closed++; });
+    el.querySelector<HTMLButtonElement>('.sweep-cell')!.click();
+    expect(picked).toHaveLength(1);
+    expect(closed).toBe(1);
+  });
+
+  it('Escape closes the dialog', () => {
+    let closed = 0;
+    const el = mkSweep(() => {}, () => { closed++; });
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(closed).toBe(1);
+  });
+
+  it('hides the decorative thumbnails from assistive technology', () => {
+    // The button's own text carries the meaning; otherwise every cell
+    // announces an extra unlabelled graphic.
+    const el = mkSweep();
+    const canvases = el.querySelectorAll('canvas');
+    expect(canvases.length).toBeGreaterThan(0);
+    for (const c of canvases) expect(c.getAttribute('aria-hidden')).toBe('true');
+  });
+});

@@ -271,13 +271,25 @@ export function mountApp(root: HTMLElement): void {
       paramId = answer;
     }
     if (!numeric.some((p) => p.id === paramId)) { showError(`Unknown parameter "${paramId}".`); return; }
+    // Remember where focus came from: losing it to <body> when a dialog
+    // closes strands keyboard users wherever the document happens to start.
+    const opener = document.activeElement as HTMLElement | null;
     const overlay = buildSweepView({
       seq: state.seq, viz: getVisualizer(state.vizId), baseParams: { ...state.params },
       paramId, count: 12,
       onPick(value) { state.params[paramId] = value; rebuildParams(); redraw(); },
-      onClose() { overlay.remove(); },
+      onClose() {
+        overlay.remove();
+        setEngineInert(false);
+        opener?.focus();
+      },
     });
     root.appendChild(overlay);
+    // The same trick the landing uses: everything behind the dialog leaves
+    // the tab order and the accessibility tree, which is a focus trap without
+    // hand-rolling one.
+    setEngineInert(true);
+    overlay.querySelector<HTMLButtonElement>('.sweep-close')?.focus();
   });
   bar.el.appendChild(sweepBtn);
 

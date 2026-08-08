@@ -31,9 +31,16 @@ export function buildSweepView(opts: {
 
   const overlay = document.createElement('div');
   overlay.className = 'sweep-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', `Parameter sweep over ${opts.paramId}`);
+  overlay.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.stopPropagation(); opts.onClose(); }
+  });
 
   const close = document.createElement('button');
   close.className = 'sweep-close';
+  close.type = 'button';
   close.textContent = '× close';
   close.addEventListener('click', opts.onClose);
   overlay.appendChild(close);
@@ -44,12 +51,19 @@ export function buildSweepView(opts: {
 
   const view = new SequenceView(opts.seq);
   for (const value of sweepValues(spec, opts.count)) {
-    const cell = document.createElement('figure');
+    // A <button>, not a <figure> with a click handler: the cells are the
+    // entire point of this view and were unreachable by keyboard.
+    const cell = document.createElement('button');
     cell.className = 'sweep-cell';
+    cell.type = 'button';
     const canvas = document.createElement('canvas');
     canvas.width = 180;
     canvas.height = 140;
-    const caption = document.createElement('figcaption');
+    // Decorative here — the caption below carries the meaning, and without
+    // this each cell announces an extra unlabelled graphic.
+    canvas.setAttribute('aria-hidden', 'true');
+    const caption = document.createElement('span');
+    caption.className = 'sweep-caption';
     caption.textContent = `${opts.paramId} = ${value}`;
     cell.append(canvas, caption);
     cell.addEventListener('click', () => { opts.onPick(value); opts.onClose(); });
