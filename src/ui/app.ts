@@ -467,7 +467,34 @@ export function mountApp(root: HTMLElement): void {
     syncUrl();
   }
 
+  /**
+   * Identity line for a rendered panel: which sequence, and how many terms of
+   * it are actually drawn. The term count matters as much as the A-number —
+   * the same sequence at 80 terms and at 2,001 terms produces very different
+   * pictures, and without this the two are indistinguishable in a screenshot.
+   */
+  function seqLabel(seq: Sequence): string {
+    const who = seq.aNumber ?? seq.name;
+    return `${who} · ${seq.terms.length.toLocaleString()} terms`;
+  }
+
+  function panelLabel(role: string, seq: Sequence): string {
+    return role ? `${role} — ${seqLabel(seq)}` : seqLabel(seq);
+  }
+
   function drawScene(): void {
+    // The canvas is the product; without this it is an unlabelled graphic to
+    // any assistive technology. Set before the 2D-context check below, since
+    // the description comes from state rather than from rendering and must
+    // survive a context that is unavailable.
+    if (state.seq) {
+      const described = getVisualizer(state.vizId);
+      canvas.setAttribute(
+        'aria-label',
+        `${described.name} of ${seqLabel(state.seq)}. ${described.explain.long}`,
+      );
+    }
+
     const rect = canvasWrap.getBoundingClientRect();
     const width = Math.max(200, rect.width);
     const height = Math.max(200, rect.height);
@@ -489,9 +516,6 @@ export function mountApp(root: HTMLElement): void {
     }
     const viz = getVisualizer(state.vizId);
     const view = new SequenceView(state.seq);
-    // The canvas is the product; without this it is an unlabelled graphic to
-    // any assistive technology.
-    canvas.setAttribute('aria-label', `${viz.name} of ${state.seq.name}. ${viz.explain.long}`);
     if (view.length < viz.minTerms) {
       showNotice(`${viz.name} works best with at least ${viz.minTerms} terms (loaded: ${view.length}).`);
     }
@@ -515,10 +539,10 @@ export function mountApp(root: HTMLElement): void {
 
     if (comparison.mode === 'side') {
       const surr = surrogateSequence(state.seq, comparison.surrogate, comparison.seed);
-      draw(state.seq, width / 2 - 1, height, 0, 'real');
+      draw(state.seq, width / 2 - 1, height, 0, panelLabel('real', state.seq));
       ctx.strokeStyle = '#333';
       ctx.beginPath(); ctx.moveTo(width / 2, 0); ctx.lineTo(width / 2, height); ctx.stroke();
-      draw(surr, width / 2 - 1, height, width / 2 + 1, `${comparison.surrogate} surrogate`);
+      draw(surr, width / 2 - 1, height, width / 2 + 1, panelLabel(`${comparison.surrogate} null`, surr));
 
       if (pinnedIndex !== null && viz.position) {
         const panel = { width: width / 2 - 1, height };
@@ -550,7 +574,7 @@ export function mountApp(root: HTMLElement): void {
       viz.render(view, { ...state.params, ...styleToParams(style) }, ctx, { width, height });
       ctx.fillStyle = '#9aa0aa';
       ctx.font = '12px system-ui';
-      ctx.fillText(`real (colour) over ${comparison.surrogate} null (grey)`, 10, 16);
+      ctx.fillText(`${seqLabel(state.seq)} — real (colour) over ${comparison.surrogate} null (grey)`, 10, 16);
       if (pinnedIndex !== null && viz.position) {
         const p = viz.position(view, state.params, { width, height }, pinnedIndex);
         if (p) drawMarker(ctx, p, '#f7768e');
@@ -559,7 +583,7 @@ export function mountApp(root: HTMLElement): void {
       const shown = comparison.showSurrogate
         ? surrogateSequence(state.seq, comparison.surrogate, comparison.seed)
         : state.seq;
-      draw(shown, width, height, 0, comparison.showSurrogate ? `${comparison.surrogate} surrogate` : 'real');
+      draw(shown, width, height, 0, panelLabel(comparison.showSurrogate ? `${comparison.surrogate} null` : 'real', shown));
 
       // The marker persists across the flip, anchoring the eye on one term
       // while the substrate swaps underneath it.
@@ -666,7 +690,7 @@ export function mountApp(root: HTMLElement): void {
         ctx.fillText(`Computing ${comparison.ensembleN}-surrogate ensemble…`, 24, 40);
       }
     } else {
-      draw(state.seq, width, height, 0, '');
+      draw(state.seq, width, height, 0, panelLabel('', state.seq));
       if (pinnedIndex !== null && viz.position) {
         const p = viz.position(view, state.params, { width, height }, pinnedIndex);
         if (p) drawMarker(ctx, p, '#f7768e');

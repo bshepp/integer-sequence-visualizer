@@ -183,3 +183,20 @@ describe('PNG attribution', () => {
     expect(callLog.some((c) => c.name === 'fillRect')).toBe(true);
   });
 });
+
+
+describe('panel identity line', () => {
+  it('reads "<who> · <count> terms", with the count grouped for legibility', () => {
+    // Reproduces the exact composition app.ts uses, so the format is pinned
+    // even though the real one is drawn to a canvas jsdom cannot render.
+    const label = (seq: Sequence) =>
+      `${seq.aNumber ?? seq.name} · ${seq.terms.length.toLocaleString()} terms`;
+
+    expect(label(fib)).toBe('A000045 · 7 terms');
+    expect(label({ ...fib, aNumber: undefined, name: 'Pasted sequence' }))
+      .toBe('Pasted sequence · 7 terms');
+
+    const long: Sequence = { terms: Array.from({ length: 2001 }, () => 1n), name: 'x', offset: 0, source: 'paste' };
+    expect(label(long)).toMatch(/2[,.\s]?001 terms/);
+  });
+});

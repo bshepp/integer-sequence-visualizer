@@ -68,18 +68,28 @@ export function paintEntry(entry: GalleryEntry, canvas: HTMLCanvasElement, w: nu
     ctx.restore();
   };
 
+  // Same identity line the engine draws, at the top for the same reason: these
+  // images get screenshotted and shared, and a picture of a sequence that does
+  // not say which sequence — or how many terms of it — is not much use.
+  const who = entry.sequence.aNumber ?? entry.sequence.name;
+  const identity = `${who} · ${entry.sequence.terms.length.toLocaleString()} terms`;
+  const caption = (text: string, x: number) => {
+    ctx.fillStyle = '#9aa0aa';
+    ctx.font = '11px system-ui';
+    ctx.fillText(text, x, 14);
+  };
+
   if (entry.state.mode === 'side') {
     const half = w / 2 - 1;
     paint(entry.sequence, 0, half);
     ctx.strokeStyle = '#333';
     ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
     paint(surrogateSequence(entry.sequence, entry.state.surrogate, entry.state.seed), w / 2 + 1, half);
-    ctx.fillStyle = '#9aa0aa';
-    ctx.font = '11px system-ui';
-    ctx.fillText('real', 8, h - 8);
-    ctx.fillText(`${entry.state.surrogate} null`, w / 2 + 9, h - 8);
+    caption(`real — ${identity}`, 8);
+    caption(`${entry.state.surrogate} null`, w / 2 + 9);
   } else {
     paint(entry.sequence, 0, w);
+    caption(identity, 8);
   }
 }
 

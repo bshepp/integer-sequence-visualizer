@@ -362,3 +362,24 @@ describe('export bar', () => {
     expect(panel.hidden).toBe(false);
   });
 });
+
+describe('panel labels identify the sequence', () => {
+  const mountEngine = () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    root.querySelector<HTMLButtonElement>('.landing-open')?.click();
+    return root;
+  };
+
+  it('names the sequence and its term count in the canvas description', () => {
+    // jsdom has no 2D context, so this also pins that the description is set
+    // before the context guard -- it is state, not rendering.
+    const root = mountEngine();
+    const label = root.querySelector('canvas')!.getAttribute('aria-label') ?? '';
+    expect(label).toContain('A000002');
+    expect(label).toMatch(/\d[\d,.\s]* terms/);
+    expect(label).toContain('Turtle walk');
+  });
+});
