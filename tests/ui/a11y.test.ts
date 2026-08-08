@@ -220,9 +220,9 @@ describe('skip link', () => {
     expect(skip, 'no skip link').not.toBeNull();
     expect(root.firstElementChild).toBe(skip);
 
-    const target = root.querySelector<HTMLElement>('#main-view');
+    const target = root.querySelector<HTMLElement>('main.main');
     expect(target, 'skip link points at nothing').not.toBeNull();
-    expect(skip!.getAttribute('href')).toBe('#main-view');
+    expect(skip!.getAttribute('href')).toBe(`#${target!.id}`);
     // Must be focusable, or the browser scrolls without moving focus.
     expect(target!.tabIndex).toBe(-1);
   });
@@ -320,5 +320,45 @@ describe('#gallery is a working link, not just a startup route', () => {
     location.hash = '#gallery';
     window.dispatchEvent(new HashChangeEvent('hashchange'));
     expect(root.querySelector('.landing')).not.toBeNull();
+  });
+});
+
+describe('export bar', () => {
+  const mountEngine = () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    root.querySelector<HTMLButtonElement>('.landing-open')?.click();
+    return root;
+  };
+
+  it('offers PNG, CSV, JSON and a table toggle, all as labelled buttons', () => {
+    const root = mountEngine();
+    for (const cls of ['.export-png', '.export-csv', '.export-json', '.table-toggle']) {
+      const btn = root.querySelector<HTMLButtonElement>(cls);
+      expect(btn, `${cls} missing`).not.toBeNull();
+      expect(btn!.tagName).toBe('BUTTON');
+      expect((btn!.textContent ?? '').trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  it('links feedback to the public issue tracker', () => {
+    const root = mountEngine();
+    const link = root.querySelector<HTMLAnchorElement>('.feedback-link')!;
+    expect(link).not.toBeNull();
+    expect(link.href).toContain('github.com/bshepp/integer-sequence-visualizer/issues');
+    expect(link.rel).toContain('noopener');
+  });
+
+  it('the table toggle reports and flips its expanded state', () => {
+    const root = mountEngine();
+    const toggle = root.querySelector<HTMLButtonElement>('.table-toggle')!;
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    const panel = root.querySelector<HTMLElement>('.data-table')!;
+    expect(toggle.getAttribute('aria-controls')).toBe(panel.id);
+    toggle.click();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(panel.hidden).toBe(false);
   });
 });

@@ -22,6 +22,9 @@ import { hitIndex } from '../viz/hit';
 import type { Size } from '../viz/types';
 import { buildLanding, shouldShowLanding } from './landing';
 import { buildStyleControls } from './styleControls';
+import { sequenceRows, toCSV, toJSON, downloadBlob } from './exportData';
+import { exportCanvasPng } from './exportImage';
+import { buildDataTable } from './dataTable';
 import { DEFAULT_STYLE, styleToParams, styleFromParams, type RenderStyle } from '../viz/style';
 import { heroEntry } from '../gallery/entries';
 import type { GalleryEntry } from '../gallery/types';
@@ -29,8 +32,15 @@ import type { GalleryEntry } from '../gallery/types';
 const MODES = ['off', 'side', 'over', 'flip', 'ensemble'];
 const SURROGATES = ['permutation', 'difference', 'matched'];
 
+// Each mounted app gets a distinct id prefix. Only one exists in the running
+// page, but hardcoded ids collide the moment two coexist in a document -- and
+// duplicate ids break aria-controls and skip-link resolution, which is exactly
+// the wiring these ids exist for. Same fix as buildSequencePanel's.
+let appSeq = 0;
+
 export function mountApp(root: HTMLElement): void {
   registerAll();
+  const uid = `app${++appSeq}`;
 
   const state: { seq: Sequence | null; vizId: string; params: Params } = {
     seq: null,
@@ -56,7 +66,7 @@ export function mountApp(root: HTMLElement): void {
   // the load panel plus ~20 preset buttons ahead of the visualization.
   const skip = document.createElement('a');
   skip.className = 'skip-link';
-  skip.href = '#main-view';
+  skip.href = `#${uid}-main`;
   skip.textContent = 'Skip to the visualization';
   root.appendChild(skip);
 
@@ -123,6 +133,7 @@ export function mountApp(root: HTMLElement): void {
     state.seq = seq;
     currentRef = refFor(seq);
     panel.setInfo(seq);
+    dataTable.setSequence(seq);
     bar.update(Boolean(getVisualizer(state.vizId).statistics), supportsSuperimpose(getVisualizer(state.vizId)));
     redraw();
   }
@@ -137,7 +148,7 @@ export function mountApp(root: HTMLElement): void {
   // main column
   const main = document.createElement('main');
   main.className = 'main';
-  main.id = 'main-view';
+  main.id = `${uid}-main`;
   // -1 rather than 0: reachable as a skip target without adding a Tab stop.
   main.tabIndex = -1;
   layout.appendChild(main);
@@ -264,6 +275,55 @@ export function mountApp(root: HTMLElement): void {
     pinnedIndex = idx !== null && idx === pinnedIndex ? null : idx;
     redraw();
   });
+
+  const exportBar = document.createElement('div');
+  exportBar.className = 'export-bar';
+
+  const mkExport = (cls: string, label: string, onClick: () => void): HTMLButtonElement => {
+    const b = document.createElement('button');
+    b.className = cls;
+    b.type = 'button';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    exportBar.appendChild(b);
+    return b;
+  };
+
+  const slug = () => (state.seq?.aNumber ?? state.seq?.name ?? 'sequence').replace(/[^\w.-]+/g, '-');
+
+  mkExport('export-png', 'PNG', () => {
+    if (!state.seq) { showNotice('Load a sequence first.'); return; }
+    exportCanvasPng(canvas, state.seq, `${slug()}-${state.vizId}.png`);
+  });
+  mkExport('export-csv', 'CSV', () => {
+    if (!state.seq) { showNotice('Load a sequence first.'); return; }
+    downloadBlob(`${slug()}.csv`, 'text/csv;charset=utf-8', toCSV(state.seq, sequenceRows(state.seq)));
+  });
+  mkExport('export-json', 'JSON', () => {
+    if (!state.seq) { showNotice('Load a sequence first.'); return; }
+    downloadBlob(`${slug()}.json`, 'application/json', toJSON(state.seq, sequenceRows(state.seq)));
+  });
+
+  const dataTable = buildDataTable();
+  dataTable.el.id = `${uid}-data-table`;
+  const tableToggle = mkExport('table-toggle', 'Show the numbers', () => {
+    dataTable.toggle();
+    tableToggle.setAttribute('aria-expanded', String(dataTable.isOpen()));
+    tableToggle.textContent = dataTable.isOpen() ? 'Hide the numbers' : 'Show the numbers';
+  });
+  tableToggle.setAttribute('aria-expanded', 'false');
+  tableToggle.setAttribute('aria-controls', dataTable.el.id);
+
+  const feedback = document.createElement('a');
+  feedback.className = 'feedback-link';
+  feedback.href = 'https://github.com/bshepp/integer-sequence-visualizer/issues/new';
+  feedback.target = '_blank';
+  feedback.rel = 'noopener noreferrer';
+  feedback.textContent = 'Report a problem';
+  exportBar.appendChild(feedback);
+
+  main.appendChild(exportBar);
+  main.appendChild(dataTable.el);
 
   const bar = buildComparisonBar(comparison, redraw);
   main.insertBefore(bar.el, canvasWrap);
