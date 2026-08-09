@@ -589,3 +589,52 @@ describe('unlinking the null model style', () => {
     expect(decodeState(url)!.nullStyle).toEqual(DEFAULT_STYLE);
   });
 });
+
+describe('reshuffling the null model', () => {
+  const mountEngine = () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    root.querySelector<HTMLButtonElement>('.landing-open')?.click();
+    return root;
+  };
+
+  it('sits beside the seed and advances it, so the redraw stays reproducible', () => {
+    const root = mountEngine();
+    const btn = root.querySelector<HTMLButtonElement>('.reshuffle-button')!;
+    const seed = root.querySelector<HTMLInputElement>('.seed-input')!;
+    expect(btn, 'no reshuffle button').not.toBeNull();
+    const before = Number(seed.value);
+    btn.click();
+    expect(Number(seed.value)).toBe(before + 1);
+    btn.click();
+    expect(Number(seed.value)).toBe(before + 2);
+  });
+
+  it('is unavailable while the null model is off, like the seed it drives', () => {
+    const root = mountEngine();
+    const btn = root.querySelector<HTMLButtonElement>('.reshuffle-button')!;
+    const seed = root.querySelector<HTMLInputElement>('.seed-input')!;
+    // The engine opens with the null model on, which is the point of the app.
+    expect(btn.disabled).toBe(false);
+    root.querySelector<HTMLButtonElement>('.null-toggle')!.click();
+    expect(btn.disabled, 'nothing to reshuffle with the null off').toBe(true);
+    expect(seed.disabled).toBe(true);
+    root.querySelector<HTMLButtonElement>('.null-toggle')!.click();
+    expect(btn.disabled).toBe(false);
+  });
+
+  it('does not call a matched surrogate a shuffle, because it is not one', () => {
+    const root = mountEngine();
+    const btn = root.querySelector<HTMLButtonElement>('.reshuffle-button')!;
+    const surr = root.querySelector<HTMLSelectElement>('.surrogate-select')!;
+    expect(btn.textContent).toBe('Reshuffle');
+    surr.value = 'matched';
+    surr.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(btn.textContent).toBe('Redraw');
+    surr.value = 'permutation';
+    surr.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(btn.textContent).toBe('Reshuffle');
+  });
+});

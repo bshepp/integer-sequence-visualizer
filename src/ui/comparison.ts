@@ -209,6 +209,11 @@ export function buildComparisonBar(
     nullToggle.setAttribute('aria-pressed', String(!off));
     surrSel.disabled = off;
     seedInput.disabled = off;
+    reshuffleBtn.disabled = off;
+    // A permutation and a difference surrogate really are reshuffles; a
+    // matched one invents new numbers, and calling that a shuffle would
+    // misdescribe what the button does.
+    reshuffleBtn.textContent = state.surrogate === 'matched' ? 'Redraw' : 'Reshuffle';
     nInput.disabled = state.mode !== 'ensemble';
     surrSel.title = off ? 'Choose a comparison mode to use a null model' : '';
     flipBtn.hidden = state.mode !== 'flip';
@@ -248,9 +253,30 @@ export function buildComparisonBar(
       if (state.mode === 'flip') flipBtn.focus();
     });
   const surrSel = mkSelect('surrogate-select', ['permutation', 'difference', 'matched'], state.surrogate,
-    (v) => { state.surrogate = v as SurrogateType; });
+    (v) => { state.surrogate = v as SurrogateType; syncMode(); });
   const seedInput = mkNumber('seed-input', state.seed, 0, 2 ** 31, (v) => { state.seed = v; });
+  seedInput.title =
+    'Which random draw to use. The same seed always produces the same null model, '
+    + 'so a shared link reproduces this exact picture.';
   const nInput = mkNumber('n-input', state.ensembleN, 1, 1000, (v) => { state.ensembleN = v; });
+
+  // A single surrogate is one sample. Judging a sequence against one draw is
+  // exactly the mistake this app exists to prevent, so a second opinion has to
+  // cost one click - not the discovery that a box labelled "seed" is what
+  // re-rolls it. (Sweep is the rigorous version; this is the quick look.)
+  const reshuffleBtn = document.createElement('button');
+  reshuffleBtn.className = 'reshuffle-button';
+  reshuffleBtn.type = 'button';
+  reshuffleBtn.textContent = 'Reshuffle';
+  reshuffleBtn.title =
+    'Draw a different null model from the same sequence. Advances the seed, so the '
+    + 'new picture is just as reproducible as the old one.';
+  reshuffleBtn.addEventListener('click', () => {
+    // Wraps rather than climbing forever: the seed is bounded by the input.
+    state.seed = (state.seed + 1) % 2 ** 31;
+    seedInput.value = String(state.seed);
+    onChange();
+  });
 
   const flipBtn = document.createElement('button');
   flipBtn.className = 'flip-button';
@@ -279,6 +305,7 @@ export function buildComparisonBar(
     field('showing', modeSel),
     field('null:', surrSel),
     field('seed', seedInput),
+    reshuffleBtn,
     field('N', nInput),
     flipBtn,
   );

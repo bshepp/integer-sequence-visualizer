@@ -100,11 +100,16 @@ export function buildAbout(opts: AboutOptions): HTMLElement {
   body.append(
     section('The question', 'about-question'),
     PARA('In August 2026, George Whale introduced NCurve on the SeqFan mailing list. It is an app that draws OEIS sequences as polyarc curves. He asked whether such visualizations tell us, at a glance, anything useful or significant about the structure and character of the underlying sequences. Nobody answered. This site is an attempt to.'),
-    PARA('The difficulty is that a drawing of a sequence is also a drawing of the drawing method. A square spiral imposes a spiral; a cumulative walk imposes drift. Some of what you see is in the numbers and some of it was put there by the technique, and staring harder does not separate them.'),
+    PARA('The difficulty is that a drawing of a sequence is also a drawing of the drawing method. A square spiral imposes a spiral; a cumulative walk imposes drift. The pattern on the screen is real either way, and staring harder will not tell you whether it belongs to these numbers or to any numbers put through the same machinery.'),
 
     section('The method', 'about-method'),
     PARA('Every rendering here can be placed beside a null model of itself: the same terms in a random order, the same steps between terms reordered, or fresh numbers matched to the same trend and spread. If a pattern survives having the sequence scrambled underneath it, the technique produced the pattern rather than the numbers.'),
     PARA('That test is necessary but not sufficient, and the gallery includes a deliberate counterexample: a(n) = n on a spiral produces striking structure that the null model endorses, because shuffling really does destroy it. Yet every sequence climbing by a constant draws the same picture, so it distinguishes nothing. A null model tells you whether a pattern survived a particular scrambling. It cannot tell you whether the pattern is worth anything.'),
+
+    section('How the randomness works', 'about-randomness'),
+    PARA('Nothing here uses the browser\'s random number generator. Every null model is drawn by a mulberry32 generator started from the seed shown in the null model bar, and shuffles are Fisher-Yates over that stream. The consequence worth knowing is that the randomness is reproducible: the same sequence, surrogate and seed always produce the same null model, on any machine and on any day. That is why a shared link reproduces the exact picture it was shared for, and why every measurement quoted on this site can be recomputed rather than taken on trust.'),
+    PARA('The three surrogates destroy different things, which is what makes them worth choosing between. A permutation keeps the exact terms and discards their order, so it asks whether the arrangement matters. A difference surrogate keeps the steps between terms and shuffles those instead, preserving the overall trend, which makes it a much harder test for anything that grows. A matched surrogate keeps only the trend and spread and invents new numbers to fit, so nothing arithmetic about the original survives at all. The (i) button beside the visualizer names whichever one is currently loaded.'),
+    PARA('One surrogate is one sample, and a single draw can mislead in either direction. Reshuffle draws another for a quick second opinion. Sweep is the version that settles it: it runs a few hundred draws and reports where the real sequence falls against the whole spread, which is the number worth quoting.'),
   );
 
   const citeHead = section('Citations', 'about-citations');

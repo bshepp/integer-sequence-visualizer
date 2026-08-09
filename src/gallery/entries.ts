@@ -20,7 +20,7 @@ export const GALLERY: GalleryEntry[] = [
     },
     verdict: 'real',
     caption: 'Same terms in both panels. Only the order differs, and the walk on the right falls apart.',
-    body: 'Both pictures are drawn from exactly the same 600 numbers; the right-hand one has simply had them shuffled. A turtle walk turns by each term in turn, so it is cumulative and every term displaces everything drawn after it. The real sequence keeps folding back on itself and stays compact; the shuffle drifts away. The Kolakoski sequence contains only 1s and 2s and is its own run-length encoding, so its runs can never exceed 2. That forces an alternation far more regular than chance. Measured against 200 permutation surrogates, 66.4% of adjacent pairs differ against a null band of 45.7% to 54.1%, and no surrogate reached even 56.1%.',
+    body: 'Both pictures are drawn from exactly the same 600 numbers; the right-hand one has had them shuffled. A turtle walk turns by each term in turn, so it is cumulative and every term displaces everything drawn after it. The real sequence keeps folding back on itself and stays compact; the shuffle drifts away. The Kolakoski sequence contains only 1s and 2s and is its own run-length encoding, so its runs can never exceed 2. That forces an alternation far more regular than chance. Measured against 200 permutation surrogates, 66.4% of adjacent pairs differ against a null band of 45.7% to 54.1%, and no surrogate reached even 56.1%.',
     evidence: {
       statistic: 'switchRate',
       measured: 0.664440734557596,
@@ -42,7 +42,7 @@ export const GALLERY: GalleryEntry[] = [
       mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
     },
     verdict: 'artifact',
-    caption: 'Striking structure from the most trivial sequence there is, and the null model endorses it.',
+    caption: 'Striking structure from the plainest sequence there is, and the null model endorses it.',
     body: 'This is a(n) = n. Nothing could be less interesting, yet the picture is full of structure, because the hue advances one step per cell while the spiral winds at a steadily growing radius and the two periodicities beat against each other. Now the uncomfortable part: shuffle the terms and the structure does vanish, so a permutation null reports that the ordering matters. It is right, and it is useless. Every sequence that climbs by a constant draws this same picture, so it distinguishes nothing. A null model tells you whether a pattern survives a specific scrambling. It cannot tell you whether the pattern is worth anything. That is still your job, and this entry is the reminder.',
   },
   {

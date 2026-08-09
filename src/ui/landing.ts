@@ -122,7 +122,7 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   const lede = document.createElement('p');
   lede.className = 'landing-lede';
   lede.textContent =
-    'Integer sequences make beautiful pictures. Some of that beauty is in the numbers, and some of it is drawn by the technique. This tool shows you both at once - the sequence, and a null model built from it - so you can tell which is which.';
+    'Integer sequences make beautiful pictures. Every pattern you see is really there; the question is whether it belongs to the sequence or to the way it is drawn. This tool renders both at once - your sequence, and a null model built from the same numbers - so you can tell which.';
 
   const heroFigure = document.createElement('figure');
   heroFigure.className = 'landing-hero';

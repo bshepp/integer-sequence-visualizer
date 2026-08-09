@@ -383,3 +383,9 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 }
 .link-toggle[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
 :root[data-theme="light"] .link-toggle { background: #ffffff; border-color: #c8ccd4; }
+.reshuffle-button {
+  background: #24262c; color: var(--text); border: 1px solid #3a3d44;
+  border-radius: 4px; padding: 5px 12px; cursor: pointer; font: inherit; font-size: 12px;
+}
+.reshuffle-button:disabled { opacity: 0.45; cursor: default; }
+:root[data-theme="light"] .reshuffle-button { background: #ffffff; border-color: #c8ccd4; }
