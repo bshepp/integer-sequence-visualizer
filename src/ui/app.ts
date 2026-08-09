@@ -237,7 +237,6 @@ export function mountApp(root: HTMLElement): void {
     styleToggle.classList.toggle('style-toggle--open', !styleUi.el.hidden);
     redraw();
   });
-  topbar.appendChild(styleUi.el);
 
   const explain = buildExplainPanel();
   const explainBtn = document.createElement('button');
@@ -265,6 +264,11 @@ export function mountApp(root: HTMLElement): void {
   const vizShort = document.createElement('p');
   vizShort.className = 'viz-short';
   topbar.appendChild(vizShort);
+
+  // Last child deliberately: .style-controls is flex-basis:100%, so wherever
+  // it sits it claims a full row. Appended earlier it was splitting the
+  // picker from the (i) button and the parameter sliders.
+  topbar.appendChild(styleUi.el);
   function rebuildParams(): void {
     const current = getVisualizer(state.vizId);
     vizShort.textContent = current.explain.short;

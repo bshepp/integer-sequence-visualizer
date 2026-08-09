@@ -441,3 +441,32 @@ describe('footer contact', () => {
     expect(link.getAttribute('href')).toBe('mailto:bshepp@gmail.com');
   });
 });
+
+describe('style panel placement', () => {
+  it('is the last thing in the topbar, so it cannot split the controls', () => {
+    // .style-controls is flex-basis:100%, so it claims a whole row wherever it
+    // sits. Appended earlier it wrapped between the visualizer picker and the
+    // (i) button, pushing the parameter sliders onto a third row.
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    const topbar = root.querySelector('.topbar')!;
+    expect(topbar.lastElementChild).toBe(topbar.querySelector('.style-controls'));
+  });
+
+  it('the toggle controls it and reports its state', () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    const toggle = root.querySelector<HTMLButtonElement>('.style-toggle')!;
+    const panel = root.querySelector<HTMLElement>('.style-controls')!;
+    expect(panel.hidden).toBe(true);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.getAttribute('aria-controls')).toBe(panel.id);
+    toggle.click();
+    expect(panel.hidden).toBe(false);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+  });
+});
