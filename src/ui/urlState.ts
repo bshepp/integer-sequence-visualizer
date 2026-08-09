@@ -2,6 +2,7 @@ import type { Params } from '../viz/types';
 import type { ComparisonMode } from './comparison';
 import type { SurrogateType } from '../nullmodel/surrogates';
 import type { RenderStyle } from '../viz/style';
+import type { Viewport } from './viewport';
 
 export type SeqRef =
   | { kind: 'oeis'; aNumber: string }
@@ -22,6 +23,8 @@ export interface UrlState {
   ensembleN?: number;
   /** Absent on links encoded before the style layer existed. */
   style?: RenderStyle;
+  /** Absent on links encoded before zoom existed. */
+  viewport?: Viewport;
 }
 
 function b64urlEncode(s: string): string {

@@ -21,6 +21,10 @@ import { buildReadout, describeHit, drawMarker, correspondingIndex } from './rea
 import { hitIndex, type Hit } from '../viz/hit';
 import { canvasTheme } from '../viz/theme';
 import { initialTheme, applyTheme, buildThemeToggle } from './themeToggle';
+import {
+  IDENTITY_VIEWPORT, applyViewport, screenToWorld, worldToScreen, zoomAt, clampViewport,
+  type Viewport,
+} from './viewport';
 import type { Size } from '../viz/types';
 import { buildLanding, shouldShowLanding, routeFor, GALLERY_HASH, ABOUT_HASH } from './landing';
 import { buildAbout } from './about';
@@ -276,6 +280,7 @@ export function mountApp(root: HTMLElement): void {
   // The term the user pinned by clicking, or null. Survives redraws (a flip
   // included) so the marker anchors the eye while the substrate changes.
   let pinnedIndex: number | null = null;
+  let viewport: Viewport = { ...IDENTITY_VIEWPORT };
 
   // Panel geometry for hit-testing: in side-by-side the left half is the real
   // sequence, and the pointer must not report real-sequence indices for
@@ -315,12 +320,23 @@ export function mountApp(root: HTMLElement): void {
       panel = 'null';
     }
 
-    const hit = viz.locate(new SequenceView(seq), state.params, { width: panelW, height: size.height }, x, pt.y);
+    // Into the visualizer's own coordinate space, which knows nothing of zoom.
+    const w = screenToWorld(viewport, x, pt.y);
+    const hit = viz.locate(new SequenceView(seq), state.params, { width: panelW, height: size.height }, w.x, w.y);
     return hit ? { hit, seq, panel } : null;
   }
 
   let hoverPending = false;
   canvas.addEventListener('pointermove', (e) => {
+    if (dragFrom) {
+      setViewport({
+        zoom: viewport.zoom,
+        panX: dragFrom.panX + (e.clientX - dragFrom.x),
+        panY: dragFrom.panY + (e.clientY - dragFrom.y),
+      });
+      readout.set(null);
+      return;
+    }
     // Throttle to one hit-test per animation frame: locate() is an O(n) scan
     // for path visualizers and pointermove fires far faster than 60Hz.
     if (hoverPending) return;
@@ -337,8 +353,35 @@ export function mountApp(root: HTMLElement): void {
   });
   canvas.addEventListener('pointerleave', () => readout.set(null));
 
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const r = canvas.getBoundingClientRect();
+    setViewport(zoomAt(viewport, e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX - r.left, e.clientY - r.top));
+  }, { passive: false });
+
+  // Drag to pan. `downAt` also lets the click handler tell a pan from a click,
+  // so ending a drag over a line does not also pin that term.
+  let dragFrom: { x: number; y: number; panX: number; panY: number } | null = null;
+  let downAt: { x: number; y: number } | null = null;
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    downAt = { x: e.clientX, y: e.clientY };
+    dragFrom = { x: e.clientX, y: e.clientY, panX: viewport.panX, panY: viewport.panY };
+    canvas.setPointerCapture(e.pointerId);
+  });
+
+  const endDrag = (e: PointerEvent) => {
+    dragFrom = null;
+    if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+  };
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+
   canvas.addEventListener('click', (e) => {
     if (!state.seq) return;
+    // The end of a pan is not a click on a term.
+    if (downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 4) return;
     const found = hitAt(canvasPoint(e));
     // Pin only from the real panel: a surrogate index moves when the seed
     // changes, so pinning one would silently point somewhere else later.
@@ -397,6 +440,44 @@ export function mountApp(root: HTMLElement): void {
       showNotice(url);
     }
   });
+
+  const zoomLabel = document.createElement('span');
+  zoomLabel.className = 'zoom-level';
+  zoomLabel.setAttribute('role', 'status');
+
+  function setViewport(v: Viewport): void {
+    viewport = clampViewport(v);
+    zoomLabel.textContent = `${Math.round(viewport.zoom * 100)}%`;
+    redraw();
+  }
+
+  const canvasCentre = () => {
+    const r = canvasWrap.getBoundingClientRect();
+    return { x: Math.max(200, r.width) / 2, y: Math.max(200, r.height) / 2 };
+  };
+
+  const mkZoom = (cls: string, label: string, aria: string, onClick: () => void) => {
+    const b = document.createElement('button');
+    b.className = cls;
+    b.type = 'button';
+    b.textContent = label;
+    b.setAttribute('aria-label', aria);
+    b.addEventListener('click', onClick);
+    exportBar.appendChild(b);
+    return b;
+  };
+
+  mkZoom('zoom-out', '−', 'Zoom out', () => {
+    const c = canvasCentre();
+    setViewport(zoomAt(viewport, 1 / 1.4, c.x, c.y));
+  });
+  exportBar.appendChild(zoomLabel);
+  mkZoom('zoom-in', '+', 'Zoom in', () => {
+    const c = canvasCentre();
+    setViewport(zoomAt(viewport, 1.4, c.x, c.y));
+  });
+  mkZoom('zoom-reset', 'Reset', 'Reset zoom and pan', () => setViewport({ ...IDENTITY_VIEWPORT }));
+  zoomLabel.textContent = '100%';
 
   const feedback = document.createElement('a');
   feedback.className = 'feedback-link';
@@ -460,7 +541,7 @@ export function mountApp(root: HTMLElement): void {
       const hash = '#' + encodeState({
         seqRef: currentRef, vizId: state.vizId, params: state.params,
         mode: comparison.mode, surrogate: comparison.surrogate, seed: comparison.seed,
-        ensembleN: comparison.ensembleN, style,
+        ensembleN: comparison.ensembleN, style, viewport,
       });
       lastHashWritten = hash;
       history.replaceState(null, '', hash);
@@ -534,11 +615,21 @@ export function mountApp(root: HTMLElement): void {
       ctx.beginPath();
       ctx.rect(0, 0, w, h);
       ctx.clip();
+      ctx.save();
+      applyViewport(ctx, viewport);
       try {
-        viz.render(new SequenceView(seq!), { ...state.params, ...styleToParams(style) }, ctx, { width: w, height: h });
+        // Stroke width is divided by the zoom so a line keeps its on-screen
+        // thickness: zooming in should reveal finer structure, not fatten
+        // every line until the drawing fills in.
+        viz.render(new SequenceView(seq!), {
+          ...state.params, ...styleToParams(style),
+          styleLineWidth: style.lineWidth / viewport.zoom,
+        }, ctx, { width: w, height: h });
       } catch (e) {
         showError(`Render failed: ${e instanceof Error ? e.message : String(e)}`);
       }
+      ctx.restore();
+      // Drawn after restoring, so labels keep their size at any zoom.
       ctx.fillStyle = canvasTheme().muted;
       ctx.font = '12px system-ui';
       // Top of the panel: the cursor readout owns the bottom-left corner.
@@ -556,12 +647,15 @@ export function mountApp(root: HTMLElement): void {
       if (pinnedIndex !== null && viz.position) {
         const panel = { width: width / 2 - 1, height };
         const real = viz.position(view, state.params, panel, pinnedIndex);
-        if (real) drawMarker(ctx, real, canvasTheme().real);
+        if (real) drawMarker(ctx, worldToScreen(viewport, real.x, real.y), canvasTheme().real);
         const corr = correspondingIndex(pinnedIndex, comparison.surrogate, state.seq.terms, comparison.seed);
         const sp = viz.position(new SequenceView(surr), state.params, panel, corr.index);
         // Pink when the same term was genuinely followed; grey when this null
         // has no such term and we are only lining up indices.
-        if (sp) drawMarker(ctx, { x: sp.x + width / 2 + 1, y: sp.y }, corr.traced ? canvasTheme().real : canvasTheme().muted);
+        if (sp) {
+          const m = worldToScreen(viewport, sp.x, sp.y);
+          drawMarker(ctx, { x: m.x + width / 2 + 1, y: m.y }, corr.traced ? canvasTheme().real : canvasTheme().muted);
+        }
         ctx.fillStyle = canvasTheme().muted;
         ctx.font = '11px system-ui';
         ctx.fillText(
@@ -586,7 +680,7 @@ export function mountApp(root: HTMLElement): void {
       ctx.fillText(`${seqLabel(state.seq)} - real (colour) over ${comparison.surrogate} null (grey)`, 10, 16);
       if (pinnedIndex !== null && viz.position) {
         const p = viz.position(view, state.params, { width, height }, pinnedIndex);
-        if (p) drawMarker(ctx, p, canvasTheme().real);
+        if (p) drawMarker(ctx, worldToScreen(viewport, p.x, p.y), canvasTheme().real);
       }
     } else if (comparison.mode === 'flip') {
       const shown = comparison.showSurrogate
@@ -601,7 +695,7 @@ export function mountApp(root: HTMLElement): void {
           ? correspondingIndex(pinnedIndex, comparison.surrogate, state.seq.terms, comparison.seed).index
           : pinnedIndex;
         const p = viz.position(new SequenceView(shown), state.params, { width, height }, idx);
-        if (p) drawMarker(ctx, p, canvasTheme().real);
+        if (p) drawMarker(ctx, worldToScreen(viewport, p.x, p.y), canvasTheme().real);
       }
     } else if (comparison.mode === 'ensemble' && viz.statistics) {
       // The adaptive log/linear scale decision (histogram's 'terms' target,
@@ -702,7 +796,7 @@ export function mountApp(root: HTMLElement): void {
       draw(state.seq, width, height, 0, panelLabel('', state.seq));
       if (pinnedIndex !== null && viz.position) {
         const p = viz.position(view, state.params, { width, height }, pinnedIndex);
-        if (p) drawMarker(ctx, p, canvasTheme().real);
+        if (p) drawMarker(ctx, worldToScreen(viewport, p.x, p.y), canvasTheme().real);
       }
     }
   }
@@ -763,6 +857,7 @@ export function mountApp(root: HTMLElement): void {
         Object.assign(style, styleFromParams(styleToParams(decoded.style)));
         styleUi.refresh();
       }
+      if (decoded.viewport) viewport = clampViewport(decoded.viewport);
       bar.refresh();
       bar.update(Boolean(getVisualizer(state.vizId).statistics), supportsSuperimpose(getVisualizer(state.vizId)));
     }

@@ -343,3 +343,6 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .sweep-button { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 5px 12px; cursor: pointer; font: inherit; font-size: 12px; }
 .sweep-button:hover { border-color: var(--accent); color: var(--accent); }
 :root[data-theme="light"] .sweep-button { background: #ffffff; border-color: #c8ccd4; }
+.zoom-level { font: 12px ui-monospace, monospace; color: var(--muted); min-width: 3.5em; text-align: center; }
+.canvas-wrap canvas { cursor: grab; touch-action: none; }
+.canvas-wrap canvas:active { cursor: grabbing; }
