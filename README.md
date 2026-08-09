@@ -51,6 +51,16 @@ experimental apparatus for answering it.
 - **The numbers behind the picture**: a data table of index and exact term,
   which doubles as the textual equivalent of the canvas for screen-reader
   users.
+- **Light and dark themes** reaching the drawing as well as the interface.
+  Both palettes are measured against WCAG AA in `tests/viz/theme.test.ts`
+  rather than assumed - a naive inversion of the dark accent lands at 2.2:1 on
+  white, and the spectrum ramp needs a different lightness on each background.
+- **Zoom and pan** in every visualizer, applied as one viewport transform
+  around the render call and inverted once for hit-testing, so no visualizer
+  knows the zoom level and cursor identification keeps working while zoomed.
+- **Copy citation** producing a reference that reproduces the exact view,
+  since the URL encodes sequence, visualizer, parameters, mode, seed, style
+  and zoom.
 
 ## Develop
 

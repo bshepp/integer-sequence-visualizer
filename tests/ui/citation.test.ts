@@ -68,3 +68,50 @@ describe('theme selection', () => {
     expect(el.textContent).toBe('Dark');
   });
 });
+
+import { citationFor } from '../../src/ui/citation';
+import type { Sequence } from '../../src/sequence/sequence';
+
+const fib: Sequence = {
+  terms: [0n, 1n, 1n, 2n], aNumber: 'A000045',
+  name: 'Fibonacci numbers', offset: 0, source: 'oeis',
+};
+
+describe('citationFor', () => {
+  const base = {
+    seq: fib, vizName: 'Turtle walk',
+    url: 'https://ulam.briansheppard.com/#abc', accessed: '2026-08-08',
+  };
+
+  it('names the sequence, the view, the URL and the access date', () => {
+    const c = citationFor(base);
+    expect(c).toContain('A000045');
+    expect(c).toContain('Fibonacci numbers');
+    expect(c).toContain('Turtle walk');
+    expect(c).toContain('https://ulam.briansheppard.com/#abc');
+    expect(c).toContain('2026-08-08');
+  });
+
+  it('records how many terms were drawn, since the picture depends on it', () => {
+    expect(citationFor(base)).toContain('4 terms');
+  });
+
+  it('credits the OEIS, since the data is theirs', () => {
+    const c = citationFor(base);
+    expect(c).toMatch(/On-Line Encyclopedia of Integer Sequences/);
+    expect(c).toContain('CC BY-SA 4.0');
+  });
+
+  it('omits the A-number cleanly for a non-OEIS sequence', () => {
+    const c = citationFor({
+      ...base,
+      seq: { terms: [1n], name: 'Pasted sequence', offset: 0, source: 'paste' },
+    });
+    expect(c).toContain('Pasted sequence');
+    expect(c).not.toMatch(/A undefined|oeis\.org\/undefined|undefined/);
+  });
+
+  it('is a single paragraph, so it pastes into a bibliography intact', () => {
+    expect(citationFor(base).split('\n').filter((l) => l.trim()).length).toBe(1);
+  });
+});

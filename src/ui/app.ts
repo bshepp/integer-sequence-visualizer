@@ -32,6 +32,7 @@ import { buildStyleControls } from './styleControls';
 import { sequenceRows, toCSV, toJSON, downloadBlob } from './exportData';
 import { exportCanvasPng } from './exportImage';
 import { buildDataTable } from './dataTable';
+import { citationFor } from './citation';
 import { DEFAULT_STYLE, styleToParams, styleFromParams, type RenderStyle } from '../viz/style';
 import { heroEntry } from '../gallery/entries';
 import type { GalleryEntry } from '../gallery/types';
@@ -417,6 +418,23 @@ export function mountApp(root: HTMLElement): void {
   mkExport('export-json', 'JSON', () => {
     if (!state.seq) { showNotice('Load a sequence first.'); return; }
     downloadBlob(`${slug()}.json`, 'application/json', toJSON(state.seq, sequenceRows(state.seq)));
+  });
+
+  mkExport('copy-citation', 'Copy citation', () => {
+    if (!state.seq) { showNotice('Load a sequence first.'); return; }
+    const text = citationFor({
+      seq: state.seq,
+      vizName: getVisualizer(state.vizId).name,
+      url: location.href,
+      accessed: new Date().toISOString().slice(0, 10),
+    });
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => showNotice('Citation copied.'))
+        .catch(() => showError('Could not copy the citation.'));
+    } else {
+      showNotice(text);
+    }
   });
 
   const dataTable = buildDataTable();
