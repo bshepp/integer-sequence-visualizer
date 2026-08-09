@@ -23,9 +23,9 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
   row-gap: 2px;
 }
 .app-wordmark { display: flex; align-items: baseline; gap: 8px; }
-.app-title { font-size: 17px; font-weight: 700; letter-spacing: 0.02em; color: var(--text); }
-.app-subtitle { font-size: 12px; color: var(--muted); }
-.app-tagline { margin: 0; font-size: 12px; color: var(--muted); }
+.app-title { font-size: 22px; font-weight: 700; letter-spacing: 0.02em; color: var(--text); }
+.app-subtitle { font-size: 14px; color: var(--muted); }
+.app-tagline { margin: 0; font-size: 14px; color: var(--muted); }
 
 .layout { display: grid; grid-template-columns: 300px 1fr; flex: 1; min-height: 0; }
 .sidebar { background: var(--panel); padding: 12px; overflow-y: auto; }
