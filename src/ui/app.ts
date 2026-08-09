@@ -20,6 +20,7 @@ import { SURROGATE_EXPLAIN } from '../nullmodel/surrogates';
 import { buildReadout, describeHit, drawMarker, correspondingIndex } from './readout';
 import { hitIndex, type Hit } from '../viz/hit';
 import { canvasTheme } from '../viz/theme';
+import { initialTheme, applyTheme, buildThemeToggle } from './themeToggle';
 import type { Size } from '../viz/types';
 import { buildLanding, shouldShowLanding, routeFor, GALLERY_HASH, ABOUT_HASH } from './landing';
 import { buildAbout } from './about';
@@ -43,6 +44,8 @@ let appSeq = 0;
 export function mountApp(root: HTMLElement): void {
   registerAll();
   const uid = `app${++appSeq}`;
+  // Before anything draws, so the first paint is already in the right theme.
+  applyTheme(initialTheme());
 
   const state: { seq: Sequence | null; vizId: string; params: Params } = {
     seq: null,
@@ -91,6 +94,9 @@ export function mountApp(root: HTMLElement): void {
   const headerNav = document.createElement('nav');
   headerNav.className = 'header-nav';
   headerNav.setAttribute('aria-label', 'Pages');
+  const themeUi = buildThemeToggle(() => redraw());
+  headerNav.appendChild(themeUi.el);
+
   const navGallery = document.createElement('button');
   navGallery.className = 'header-nav-button';
   navGallery.type = 'button';
@@ -408,6 +414,8 @@ export function mountApp(root: HTMLElement): void {
   bar.update(Boolean(getVisualizer(state.vizId).statistics), supportsSuperimpose(getVisualizer(state.vizId)));
 
   const sweepBtn = document.createElement('button');
+  sweepBtn.className = 'sweep-button';
+  sweepBtn.type = 'button';
   sweepBtn.textContent = 'Sweep…';
   sweepBtn.addEventListener('click', () => {
     if (!state.seq) { showNotice('Load a sequence first.'); return; }

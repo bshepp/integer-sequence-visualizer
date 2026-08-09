@@ -16,6 +16,8 @@ export interface CanvasPalette {
   axis: string;
   /** Null-model band fill; level 0 is the widest and faintest. */
   band(level: number): string;
+  /** HSL lightness for the spectrum colour ramp, in percent. */
+  spectrumLightness: number;
 }
 
 export const DARK_PALETTE: CanvasPalette = {
@@ -28,6 +30,7 @@ export const DARK_PALETTE: CanvasPalette = {
   grid: '#333333',
   axis: 'rgba(255,255,255,0.18)',
   band: (level) => `rgba(122,162,247,${0.10 + level * 0.07})`,
+  spectrumLightness: 60,
 };
 
 // Not a naive inversion. The dark theme's accent and real-line hues fail
@@ -44,6 +47,7 @@ export const LIGHT_PALETTE: CanvasPalette = {
   grid: '#c8ccd4',
   axis: 'rgba(0,0,0,0.22)',
   band: (level) => `rgba(31,79,168,${0.10 + level * 0.07})`,
+  spectrumLightness: 38,
 };
 
 // Module-level rather than threaded through every render() call. Canvas colour

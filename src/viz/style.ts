@@ -74,9 +74,13 @@ export function styleFromParams(p: Params): RenderStyle {
  */
 export function strokeColorAt(s: RenderStyle, t: number): string {
   if (s.colorMode === 'none') return canvasTheme().muted;
-  if (s.colorMode === 'flat') return `hsl(${s.hueStart}, 70%, 60%)`;
+  // Lightness follows the theme. 60% reads well against a dark canvas and
+  // washes out to pastel on a light one, so the light theme darkens the ramp
+  // instead of inheriting a palette tuned for the opposite background.
+  const l = canvasTheme().spectrumLightness;
+  if (s.colorMode === 'flat') return `hsl(${s.hueStart}, 70%, ${l}%)`;
   const clamped = Math.min(1, Math.max(0, t));
-  return `hsl(${s.hueStart + (s.hueEnd - s.hueStart) * clamped}, 70%, 60%)`;
+  return `hsl(${s.hueStart + (s.hueEnd - s.hueStart) * clamped}, 70%, ${l}%)`;
 }
 
 export function applyStyle(ctx: CanvasRenderingContext2D, s: RenderStyle): void {

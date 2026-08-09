@@ -286,3 +286,60 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 }
 .page-nav-button:hover { border-color: var(--accent); color: var(--accent); }
 .page-nav-button--primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+
+/* Mirrors src/viz/theme.ts. The two must agree: CSS paints the chrome and the
+   module paints the canvas, and a visitor sees them side by side. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #fbfbfd;
+  --panel: #eef0f4;
+  --text: #16181d;
+  --muted: #565c66;
+  --accent: #1f4fa8;
+}
+:root[data-theme="light"] .tab-pane input,
+:root[data-theme="light"] .tab-pane textarea,
+:root[data-theme="light"] .tab-pane button,
+:root[data-theme="light"] .tab-pane select,
+:root[data-theme="light"] .viz-picker,
+:root[data-theme="light"] .style-controls select,
+:root[data-theme="light"] .export-bar button,
+:root[data-theme="light"] .header-nav-button,
+:root[data-theme="light"] .page-nav-button,
+:root[data-theme="light"] .preset-button,
+:root[data-theme="light"] .search-results button,
+:root[data-theme="light"] .bfile-cap,
+:root[data-theme="light"] .explain-button,
+:root[data-theme="light"] .comparison-bar select,
+:root[data-theme="light"] .comparison-bar input,
+:root[data-theme="light"] .sweep-close,
+:root[data-theme="light"] .theme-toggle { background: #ffffff; border-color: #c8ccd4; }
+:root[data-theme="light"] .style-toggle { background: var(--text); color: var(--bg); border-color: var(--text); }
+:root[data-theme="light"] .bfile-button,
+:root[data-theme="light"] .landing-open,
+:root[data-theme="light"] .page-nav-button--primary { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+:root[data-theme="light"] .app-header,
+:root[data-theme="light"] .topbar,
+:root[data-theme="light"] .comparison-bar,
+:root[data-theme="light"] .export-bar,
+:root[data-theme="light"] .data-table { border-color: #d6dae2; }
+:root[data-theme="light"] .banner-error { background: #fbe4e9; color: #8c0f31; border-color: #a3123a55; }
+:root[data-theme="light"] .banner-notice { background: #e5edfb; color: #1f4fa8; border-color: #1f4fa855; }
+:root[data-theme="light"] .readout { background: rgba(255,255,255,0.92); }
+:root[data-theme="light"] .verdict--real { background: #dff3e6; color: #1c6b3a; }
+:root[data-theme="light"] .verdict--artifact { background: #fbe4e9; color: #8c0f31; }
+:root[data-theme="light"] .verdict--open { background: #e7e9ee; color: #565c66; }
+:root[data-theme="light"] .sweep-overlay { background: rgba(255,255,255,0.85); }
+:root[data-theme="light"] .sweep-cell,
+:root[data-theme="light"] .gallery-thumb,
+:root[data-theme="light"] .explain-panel { background: #ffffff; border-color: #c8ccd4; }
+:root[data-theme="light"] .busy { background: rgba(255,255,255,0.92); }
+
+.theme-toggle {
+  background: #24262c; color: var(--text); border: 1px solid #3a3d44;
+  border-radius: 4px; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 12px;
+}
+.theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.sweep-button { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 5px 12px; cursor: pointer; font: inherit; font-size: 12px; }
+.sweep-button:hover { border-color: var(--accent); color: var(--accent); }
+:root[data-theme="light"] .sweep-button { background: #ffffff; border-color: #c8ccd4; }

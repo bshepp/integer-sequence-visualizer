@@ -35,7 +35,7 @@ describe('canvas palettes', () => {
   });
 
   it('both palettes define every key', () => {
-    const keys: Array<keyof CanvasPalette> = ['bg', 'panel', 'text', 'muted', 'accent', 'real', 'grid', 'axis', 'band'];
+    const keys: Array<keyof CanvasPalette> = ['bg', 'panel', 'text', 'muted', 'accent', 'real', 'grid', 'axis', 'band', 'spectrumLightness'];
     for (const p of [DARK_PALETTE, LIGHT_PALETTE]) {
       for (const k of keys) expect(p[k], `${k} missing`).toBeDefined();
     }
@@ -55,6 +55,13 @@ describe('canvas palettes', () => {
     expect(LIGHT_PALETTE.bg).not.toBe(DARK_PALETTE.bg);
     expect(contrast(LIGHT_PALETTE.bg, '#ffffff')).toBeLessThan(1.5);
     expect(contrast(DARK_PALETTE.bg, '#000000')).toBeLessThan(1.5);
+  });
+
+  it('the light theme darkens the spectrum ramp rather than inheriting it', () => {
+    // hsl(h, 70%, 60%) reads well on dark and turns pastel on white, so the
+    // light palette must not simply reuse the dark lightness.
+    expect(LIGHT_PALETTE.spectrumLightness).toBeLessThan(DARK_PALETTE.spectrumLightness);
+    expect(LIGHT_PALETTE.spectrumLightness).toBeGreaterThan(20);
   });
 
   it('band() returns progressively stronger fills for deeper levels', () => {
