@@ -22,6 +22,13 @@ export type Verdict =
   | 'real'
   /** Reproduced by the null, or produced by the layout itself. */
   | 'artifact'
+  /**
+   * Both, in separable parts: the structure survives its null model, but the
+   * striking thing about the picture is the drawing's contribution rather
+   * than the sequence's. Carries evidence like 'real' does, for the half that
+   * is real; the body has to say which half is which.
+   */
+  | 'split'
   /** Not measured. Say so; do not guess. */
   | 'open';
 
@@ -35,6 +42,6 @@ export interface GalleryEntry {
   verdict: Verdict;
   caption: string;
   body: string;
-  /** Required when verdict === 'real'. */
+  /** Required when verdict === 'real' or 'split'. */
   evidence?: Evidence;
 }

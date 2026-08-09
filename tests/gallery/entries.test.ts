@@ -54,9 +54,9 @@ describe('gallery entries', () => {
     }
   });
 
-  it('every "real" verdict carries reproducible evidence', () => {
+  it('every "real" or "split" verdict carries reproducible evidence', () => {
     for (const e of GALLERY) {
-      if (e.verdict === 'real') {
+      if (e.verdict === 'real' || e.verdict === 'split') {
         expect(e.evidence, `${e.id} claims 'real' without evidence`).toBeDefined();
       }
     }

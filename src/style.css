@@ -389,3 +389,6 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 }
 .reshuffle-button:disabled { opacity: 0.45; cursor: default; }
 :root[data-theme="light"] .reshuffle-button { background: #ffffff; border-color: #c8ccd4; }
+/* Half-real: read as neither endorsement nor dismissal. */
+.verdict--split { background: #37301d; color: #e8c46a; }
+:root[data-theme="light"] .verdict--split { background: #f7edd4; color: #7a5a10; }

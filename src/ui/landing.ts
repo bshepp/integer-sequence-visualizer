@@ -32,6 +32,7 @@ export function shouldShowLanding(hash: string): boolean {
 const VERDICT_LABEL: Record<GalleryEntry['verdict'], string> = {
   real: 'Survives the null',
   artifact: 'Drawn by the layout',
+  split: 'Half real, half technique',
   open: 'Not yet measured',
 };
 

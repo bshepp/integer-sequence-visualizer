@@ -1,5 +1,5 @@
 import type { GalleryEntry } from './types';
-import { kolakoski, fibonacci, naturals, primes, recaman, thueMorse, ruler, norgard, oeisSeq } from './sequences';
+import { kolakoski, fibonacci, naturals, primes, recaman, thueMorse, ruler, norgard, oeisSeq, A000464_TERMS } from './sequences';
 
 const N = 600;
 
@@ -26,6 +26,26 @@ export const GALLERY: GalleryEntry[] = [
       measured: 0.664440734557596,
       bandLo: 0.4574290484140234,
       bandHi: 0.5409015025041736,
+      surrogate: 'permutation', n: 200, seed: 1,
+    },
+  },
+  {
+    id: 'a000464-pentagram',
+    title: 'A star with two authors',
+    sequence: oeisSeq('A000464', 'Expansion of e.g.f. sin(x)/cos(2*x)', A000464_TERMS),
+    state: {
+      seqRef: { kind: 'oeis', aNumber: 'A000464' },
+      vizId: 'turtle', params: { angle: 73, k: 4 },
+      mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
+    },
+    verdict: 'split',
+    caption: 'The walk really does close into a regular figure. Nothing about the sequence chose five points.',
+    body: 'A000464 at 73 degrees draws a clean pentagram, and the honest answer to whether it is real turns out to be "half of it". That the walk closes at all belongs to the sequence: its terms are 1, 3, 1, 3 mod 4 without a single exception across all 216 known terms, so every pair of terms turns by the same amount and the path is one rotation repeated. Measured at -0.933 against a null band of -0.540 to 0.406, and not one of 200 shuffles came close. But the five-pointedness belongs to the protractor. A pair of terms turns 4 x 73 = 292 degrees, and 292 happens to sit near 288, which is four fifths of a full turn. Hand the same perfect alternation an angle of 100 degrees and it draws nine points instead. Two more things worth knowing. 73 does not close exactly, so the star creeps 20 degrees each circuit; load the full b-file and it fills in a rosette, making this the one figure on the site that looks better with fewer terms. And press Reshuffle a few times: at fifteen terms the shuffle is arranging eight 1s and seven 3s, and about one arrangement in twenty comes out near-alternating by luck, so the null will draw you a pentagram of its own. That is not the null failing. That is fifteen terms being a small number, and the reason a single surrogate is never the test.',
+    evidence: {
+      statistic: 'residueAlternation',
+      measured: -0.9333333333333332,
+      bandLo: -0.5404761904761906,
+      bandHi: 0.40595238095238106,
       surrogate: 'permutation', n: 200, seed: 1,
     },
   },

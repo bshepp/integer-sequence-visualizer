@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { GALLERY } from '../../src/gallery/entries';
-import { switchRate, longestRun, angularVariance } from '../../src/gallery/statistics';
+import { switchRate, longestRun, angularVariance, residueAlternation } from '../../src/gallery/statistics';
 import { makeSurrogate } from '../../src/nullmodel/surrogates';
 import { SequenceView, type Sequence } from '../../src/sequence/sequence';
 import type { Evidence } from '../../src/gallery/types';
@@ -10,6 +10,7 @@ const STATISTICS: Record<string, (seq: SequenceView, params: Record<string, unkn
   switchRate: (seq) => switchRate(seq),
   longestRun: (seq) => longestRun(seq),
   angularVariance: (seq, params) => angularVariance(seq, Number(params.modulus ?? 2)),
+  residueAlternation: (seq, params) => residueAlternation(seq, Number(params.k ?? 2)),
 };
 
 const asSeq = (terms: bigint[]): Sequence => ({ terms, name: 's', offset: 0, source: 'paste' });
@@ -54,8 +55,11 @@ describe('gallery verdicts are computed, not asserted', () => {
       expect(band.hi).toBeCloseTo(ev.bandHi, 9);
     });
 
-    it(`${entry.id}: verdict 'real' means the measurement is outside the band`, () => {
-      if (entry.verdict === 'real') {
+    it(`${entry.id}: a 'real' or 'split' verdict means the measurement is outside the band`, () => {
+      // 'split' claims only half a result, but that half has to clear the
+      // band exactly as 'real' does - the hedge is about what the number
+      // means, not about whether it holds.
+      if (entry.verdict === 'real' || entry.verdict === 'split') {
         expect(ev.measured < ev.bandLo || ev.measured > ev.bandHi).toBe(true);
       }
     });

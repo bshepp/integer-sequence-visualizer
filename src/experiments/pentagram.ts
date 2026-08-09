@@ -1,4 +1,10 @@
 import { permutationSurrogate } from '../nullmodel/surrogates';
+import { alternation } from '../gallery/statistics';
+
+// Re-exported so this module reads as the single place the pentagram question
+// is answered, while the statistic itself stays shared with the gallery
+// evidence that quotes it.
+export { alternation };
 
 /**
  * Is the A000464 pentagram real?
@@ -78,24 +84,6 @@ export function foldFromPairTurn(pairTurnDeg: number, maxFold = 12): { fold: num
     if (drift < best.driftDeg) best = { fold: m, driftDeg: drift };
   }
   return best;
-}
-
-/**
- * Lag-1 autocorrelation of the residues: -1 for a perfect two-value
- * alternation, ~0 for a shuffle. This is the part a permutation destroys, so
- * it is the part that belongs to the sequence rather than to the drawing.
- */
-export function alternation(residues: number[]): number {
-  const n = residues.length;
-  if (n < 3) return 0;
-  const mean = residues.reduce((a, b) => a + b, 0) / n;
-  let num = 0, den = 0;
-  for (let i = 0; i < n; i++) {
-    const d = residues[i]! - mean;
-    den += d * d;
-    if (i + 1 < n) num += d * (residues[i + 1]! - mean);
-  }
-  return den === 0 ? 0 : num / den;
 }
 
 export function residuesOf(terms: bigint[], k: number): number[] {

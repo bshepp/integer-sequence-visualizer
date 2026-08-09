@@ -94,3 +94,30 @@ export function norgard(n: number): bigint[] {
 export function oeisSeq(aNumber: string, name: string, terms: bigint[]): Sequence {
   return { terms, aNumber, name, offset: 0, source: 'oeis' };
 }
+
+/**
+ * A000464: expansion of e.g.f. sin(x)/cos(2x).
+ *
+ * Fifteen terms, which is what the OEIS entry itself lists and therefore what
+ * clicking through to the engine loads. That matters here more than usual:
+ * the figure this sequence draws is a short-run picture and looks materially
+ * different with more terms, so bundling a longer list would make the gallery
+ * thumbnail a promise the engine does not keep.
+ */
+export const A000464_TERMS: bigint[] = [
+  1n,
+  11n,
+  361n,
+  24611n,
+  2873041n,
+  512343611n,
+  129570724921n,
+  44110959165011n,
+  19450718635716001n,
+  10784052561125704811n,
+  7342627959965776406281n,
+  6023130568334172003579011n,
+  5858598896811701995459355761n,
+  6667317162352419006959182803611n,
+  8776621742176931117228228227924441n,
+];

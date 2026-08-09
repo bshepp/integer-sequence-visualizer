@@ -76,3 +76,47 @@ export function angularVariance(seq: SequenceView, modulus: number): number {
   const mean = resultants.reduce((s, v) => s + v, 0) / resultants.length;
   return resultants.reduce((s, v) => s + (v - mean) ** 2, 0) / resultants.length;
 }
+
+/**
+ * Lag-1 autocorrelation of the residues a(n) mod k.
+ *
+ * -1 for a perfect two-value alternation, ~0 for a shuffle. A turtle walk
+ * turns by (angle x term mod k), so this measures the one thing about the
+ * residues that a permutation surrogate destroys: whether adjacent terms
+ * reverse each other. A sequence whose residues alternate strictly turns by
+ * the same amount every pair of terms, which is what makes a walk close into
+ * a regular figure instead of wandering.
+ *
+ * Deterministic and pure, so recorded gallery evidence reproduces exactly.
+ *
+ * Uses the conventional (biased) estimator: n-1 cross terms over n variance
+ * terms, so a perfect alternation of length n reads -(n-1)/n rather than a
+ * round -1. The shrink toward 0 on short series is the point - a five-term
+ * alternation is much weaker evidence than a fifty-term one, and the
+ * statistic should say so.
+ */
+export function residueAlternation(seq: SequenceView, modulus: number): number {
+  const r: number[] = [];
+  for (let i = 0; i < seq.length; i++) r.push(seq.mod(i, modulus));
+  return alternation(r);
+}
+
+/**
+ * The bare estimator, over any series of numbers. Split out from
+ * residueAlternation because the pentagram experiment needs to run it over
+ * thousands of shuffled residue arrays that never become a SequenceView, and
+ * two copies of a statistic is how a gallery claim and its own experiment
+ * quietly stop agreeing.
+ */
+export function alternation(values: number[]): number {
+  const n = values.length;
+  if (n < 3) return 0;
+  const mean = values.reduce((a, b) => a + b, 0) / n;
+  let num = 0, den = 0;
+  for (let i = 0; i < n; i++) {
+    const d = values[i]! - mean;
+    den += d * d;
+    if (i + 1 < n) num += d * (values[i + 1]! - mean);
+  }
+  return den === 0 ? 0 : num / den;
+}
