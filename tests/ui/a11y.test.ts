@@ -4,6 +4,8 @@ import { initMessages, showError, showNotice } from '../../src/ui/messages';
 import { labelledControl } from '../../src/ui/a11y';
 import { buildSequencePanel } from '../../src/ui/sequencePanel';
 import { mountApp } from '../../src/ui/app';
+import { encodeState, decodeState } from '../../src/ui/urlState';
+import { DEFAULT_STYLE } from '../../src/viz/style';
 
 describe('message live regions', () => {
   let container: HTMLElement;
@@ -444,7 +446,7 @@ describe('footer contact', () => {
 
 describe('style panel placement', () => {
   it('is the last thing in the topbar, so it cannot split the controls', () => {
-    // .style-controls is flex-basis:100%, so it claims a whole row wherever it
+    // .style-panels is flex-basis:100%, so it claims a whole row wherever it
     // sits. Appended earlier it wrapped between the visualizer picker and the
     // (i) button, pushing the parameter sliders onto a third row.
     history.replaceState(null, '', location.pathname);
@@ -452,7 +454,7 @@ describe('style panel placement', () => {
     document.body.appendChild(root);
     mountApp(root);
     const topbar = root.querySelector('.topbar')!;
-    expect(topbar.lastElementChild).toBe(topbar.querySelector('.style-controls'));
+    expect(topbar.lastElementChild).toBe(topbar.querySelector('.style-panels'));
   });
 
   it('the toggle controls it and reports its state', () => {
@@ -461,7 +463,7 @@ describe('style panel placement', () => {
     document.body.appendChild(root);
     mountApp(root);
     const toggle = root.querySelector<HTMLButtonElement>('.style-toggle')!;
-    const panel = root.querySelector<HTMLElement>('.style-controls')!;
+    const panel = root.querySelector<HTMLElement>('.style-panels')!;
     expect(panel.hidden).toBe(true);
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(toggle.getAttribute('aria-controls')).toBe(panel.id);
@@ -520,5 +522,70 @@ describe('the shareable-address hint', () => {
     picker.value = 'scatter';
     picker.dispatchEvent(new Event('change'));
     expect(root.querySelector('.messages [aria-live="polite"]')!.textContent).toBe('');
+  });
+});
+
+describe('unlinking the null model style', () => {
+  const mountEngine = () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    root.querySelector<HTMLButtonElement>('.landing-open')?.click();
+    return root;
+  };
+
+  it('starts linked, with a single unlabelled style panel', () => {
+    const root = mountEngine();
+    const link = root.querySelector<HTMLButtonElement>('.link-toggle')!;
+    expect(link, 'no link toggle').not.toBeNull();
+    expect(link.getAttribute('aria-pressed')).toBe('false');
+    expect(link.textContent).toMatch(/linked/i);
+    const groups = [...root.querySelectorAll<HTMLElement>('.style-group')];
+    expect(groups).toHaveLength(2);
+    expect(groups[1]!.hidden, 'null panel should be hidden while linked').toBe(true);
+  });
+
+  it('reveals a second panel when unlinked, and opens it', () => {
+    const root = mountEngine();
+    root.querySelector<HTMLButtonElement>('.link-toggle')!.click();
+    const groups = [...root.querySelectorAll<HTMLElement>('.style-group')];
+    expect(groups[1]!.hidden).toBe(false);
+    expect(root.querySelector<HTMLElement>('.style-panels')!.hidden).toBe(false);
+    expect(root.querySelector('.style-panels')!.classList.contains('style-panels--split')).toBe(true);
+  });
+
+  it('carries the separate style through a share link, and linked state omits it', () => {
+    const linked = encodeState({
+      seqRef: null, vizId: 'turtle', params: {}, mode: 'side',
+      surrogate: 'permutation', seed: 1,
+    });
+    expect(linked).not.toContain('unlink');
+    expect(decodeState(linked)!.nullStyle).toBeUndefined();
+
+    const split = encodeState({
+      seqRef: null, vizId: 'turtle', params: {}, mode: 'side',
+      surrogate: 'permutation', seed: 1,
+      nullStyle: { ...DEFAULT_STYLE, colorMode: 'none', lineWidth: 4 },
+    });
+    expect(split).toContain('unlink=1');
+    expect(split).toContain('null.colour=none');
+    expect(split).toContain('null.line=4');
+    const back = decodeState(split)!;
+    expect(back.nullStyle!.colorMode).toBe('none');
+    expect(back.nullStyle!.lineWidth).toBe(4);
+    // The null's keys must not leak into the visualizer's parameters.
+    expect(back.params['null.colour']).toBeUndefined();
+    expect(back.params['null.line']).toBeUndefined();
+  });
+
+  it('survives unlinking with everything still at its default', () => {
+    // No null.* keys are emitted in that case, so the flag is what carries it.
+    const url = encodeState({
+      seqRef: null, vizId: 'turtle', params: {}, mode: 'side',
+      surrogate: 'permutation', seed: 1, nullStyle: { ...DEFAULT_STYLE },
+    });
+    expect(url).toContain('unlink=1');
+    expect(decodeState(url)!.nullStyle).toEqual(DEFAULT_STYLE);
   });
 });

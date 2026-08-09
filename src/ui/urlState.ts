@@ -19,6 +19,8 @@ export interface UrlState {
   ensembleN?: number;
   style?: RenderStyle;
   viewport?: Viewport;
+  /** Present only when the null model is drawn with its own style. */
+  nullStyle?: RenderStyle;
 }
 
 /**
@@ -48,8 +50,38 @@ const RESERVED = new Set([
   'seq', 'formula', 'terms', 'paste', 'viz',
   'null', 'surrogate', 'seed', 'ensemble',
   'line', 'join', 'cap', 'colour', 'hue',
-  'zoom', 'pan',
+  'zoom', 'pan', 'unlink',
 ]);
+
+/** Style keys for either panel; the null's are namespaced with a prefix. */
+const STYLE_KEYS = ['line', 'join', 'cap', 'colour', 'hue'] as const;
+const NULL_PREFIX = 'null.';
+
+function encodeStyle(p: URLSearchParams, st: RenderStyle, prefix = ''): void {
+  if (st.lineWidth !== DEFAULT_STYLE.lineWidth) p.set(`${prefix}line`, String(st.lineWidth));
+  if (st.lineJoin !== DEFAULT_STYLE.lineJoin) p.set(`${prefix}join`, st.lineJoin);
+  if (st.lineCap !== DEFAULT_STYLE.lineCap) p.set(`${prefix}cap`, st.lineCap);
+  if (st.colorMode !== DEFAULT_STYLE.colorMode) p.set(`${prefix}colour`, st.colorMode);
+  if (st.hueStart !== DEFAULT_STYLE.hueStart || st.hueEnd !== DEFAULT_STYLE.hueEnd) {
+    p.set(`${prefix}hue`, `${st.hueStart}-${st.hueEnd}`);
+  }
+}
+
+function decodeStyle(p: URLSearchParams, prefix = ''): RenderStyle | undefined {
+  const has = STYLE_KEYS.some((k) => p.has(`${prefix}${k}`));
+  if (!has) return undefined;
+  const hue = p.get(`${prefix}hue`);
+  const [hueStart, hueEnd] = hue ? hue.split('-').map(Number) : [undefined, undefined];
+  return {
+    ...DEFAULT_STYLE,
+    lineWidth: num(p.get(`${prefix}line`)) ?? DEFAULT_STYLE.lineWidth,
+    lineJoin: (p.get(`${prefix}join`) ?? DEFAULT_STYLE.lineJoin) as CanvasLineJoin,
+    lineCap: (p.get(`${prefix}cap`) ?? DEFAULT_STYLE.lineCap) as CanvasLineCap,
+    colorMode: (p.get(`${prefix}colour`) ?? DEFAULT_STYLE.colorMode) as RenderStyle['colorMode'],
+    hueStart: Number.isFinite(hueStart) ? hueStart! : DEFAULT_STYLE.hueStart,
+    hueEnd: Number.isFinite(hueEnd) ? hueEnd! : DEFAULT_STYLE.hueEnd,
+  };
+}
 
 const num = (v: string | null): number | undefined => {
   if (v === null) return undefined;
@@ -102,15 +134,13 @@ export function encodeState(s: UrlState): string {
     p.set('ensemble', String(s.ensembleN));
   }
 
-  const st = s.style;
-  if (st) {
-    if (st.lineWidth !== DEFAULT_STYLE.lineWidth) p.set('line', String(st.lineWidth));
-    if (st.lineJoin !== DEFAULT_STYLE.lineJoin) p.set('join', st.lineJoin);
-    if (st.lineCap !== DEFAULT_STYLE.lineCap) p.set('cap', st.lineCap);
-    if (st.colorMode !== DEFAULT_STYLE.colorMode) p.set('colour', st.colorMode);
-    if (st.hueStart !== DEFAULT_STYLE.hueStart || st.hueEnd !== DEFAULT_STYLE.hueEnd) {
-      p.set('hue', `${st.hueStart}-${st.hueEnd}`);
-    }
+  if (s.style) encodeStyle(p, s.style);
+  if (s.nullStyle) {
+    // The flag is carried separately: unlinking with every setting still at
+    // its default emits no null.* keys at all, and without it that state
+    // would decode as linked.
+    p.set('unlink', '1');
+    encodeStyle(p, s.nullStyle, NULL_PREFIX);
   }
 
   const v = s.viewport;
@@ -138,7 +168,7 @@ export function decodeState(hash: string): UrlState | null {
 
   const params: Params = {};
   for (const [k, v] of p.entries()) {
-    if (RESERVED.has(k)) continue;
+    if (RESERVED.has(k) || k.startsWith(NULL_PREFIX)) continue;
     // Params are number | string | boolean. Recover the original type so a
     // slider reads a number rather than the string "90".
     if (v === 'true' || v === 'false') params[k] = v === 'true';
@@ -158,19 +188,9 @@ export function decodeState(hash: string): UrlState | null {
     ensembleN: num(p.get('ensemble')) ?? DEFAULT_ENSEMBLE_N,
   };
 
-  const hue = p.get('hue');
-  const [hueStart, hueEnd] = hue ? hue.split('-').map(Number) : [undefined, undefined];
-  if (p.has('line') || p.has('join') || p.has('cap') || p.has('colour') || hue) {
-    state.style = {
-      ...DEFAULT_STYLE,
-      lineWidth: num(p.get('line')) ?? DEFAULT_STYLE.lineWidth,
-      lineJoin: (p.get('join') ?? DEFAULT_STYLE.lineJoin) as CanvasLineJoin,
-      lineCap: (p.get('cap') ?? DEFAULT_STYLE.lineCap) as CanvasLineCap,
-      colorMode: (p.get('colour') ?? DEFAULT_STYLE.colorMode) as RenderStyle['colorMode'],
-      hueStart: Number.isFinite(hueStart) ? hueStart! : DEFAULT_STYLE.hueStart,
-      hueEnd: Number.isFinite(hueEnd) ? hueEnd! : DEFAULT_STYLE.hueEnd,
-    };
-  }
+  const style = decodeStyle(p);
+  if (style) state.style = style;
+  if (p.has('unlink')) state.nullStyle = decodeStyle(p, NULL_PREFIX) ?? { ...DEFAULT_STYLE };
 
   const pan = p.get('pan');
   const [panX, panY] = pan ? pan.split(',').map(Number) : [undefined, undefined];

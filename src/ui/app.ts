@@ -59,7 +59,17 @@ export function mountApp(root: HTMLElement): void {
   };
 
   const comparison = defaultComparison();
+  const linkBtn = document.createElement('button');
   const style: RenderStyle = { ...DEFAULT_STYLE };
+  // The null's own style, used only once the two are unlinked. Kept alongside
+  // rather than derived, so unlinking and relinking does not lose the choices
+  // made while apart.
+  const nullStyle: RenderStyle = { ...DEFAULT_STYLE };
+  let styleLinked = true;
+
+  /** Which style a panel draws with. */
+  const styleFor = (panel: 'real' | 'null'): RenderStyle =>
+    (panel === 'null' && !styleLinked ? nullStyle : style);
   let currentRef: SeqRef | null = null;
 
   let ensembleCancel: { cancel(): void } | null = null;
@@ -230,19 +240,48 @@ export function mountApp(root: HTMLElement): void {
   // chrome, leaving the canvas only 61% of the viewport on a short screen.
   // Behind a disclosure it costs one button.
   const styleUi = buildStyleControls(style, userChanged);
-  styleUi.el.hidden = true;
-  styleUi.el.id = `${uid}-style`;
+  const nullStyleUi = buildStyleControls(nullStyle, userChanged);
+
+  const stylePanels = document.createElement('div');
+  stylePanels.className = 'style-panels';
+  stylePanels.hidden = true;
+  stylePanels.id = `${uid}-style`;
+
+  const styleGroup = (labelText: string, inner: HTMLElement) => {
+    const g = document.createElement('div');
+    g.className = 'style-group';
+    const l = document.createElement('span');
+    l.className = 'style-group-label';
+    l.textContent = labelText;
+    g.append(l, inner);
+    return g;
+  };
+  const realGroup = styleGroup('Real', styleUi.el);
+  const nullGroup = styleGroup('Null', nullStyleUi.el);
+  stylePanels.append(realGroup, nullGroup);
+
+  function syncStyleLink(): void {
+    // With one style there is nothing to label; the captions only earn their
+    // space once there are two panels to tell apart.
+    nullGroup.hidden = styleLinked;
+    stylePanels.classList.toggle('style-panels--split', !styleLinked);
+    linkBtn.textContent = styleLinked ? 'Null style: linked' : 'Null style: separate';
+    linkBtn.setAttribute('aria-pressed', String(!styleLinked));
+    linkBtn.title = styleLinked
+      ? 'Give the null model its own line and colour settings'
+      : 'Draw the null model with the same settings as the real sequence';
+  }
 
   const styleToggle = document.createElement('button');
   styleToggle.className = 'style-toggle';
   styleToggle.type = 'button';
   styleToggle.textContent = 'Style';
   styleToggle.setAttribute('aria-expanded', 'false');
-  styleToggle.setAttribute('aria-controls', styleUi.el.id);
+  styleToggle.setAttribute('aria-controls', stylePanels.id);
   styleToggle.addEventListener('click', () => {
-    styleUi.el.hidden = !styleUi.el.hidden;
-    styleToggle.setAttribute('aria-expanded', String(!styleUi.el.hidden));
-    styleToggle.classList.toggle('style-toggle--open', !styleUi.el.hidden);
+    stylePanels.hidden = !stylePanels.hidden;
+    styleToggle.setAttribute('aria-expanded', String(!stylePanels.hidden));
+    styleToggle.classList.toggle('style-toggle--open', !stylePanels.hidden);
     redraw();
   });
 
@@ -276,7 +315,7 @@ export function mountApp(root: HTMLElement): void {
   // Last child deliberately: .style-controls is flex-basis:100%, so wherever
   // it sits it claims a full row. Appended earlier it was splitting the
   // picker from the (i) button and the parameter sliders.
-  topbar.appendChild(styleUi.el);
+  topbar.appendChild(stylePanels);
   function rebuildParams(): void {
     const current = getVisualizer(state.vizId);
     vizShort.textContent = current.explain.short;
@@ -573,6 +612,24 @@ export function mountApp(root: HTMLElement): void {
   });
   bar.el.appendChild(sweepBtn);
 
+  linkBtn.className = 'link-toggle';
+  linkBtn.type = 'button';
+  linkBtn.addEventListener('click', () => {
+    styleLinked = !styleLinked;
+    // Unlinking copies the current look across, so the null starts from what
+    // is on screen rather than snapping back to defaults the moment you
+    // decide to differentiate it.
+    if (!styleLinked) Object.assign(nullStyle, style);
+    nullStyleUi.refresh();
+    syncStyleLink();
+    // Opening the panel on unlink: the button has just created a second set
+    // of controls, and hiding them would make it look like nothing happened.
+    if (!styleLinked && stylePanels.hidden) styleToggle.click();
+    else userChanged();
+  });
+  bar.el.appendChild(linkBtn);
+  syncStyleLink();
+
   // The hash the app itself last wrote via syncUrl. The hashchange handler
   // compares against this to ignore its own writes: replaceState shouldn't
   // fire hashchange per spec, but browsers vary, and a redraw -> syncUrl ->
@@ -614,6 +671,7 @@ export function mountApp(root: HTMLElement): void {
         seqRef: currentRef, vizId: state.vizId, params: state.params,
         mode: comparison.mode, surrogate: comparison.surrogate, seed: comparison.seed,
         ensembleN: comparison.ensembleN, style, viewport,
+        nullStyle: styleLinked ? undefined : nullStyle,
       });
       const changed = lastHashWritten !== '' && lastHashWritten !== hash;
       lastHashWritten = hash;
@@ -683,7 +741,10 @@ export function mountApp(root: HTMLElement): void {
     if (view.length < viz.minTerms) {
       showNotice(`${viz.name} works best with at least ${viz.minTerms} terms (loaded: ${view.length}).`);
     }
-    const draw = (seq: typeof state.seq, w: number, h: number, ox: number, label: string) => {
+    const draw = (
+      seq: typeof state.seq, w: number, h: number, ox: number, label: string,
+      panel: 'real' | 'null' = 'real',
+    ) => {
       ctx.save();
       ctx.translate(ox, 0);
       ctx.beginPath();
@@ -695,9 +756,10 @@ export function mountApp(root: HTMLElement): void {
         // Stroke width is divided by the zoom so a line keeps its on-screen
         // thickness: zooming in should reveal finer structure, not fatten
         // every line until the drawing fills in.
+        const drawStyle = styleFor(panel);
         viz.render(new SequenceView(seq!), {
-          ...state.params, ...styleToParams(style),
-          styleLineWidth: style.lineWidth / viewport.zoom,
+          ...state.params, ...styleToParams(drawStyle),
+          styleLineWidth: drawStyle.lineWidth / viewport.zoom,
         }, ctx, { width: w, height: h });
       } catch (e) {
         showError(`Render failed: ${e instanceof Error ? e.message : String(e)}`);
@@ -714,7 +776,7 @@ export function mountApp(root: HTMLElement): void {
       draw(state.seq, width / 2 - 1, height, 0, panelLabel('real', state.seq));
       ctx.strokeStyle = canvasTheme().grid;
       ctx.beginPath(); ctx.moveTo(width / 2, 0); ctx.lineTo(width / 2, height); ctx.stroke();
-      draw(surr, width / 2 - 1, height, width / 2 + 1, panelLabel(`${comparison.surrogate} null`, surr));
+      draw(surr, width / 2 - 1, height, width / 2 + 1, panelLabel(`${comparison.surrogate} null`, surr), 'null');
 
       if (pinnedIndex !== null && viz.position) {
         const panel = { width: width / 2 - 1, height };
@@ -741,13 +803,16 @@ export function mountApp(root: HTMLElement): void {
       const surr = surrogateSequence(state.seq, comparison.surrogate, comparison.seed);
       // Null underneath in flat grey, real on top in full colour: the eye
       // should read the real sequence as figure and the null as ground.
-      const nullStyle = { ...style, colorMode: 'none' as const };
+      // Grey underneath is the default because the eye should read the real
+      // sequence as figure and the null as ground. An explicit unlinked style
+      // is a deliberate choice and overrides that.
+      const overNull = styleLinked ? { ...style, colorMode: 'none' as const } : nullStyle;
       ctx.save();
       ctx.globalAlpha = 0.5;
-      viz.render(new SequenceView(surr), { ...state.params, ...styleToParams(nullStyle) }, ctx, { width, height });
+      viz.render(new SequenceView(surr), { ...state.params, ...styleToParams(overNull) }, ctx, { width, height });
       ctx.restore();
       viz.render(view, { ...state.params, ...styleToParams(style) }, ctx, { width, height });
-      drawCanvasLabel(ctx, `${seqLabel(state.seq)} - real (colour) over ${comparison.surrogate} null (grey)`, 10, 16);
+      drawCanvasLabel(ctx, `${seqLabel(state.seq)} - real over ${comparison.surrogate} null${styleLinked ? ' (grey)' : ''}`, 10, 16);
       if (pinnedIndex !== null && viz.position) {
         const p = viz.position(view, state.params, { width, height }, pinnedIndex);
         if (p) drawMarker(ctx, worldToScreen(viewport, p.x, p.y), canvasTheme().real);
@@ -756,7 +821,7 @@ export function mountApp(root: HTMLElement): void {
       const shown = comparison.showSurrogate
         ? surrogateSequence(state.seq, comparison.surrogate, comparison.seed)
         : state.seq;
-      draw(shown, width, height, 0, panelLabel(comparison.showSurrogate ? `${comparison.surrogate} null` : 'real', shown));
+      draw(shown, width, height, 0, panelLabel(comparison.showSurrogate ? `${comparison.surrogate} null` : 'real', shown), comparison.showSurrogate ? 'null' : 'real');
 
       // The marker persists across the flip, anchoring the eye on one term
       // while the substrate swaps underneath it.
@@ -927,6 +992,14 @@ export function mountApp(root: HTMLElement): void {
         Object.assign(style, styleFromParams(styleToParams(decoded.style)));
         styleUi.refresh();
       }
+      // A null style is present in the address only when the two were
+      // unlinked, so its presence is the flag.
+      styleLinked = !decoded.nullStyle;
+      if (decoded.nullStyle) {
+        Object.assign(nullStyle, styleFromParams(styleToParams(decoded.nullStyle)));
+        nullStyleUi.refresh();
+      }
+      syncStyleLink();
       if (decoded.viewport) viewport = clampViewport(decoded.viewport);
       bar.refresh();
       bar.update(Boolean(getVisualizer(state.vizId).statistics), supportsSuperimpose(getVisualizer(state.vizId)));

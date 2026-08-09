@@ -367,3 +367,19 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .null-toggle--on { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 :root[data-theme="light"] .null-toggle { background: #ffffff; border-color: #c8ccd4; }
 :root[data-theme="light"] .null-toggle--on { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+.style-panels { flex-basis: 100%; display: flex; flex-direction: column; gap: 6px; }
+.style-panels[hidden] { display: none; }
+.style-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.style-group-label {
+  display: none; min-width: 3em; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+}
+/* The captions only earn their space once there are two panels to tell apart. */
+.style-panels--split .style-group-label { display: inline; }
+.style-group[hidden] { display: none; }
+.link-toggle {
+  background: #24262c; color: var(--muted); border: 1px solid #3a3d44;
+  border-radius: 4px; padding: 5px 12px; cursor: pointer; font: inherit; font-size: 12px;
+}
+.link-toggle[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+:root[data-theme="light"] .link-toggle { background: #ffffff; border-color: #c8ccd4; }
