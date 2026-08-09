@@ -4,6 +4,7 @@ import { makeSurrogate, type SurrogateType } from '../nullmodel/surrogates';
 import type { Bands } from '../nullmodel/bands';
 import type { Size, Visualizer } from '../viz/types';
 import { minMax } from '../viz/mathUtils';
+import { canvasTheme } from '../viz/theme';
 
 export type ComparisonMode = 'off' | 'side' | 'over' | 'flip' | 'ensemble';
 
@@ -52,10 +53,10 @@ export function isDegenerateBand(band: Bands, epsilon = 1e-9): boolean {
 // which - the single most important graphic in the app was unlabelled.
 function drawLegend(ctx: CanvasRenderingContext2D, band: Bands, left: number, top: number): void {
   const items: Array<{ swatch: string; dashed?: boolean; label: string }> = [
-    { swatch: '#f7768e', label: 'real sequence' },
-    { swatch: '#9aa0aa', dashed: true, label: 'null median' },
+    { swatch: canvasTheme().real, label: 'real sequence' },
+    { swatch: canvasTheme().muted, dashed: true, label: 'null median' },
     ...band.levels.map((l, i) => ({
-      swatch: `rgba(122,162,247,${0.10 + i * 0.07})`,
+      swatch: canvasTheme().band(i),
       label: `${l.pct}% of nulls`,
     })),
   ];
@@ -75,7 +76,7 @@ function drawLegend(ctx: CanvasRenderingContext2D, band: Bands, left: number, to
       ctx.fillStyle = item.swatch;
       ctx.fillRect(left, y - 4, 14, 8);
     }
-    ctx.fillStyle = '#9aa0aa';
+    ctx.fillStyle = canvasTheme().muted;
     ctx.fillText(item.label, left + 20, y);
     y += 14;
   }
@@ -112,7 +113,7 @@ export function drawEnsembleChart(
     // reads darkest, so how deep inside (or how far outside) the real line
     // sits is legible without reading any numbers.
     band.levels.forEach((level, li) => {
-      ctx.fillStyle = `rgba(122,162,247,${0.10 + li * 0.07})`;
+      ctx.fillStyle = canvasTheme().band(li);
       ctx.beginPath();
       for (let i = 0; i < n; i++) (i === 0 ? ctx.moveTo : ctx.lineTo).call(ctx, x(i), y(level.hi[i]!));
       for (let i = n - 1; i >= 0; i--) ctx.lineTo(x(i), y(level.lo[i]!));
@@ -121,7 +122,7 @@ export function drawEnsembleChart(
     });
 
     // median (dashed)
-    ctx.strokeStyle = '#9aa0aa';
+    ctx.strokeStyle = canvasTheme().muted;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
     for (let i = 0; i < n; i++) (i === 0 ? ctx.moveTo : ctx.lineTo).call(ctx, x(i), y(band.median[i]!));
@@ -129,7 +130,7 @@ export function drawEnsembleChart(
     ctx.setLineDash([]);
 
     // real line
-    ctx.strokeStyle = '#f7768e';
+    ctx.strokeStyle = canvasTheme().real;
     ctx.lineWidth = 2;
     ctx.beginPath();
     for (let i = 0; i < Math.min(n, realVals.length); i++) {
@@ -138,14 +139,14 @@ export function drawEnsembleChart(
     ctx.stroke();
     ctx.lineWidth = 1;
 
-    ctx.fillStyle = '#e6e6e6';
+    ctx.fillStyle = canvasTheme().text;
     ctx.font = '12px system-ui';
     ctx.fillText(key, MARGIN, top + 16);
 
     drawLegend(ctx, band, size.width - MARGIN - 110, top + MARGIN);
 
     if (isDegenerateBand(band)) {
-      ctx.fillStyle = '#9aa0aa';
+      ctx.fillStyle = canvasTheme().muted;
       ctx.font = '11px system-ui';
       // A couple of px shy of top + MARGIN (where the plot area/band fill
       // begins) so the caption can't crowd the plot when several stat panels

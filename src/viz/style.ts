@@ -1,4 +1,5 @@
 import type { Params, ParamValue } from './types';
+import { canvasTheme } from './theme';
 
 export type ColorMode = 'spectrum' | 'flat' | 'none';
 
@@ -72,7 +73,7 @@ export function styleFromParams(p: Params): RenderStyle {
  * still visible cannot be an artifact of the palette.
  */
 export function strokeColorAt(s: RenderStyle, t: number): string {
-  if (s.colorMode === 'none') return NEUTRAL;
+  if (s.colorMode === 'none') return canvasTheme().muted;
   if (s.colorMode === 'flat') return `hsl(${s.hueStart}, 70%, 60%)`;
   const clamped = Math.min(1, Math.max(0, t));
   return `hsl(${s.hueStart + (s.hueEnd - s.hueStart) * clamped}, 70%, 60%)`;

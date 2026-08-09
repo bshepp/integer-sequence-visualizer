@@ -3,6 +3,7 @@ import { signedLogMagnitude } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { shouldUseLogScale, overrideFromParams } from './histogram';
 import { strokeColorAt, styleFromParams } from './style';
+import { canvasTheme } from './theme';
 
 const MARGIN = 28;
 
@@ -81,7 +82,7 @@ export const autocorrViz: Visualizer = {
     const x = (k: number) => MARGIN + (k / Math.max(1, r.length - 1)) * w;
     const y = (v: number) => MARGIN + h / 2 - v * (h / 2);
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.strokeStyle = canvasTheme().axis;
     ctx.beginPath();
     ctx.moveTo(MARGIN, y(0));
     ctx.lineTo(MARGIN + w, y(0));
@@ -98,7 +99,7 @@ export const autocorrViz: Visualizer = {
     }
 
     if (useLog) {
-      ctx.fillStyle = '#9aa0aa';
+      ctx.fillStyle = canvasTheme().muted;
       ctx.font = '11px system-ui';
       ctx.fillText('r' + LOG_SUFFIX, MARGIN, MARGIN - 8);
     }

@@ -2,6 +2,7 @@ import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { spiralLayout } from './gridUtils';
 import { strokeColorAt, styleFromParams, type RenderStyle } from './style';
+import { canvasTheme } from './theme';
 
 function cellColor(
   seq: SequenceView, i: number, colorBy: string, modulus: number, maxLog: number, style: RenderStyle,
@@ -12,9 +13,9 @@ function cellColor(
   if (style.colorMode === 'none') {
     const shade = maxLog > 0 ? (seq.logMagnitude(i) / maxLog) * 45 + 25 : 45;
     return colorBy === 'magnitude' ? `rgb(${shade * 2.4}, ${shade * 2.4}, ${shade * 2.4})`
-      : seq.mod(i, 2) === 0 ? '#3a3d44' : '#9aa0aa';
+      : seq.mod(i, 2) === 0 ? canvasTheme().grid : canvasTheme().muted;
   }
-  if (colorBy === 'parity') return seq.mod(i, 2) === 0 ? '#1d2026' : '#7aa2f7';
+  if (colorBy === 'parity') return seq.mod(i, 2) === 0 ? canvasTheme().panel : canvasTheme().accent;
   if (colorBy === 'magnitude') {
     const l = maxLog > 0 ? (seq.logMagnitude(i) / maxLog) * 60 + 15 : 40;
     return `hsl(220, 60%, ${l}%)`;

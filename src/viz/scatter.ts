@@ -2,6 +2,7 @@ import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { minMax } from './mathUtils';
 import { strokeColorAt, styleFromParams } from './style';
+import { canvasTheme } from './theme';
 
 const MARGIN = 28;
 
@@ -67,7 +68,7 @@ export const scatterViz: Visualizer = {
     const y = (v: number) => MARGIN + h - ((v - lo) / (hi - lo || 1)) * h;
 
     // zero axis
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.strokeStyle = canvasTheme().axis;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(MARGIN, y(0));

@@ -1,6 +1,7 @@
 import { SequenceView, type Sequence } from '../sequence/sequence';
 import { labelledControl } from './a11y';
 import type { Params, Visualizer } from '../viz/types';
+import { canvasTheme } from '../viz/theme';
 
 // `count` values spread uniformly across [min, max]. The endpoints (`min`, `max`)
 // are always included exactly. Interior values are snapped to the step grid
@@ -100,7 +101,7 @@ export function buildSweepView(opts: {
 
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.fillStyle = '#14161a';
+        ctx.fillStyle = canvasTheme().bg;
         ctx.fillRect(0, 0, 180, 140);
         try {
           opts.viz.render(view, { ...opts.baseParams, [paramId]: value }, ctx, { width: 180, height: 140 });

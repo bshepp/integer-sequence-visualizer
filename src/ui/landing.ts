@@ -4,6 +4,7 @@ import { decodeState } from './urlState';
 import { SequenceView, type Sequence } from '../sequence/sequence';
 import { getVisualizer } from '../viz/registry';
 import { surrogateSequence } from './comparison';
+import { canvasTheme } from '../viz/theme';
 
 /** Reserved literal hashes, checked before decodeState so they cannot collide. */
 export const GALLERY_HASH = 'gallery';
@@ -50,7 +51,7 @@ export function paintEntry(entry: GalleryEntry, canvas: HTMLCanvasElement, w: nu
   const ctx = canvas.getContext('2d');
   if (!ctx) return; // jsdom / unsupported
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.fillStyle = '#14161a';
+  ctx.fillStyle = canvasTheme().bg;
   ctx.fillRect(0, 0, w, h);
 
   const viz = getVisualizer(entry.state.vizId);
@@ -74,7 +75,7 @@ export function paintEntry(entry: GalleryEntry, canvas: HTMLCanvasElement, w: nu
   const who = entry.sequence.aNumber ?? entry.sequence.name;
   const identity = `${who} · ${entry.sequence.terms.length.toLocaleString()} terms`;
   const caption = (text: string, x: number) => {
-    ctx.fillStyle = '#9aa0aa';
+    ctx.fillStyle = canvasTheme().muted;
     ctx.font = '11px system-ui';
     ctx.fillText(text, x, 14);
   };
@@ -82,7 +83,7 @@ export function paintEntry(entry: GalleryEntry, canvas: HTMLCanvasElement, w: nu
   if (entry.state.mode === 'side') {
     const half = w / 2 - 1;
     paint(entry.sequence, 0, half);
-    ctx.strokeStyle = '#333';
+    ctx.strokeStyle = canvasTheme().grid;
     ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
     paint(surrogateSequence(entry.sequence, entry.state.surrogate, entry.state.seed), w / 2 + 1, half);
     caption(`real - ${identity}`, 8);

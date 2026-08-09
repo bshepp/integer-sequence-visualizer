@@ -4,6 +4,7 @@ import type { Params, Size, Visualizer } from './types';
 import { shouldUseLogScale, overrideFromParams } from './histogram';
 import { minMax } from './mathUtils';
 import { strokeColorAt, styleFromParams } from './style';
+import { canvasTheme } from './theme';
 
 const MARGIN = 28;
 const MAX_SAFE = BigInt(Number.MAX_SAFE_INTEGER);
@@ -92,7 +93,7 @@ export const differencesViz: Visualizer = {
     const x = (i: number) => MARGIN + (i / Math.max(1, vals.length - 1)) * w;
     const y = (v: number) => MARGIN + h - ((v - lo) / (hi - lo || 1)) * h;
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.strokeStyle = canvasTheme().axis;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(MARGIN, y(0));

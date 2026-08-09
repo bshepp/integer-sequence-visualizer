@@ -19,6 +19,7 @@ import { buildExplainPanel } from './explainPanel';
 import { SURROGATE_EXPLAIN } from '../nullmodel/surrogates';
 import { buildReadout, describeHit, drawMarker, correspondingIndex } from './readout';
 import { hitIndex, type Hit } from '../viz/hit';
+import { canvasTheme } from '../viz/theme';
 import type { Size } from '../viz/types';
 import { buildLanding, shouldShowLanding, routeFor, GALLERY_HASH, ABOUT_HASH } from './landing';
 import { buildAbout } from './about';
@@ -506,10 +507,10 @@ export function mountApp(root: HTMLElement): void {
     const ctx = canvas.getContext('2d');
     if (!ctx) return; // jsdom / unsupported
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = '#14161a';
+    ctx.fillStyle = canvasTheme().bg;
     ctx.fillRect(0, 0, width, height);
     if (!state.seq) {
-      ctx.fillStyle = '#9aa0aa';
+      ctx.fillStyle = canvasTheme().muted;
       ctx.font = '16px system-ui';
       ctx.fillText('Load a sequence to begin - try a preset on the left.', 24, 40);
       return;
@@ -530,7 +531,7 @@ export function mountApp(root: HTMLElement): void {
       } catch (e) {
         showError(`Render failed: ${e instanceof Error ? e.message : String(e)}`);
       }
-      ctx.fillStyle = '#9aa0aa';
+      ctx.fillStyle = canvasTheme().muted;
       ctx.font = '12px system-ui';
       // Top of the panel: the cursor readout owns the bottom-left corner.
       ctx.fillText(label, 10, 16);
@@ -540,20 +541,20 @@ export function mountApp(root: HTMLElement): void {
     if (comparison.mode === 'side') {
       const surr = surrogateSequence(state.seq, comparison.surrogate, comparison.seed);
       draw(state.seq, width / 2 - 1, height, 0, panelLabel('real', state.seq));
-      ctx.strokeStyle = '#333';
+      ctx.strokeStyle = canvasTheme().grid;
       ctx.beginPath(); ctx.moveTo(width / 2, 0); ctx.lineTo(width / 2, height); ctx.stroke();
       draw(surr, width / 2 - 1, height, width / 2 + 1, panelLabel(`${comparison.surrogate} null`, surr));
 
       if (pinnedIndex !== null && viz.position) {
         const panel = { width: width / 2 - 1, height };
         const real = viz.position(view, state.params, panel, pinnedIndex);
-        if (real) drawMarker(ctx, real, '#f7768e');
+        if (real) drawMarker(ctx, real, canvasTheme().real);
         const corr = correspondingIndex(pinnedIndex, comparison.surrogate, state.seq.terms, comparison.seed);
         const sp = viz.position(new SequenceView(surr), state.params, panel, corr.index);
         // Pink when the same term was genuinely followed; grey when this null
         // has no such term and we are only lining up indices.
-        if (sp) drawMarker(ctx, { x: sp.x + width / 2 + 1, y: sp.y }, corr.traced ? '#f7768e' : '#9aa0aa');
-        ctx.fillStyle = '#9aa0aa';
+        if (sp) drawMarker(ctx, { x: sp.x + width / 2 + 1, y: sp.y }, corr.traced ? canvasTheme().real : canvasTheme().muted);
+        ctx.fillStyle = canvasTheme().muted;
         ctx.font = '11px system-ui';
         ctx.fillText(
           corr.traced
@@ -572,12 +573,12 @@ export function mountApp(root: HTMLElement): void {
       viz.render(new SequenceView(surr), { ...state.params, ...styleToParams(nullStyle) }, ctx, { width, height });
       ctx.restore();
       viz.render(view, { ...state.params, ...styleToParams(style) }, ctx, { width, height });
-      ctx.fillStyle = '#9aa0aa';
+      ctx.fillStyle = canvasTheme().muted;
       ctx.font = '12px system-ui';
       ctx.fillText(`${seqLabel(state.seq)} - real (colour) over ${comparison.surrogate} null (grey)`, 10, 16);
       if (pinnedIndex !== null && viz.position) {
         const p = viz.position(view, state.params, { width, height }, pinnedIndex);
-        if (p) drawMarker(ctx, p, '#f7768e');
+        if (p) drawMarker(ctx, p, canvasTheme().real);
       }
     } else if (comparison.mode === 'flip') {
       const shown = comparison.showSurrogate
@@ -592,7 +593,7 @@ export function mountApp(root: HTMLElement): void {
           ? correspondingIndex(pinnedIndex, comparison.surrogate, state.seq.terms, comparison.seed).index
           : pinnedIndex;
         const p = viz.position(new SequenceView(shown), state.params, { width, height }, idx);
-        if (p) drawMarker(ctx, p, '#f7768e');
+        if (p) drawMarker(ctx, p, canvasTheme().real);
       }
     } else if (comparison.mode === 'ensemble' && viz.statistics) {
       // The adaptive log/linear scale decision (histogram's 'terms' target,
@@ -678,14 +679,14 @@ export function mountApp(root: HTMLElement): void {
           }
         }
       } else if (ensembleFailed) {
-        ctx.fillStyle = '#f7768e';
+        ctx.fillStyle = canvasTheme().real;
         ctx.font = '14px system-ui';
         // "the next redraw retries" is literal - a window resize retries
         // too, not just a parameter change - so this says "will retry"
         // rather than naming one specific trigger.
         ctx.fillText('Ensemble computation failed - will retry automatically.', 24, 40);
       } else {
-        ctx.fillStyle = '#9aa0aa';
+        ctx.fillStyle = canvasTheme().muted;
         ctx.font = '14px system-ui';
         ctx.fillText(`Computing ${comparison.ensembleN}-surrogate ensemble…`, 24, 40);
       }
@@ -693,7 +694,7 @@ export function mountApp(root: HTMLElement): void {
       draw(state.seq, width, height, 0, panelLabel('', state.seq));
       if (pinnedIndex !== null && viz.position) {
         const p = viz.position(view, state.params, { width, height }, pinnedIndex);
-        if (p) drawMarker(ctx, p, '#f7768e');
+        if (p) drawMarker(ctx, p, canvasTheme().real);
       }
     }
   }

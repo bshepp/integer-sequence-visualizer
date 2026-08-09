@@ -1,6 +1,7 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { strokeColorAt, styleFromParams } from './style';
+import { canvasTheme } from './theme';
 
 /** The one layout render(), position() and locate() all agree on. */
 function layout(n: number, params: Params, size: Size) {
@@ -34,7 +35,7 @@ export const modGridViz: Visualizer = {
     for (let i = 0; i < seq.length; i++) {
       const r = seq.mod(i, m);
       ctx.fillStyle = style.colorMode === 'none'
-        ? (r % 2 === 0 ? '#3a3d44' : '#9aa0aa')
+        ? (r % 2 === 0 ? canvasTheme().grid : canvasTheme().muted)
         : strokeColorAt(style, r / m);
       ctx.fillRect(L.ox + (i % L.cols) * L.cell, L.oy + Math.floor(i / L.cols) * L.cell, L.cell, L.cell);
     }

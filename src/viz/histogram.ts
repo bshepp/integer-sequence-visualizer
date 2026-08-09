@@ -3,6 +3,7 @@ import { signedLogMagnitude } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { minMax } from './mathUtils';
 import { strokeColorAt, styleFromParams } from './style';
+import { canvasTheme } from './theme';
 
 const MARGIN = 28;
 const MAX_SAFE = BigInt(Number.MAX_SAFE_INTEGER);
@@ -190,7 +191,7 @@ export const histogramViz: Visualizer = {
       const bh = (counts[i]! / maxC) * h;
       ctx.fillRect(MARGIN + i * bw + 1, MARGIN + h - bh, Math.max(1, bw - 2), bh);
     }
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.strokeStyle = canvasTheme().axis;
     ctx.strokeRect(MARGIN, MARGIN, w, h);
   },
 };
