@@ -289,10 +289,9 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     loadedSeq = seq;
     syncBfile();
     info.replaceChildren();
-    const name = document.createElement('div');
-    name.className = 'info-name';
-    name.textContent = seq.name;
-    info.appendChild(name);
+    // Identity first. OEIS names run long -- A000002's is a full sentence and
+    // wraps to three lines -- which pushed the A-number and term count out of
+    // sight beneath it. Those are the two facts you actually check.
     const meta = document.createElement('div');
     meta.className = 'info-meta';
     if (seq.aNumber) {
@@ -303,8 +302,13 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
       a.textContent = seq.aNumber;
       meta.appendChild(a);
     }
-    meta.append(` · ${seq.terms.length} terms · ${seq.source}`);
+    meta.append(`${seq.aNumber ? ' · ' : ''}${seq.terms.length} terms · ${seq.source}`);
     info.appendChild(meta);
+
+    const name = document.createElement('div');
+    name.className = 'info-name';
+    name.textContent = seq.name;
+    info.appendChild(name);
   }
 
   return { el, setInfo };

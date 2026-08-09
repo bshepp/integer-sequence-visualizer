@@ -1,8 +1,8 @@
-import type { Params } from '../viz/types';
+import type { Params, ParamValue } from '../viz/types';
 import type { ComparisonMode } from './comparison';
 import type { SurrogateType } from '../nullmodel/surrogates';
-import type { RenderStyle } from '../viz/style';
-import type { Viewport } from './viewport';
+import { DEFAULT_STYLE, type RenderStyle } from '../viz/style';
+import { IDENTITY_VIEWPORT, type Viewport } from './viewport';
 
 export type SeqRef =
   | { kind: 'oeis'; aNumber: string }
@@ -16,43 +16,171 @@ export interface UrlState {
   mode: ComparisonMode;
   surrogate: SurrogateType;
   seed: number;
-  // Optional: absent entirely from links encoded before this field existed.
-  // decodeState does no per-field validation beyond vizId (see below), so an
-  // older/missing key simply decodes as undefined - callers that read it
-  // must treat that as "keep the current default", not throw or crash.
   ensembleN?: number;
-  /** Absent on links encoded before the style layer existed. */
   style?: RenderStyle;
-  /** Absent on links encoded before zoom existed. */
   viewport?: Viewport;
 }
 
-function b64urlEncode(s: string): string {
-  const utf8 = String.fromCharCode(...new TextEncoder().encode(s));
-  return btoa(utf8).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+/**
+ * The URL is written to be read.
+ *
+ * It used to be base64-encoded JSON, which round-tripped perfectly and told a
+ * reader nothing: an address that looks like line noise gives no reason to
+ * believe it captures the view, so nobody thinks to keep one. Readable keys
+ * make the address self-describing -
+ *
+ *   #seq=A000002&viz=turtle&angle=90&k=4&null=side
+ *
+ * - which is also the difference between a link someone pastes into a paper
+ * and one they do not.
+ *
+ * Anything at its default is omitted, so an ordinary view produces a short
+ * address and every key present is a key that matters. No backwards
+ * compatibility with the old format: nothing outside this repository has ever
+ * bookmarked one.
+ */
+
+const DEFAULT_ENSEMBLE_N = 200;
+
+// Keys the frame owns. A visualizer parameter sharing one of these names would
+// be silently overwritten, so the encoder checks rather than trusting.
+const RESERVED = new Set([
+  'seq', 'formula', 'terms', 'paste', 'viz',
+  'null', 'surrogate', 'seed', 'ensemble',
+  'line', 'join', 'cap', 'colour', 'hue',
+  'zoom', 'pan',
+]);
+
+const num = (v: string | null): number | undefined => {
+  if (v === null) return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+};
+
+function encodeSeqRef(p: URLSearchParams, ref: SeqRef | null): void {
+  if (!ref) return;
+  if (ref.kind === 'oeis') { p.set('seq', ref.aNumber); return; }
+  if (ref.kind === 'formula') {
+    p.set('formula', ref.src);
+    p.set('terms', String(ref.count));
+    return;
+  }
+  // Pasted sequences have no external identity, so the terms themselves are
+  // the reference. Capped: past a few hundred the address stops being a URL
+  // and the b-file path is the right tool anyway.
+  p.set('paste', ref.terms.slice(0, 500).join(','));
 }
 
-function b64urlDecode(s: string): string {
-  const b64 = s.replace(/-/g, '+').replace(/_/g, '/');
-  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
+function decodeSeqRef(p: URLSearchParams): SeqRef | null {
+  const seq = p.get('seq');
+  if (seq) return { kind: 'oeis', aNumber: seq };
+  const formula = p.get('formula');
+  if (formula) return { kind: 'formula', src: formula, count: num(p.get('terms')) ?? 200 };
+  const paste = p.get('paste');
+  if (paste) return { kind: 'paste', terms: paste.split(',').filter(Boolean) };
+  return null;
 }
 
 export function encodeState(s: UrlState): string {
-  const ref = s.seqRef?.kind === 'paste'
-    ? { ...s.seqRef, terms: s.seqRef.terms.slice(0, 500) }
-    : s.seqRef;
-  return b64urlEncode(JSON.stringify({ ...s, seqRef: ref }));
+  const p = new URLSearchParams();
+  encodeSeqRef(p, s.seqRef);
+  p.set('viz', s.vizId);
+
+  for (const [k, v] of Object.entries(s.params)) {
+    // logScaleOverride and histogramDomainLo/Hi are computed per render and
+    // threaded through params; they are derived state, not user choices, and
+    // do not belong in a shared address.
+    if (k.startsWith('style') || k.startsWith('histogramDomain') || k === 'logScaleOverride') continue;
+    if (RESERVED.has(k)) continue;
+    p.set(k, String(v));
+  }
+
+  if (s.mode !== 'off') p.set('null', s.mode);
+  if (s.surrogate !== 'permutation') p.set('surrogate', s.surrogate);
+  if (s.seed !== 1) p.set('seed', String(s.seed));
+  if (s.ensembleN !== undefined && s.ensembleN !== DEFAULT_ENSEMBLE_N) {
+    p.set('ensemble', String(s.ensembleN));
+  }
+
+  const st = s.style;
+  if (st) {
+    if (st.lineWidth !== DEFAULT_STYLE.lineWidth) p.set('line', String(st.lineWidth));
+    if (st.lineJoin !== DEFAULT_STYLE.lineJoin) p.set('join', st.lineJoin);
+    if (st.lineCap !== DEFAULT_STYLE.lineCap) p.set('cap', st.lineCap);
+    if (st.colorMode !== DEFAULT_STYLE.colorMode) p.set('colour', st.colorMode);
+    if (st.hueStart !== DEFAULT_STYLE.hueStart || st.hueEnd !== DEFAULT_STYLE.hueEnd) {
+      p.set('hue', `${st.hueStart}-${st.hueEnd}`);
+    }
+  }
+
+  const v = s.viewport;
+  if (v && (v.zoom !== IDENTITY_VIEWPORT.zoom || v.panX !== 0 || v.panY !== 0)) {
+    if (v.zoom !== IDENTITY_VIEWPORT.zoom) p.set('zoom', String(Math.round(v.zoom * 1000) / 1000));
+    if (v.panX !== 0 || v.panY !== 0) p.set('pan', `${Math.round(v.panX)},${Math.round(v.panY)}`);
+  }
+
+  // URLSearchParams percent-encodes far more than a hash fragment requires.
+  // Putting these back keeps the address legible without changing what it
+  // parses back to: all four are legal in a fragment.
+  return p.toString().replace(/%2C/g, ',').replace(/%2F/g, '/').replace(/%3A/g, ':').replace(/\+/g, '+');
 }
 
 export function decodeState(hash: string): UrlState | null {
   const raw = hash.startsWith('#') ? hash.slice(1) : hash;
   if (!raw) return null;
-  try {
-    const obj = JSON.parse(b64urlDecode(raw)) as UrlState;
-    if (typeof obj !== 'object' || obj === null || typeof obj.vizId !== 'string') return null;
-    return obj;
-  } catch {
-    return null;
+
+  const p = new URLSearchParams(raw);
+  const vizId = p.get('viz');
+  // Without a visualizer there is no view to restore, which is also how a
+  // reserved page word like "gallery" is rejected here rather than being
+  // mistaken for a state.
+  if (!vizId) return null;
+
+  const params: Params = {};
+  for (const [k, v] of p.entries()) {
+    if (RESERVED.has(k)) continue;
+    // Params are number | string | boolean. Recover the original type so a
+    // slider reads a number rather than the string "90".
+    if (v === 'true' || v === 'false') params[k] = v === 'true';
+    else {
+      const n = Number(v);
+      params[k] = v !== '' && Number.isFinite(n) ? n : (v as ParamValue);
+    }
   }
+
+  const state: UrlState = {
+    seqRef: decodeSeqRef(p),
+    vizId,
+    params,
+    mode: (p.get('null') ?? 'off') as ComparisonMode,
+    surrogate: (p.get('surrogate') ?? 'permutation') as SurrogateType,
+    seed: num(p.get('seed')) ?? 1,
+    ensembleN: num(p.get('ensemble')) ?? DEFAULT_ENSEMBLE_N,
+  };
+
+  const hue = p.get('hue');
+  const [hueStart, hueEnd] = hue ? hue.split('-').map(Number) : [undefined, undefined];
+  if (p.has('line') || p.has('join') || p.has('cap') || p.has('colour') || hue) {
+    state.style = {
+      ...DEFAULT_STYLE,
+      lineWidth: num(p.get('line')) ?? DEFAULT_STYLE.lineWidth,
+      lineJoin: (p.get('join') ?? DEFAULT_STYLE.lineJoin) as CanvasLineJoin,
+      lineCap: (p.get('cap') ?? DEFAULT_STYLE.lineCap) as CanvasLineCap,
+      colorMode: (p.get('colour') ?? DEFAULT_STYLE.colorMode) as RenderStyle['colorMode'],
+      hueStart: Number.isFinite(hueStart) ? hueStart! : DEFAULT_STYLE.hueStart,
+      hueEnd: Number.isFinite(hueEnd) ? hueEnd! : DEFAULT_STYLE.hueEnd,
+    };
+  }
+
+  const pan = p.get('pan');
+  const [panX, panY] = pan ? pan.split(',').map(Number) : [undefined, undefined];
+  if (p.has('zoom') || pan) {
+    state.viewport = {
+      zoom: num(p.get('zoom')) ?? 1,
+      panX: Number.isFinite(panX) ? panX! : 0,
+      panY: Number.isFinite(panY) ? panY! : 0,
+    };
+  }
+
+  return state;
 }

@@ -55,8 +55,8 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .section-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin: 16px 0 6px; }
 .section-label:first-child { margin-top: 0; }
 .info-card { font-size: 13px; }
-.info-name { font-weight: 600; margin-bottom: 4px; }
-.info-meta { color: var(--muted); margin-bottom: 8px; }
+.info-name { font-weight: 600; }
+.info-meta { color: var(--muted); margin-bottom: 4px; }
 .bfile-box { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
 /* Sized like the tab-pane controls above it, but deliberately the accent
    colour: this is the action that makes the pictures worth looking at, and it
