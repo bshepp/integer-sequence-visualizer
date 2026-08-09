@@ -471,7 +471,7 @@ describe('style panel placement', () => {
   });
 });
 
-describe('bookmark affordance', () => {
+describe('the shareable-address hint', () => {
   const mountEngine = () => {
     history.replaceState(null, '', location.pathname);
     const root = document.createElement('div');
@@ -481,21 +481,44 @@ describe('bookmark affordance', () => {
     return root;
   };
 
-  it('offers a bookmark button in the export bar', () => {
-    const root = mountEngine();
-    const b = root.querySelector<HTMLButtonElement>('.bookmark-hint');
-    expect(b, 'no bookmark button').not.toBeNull();
-    expect(b!.tagName).toBe('BUTTON');
+  it('offers no bookmark button, because no browser exposes an API for it', () => {
+    // window.external.AddFavorite and window.sidebar.addPanel were both removed
+    // years ago and never replaced. A button that silently did nothing would be
+    // worse than none.
+    expect(mountEngine().querySelector('.bookmark-hint')).toBeNull();
   });
 
-  it('tells you the shortcut rather than pretending to bookmark', () => {
-    // No browser exposes an API to write a bookmark; the IE and Firefox ones
-    // were removed and never replaced. A button that silently did nothing
-    // would be worse than no button.
+  it('stays quiet while the app is only doing its own navigation', () => {
+    // Opening a gallery entry changes the address, but the reader did not do
+    // it and did not watch it happen, so saying so then teaches nothing.
+    localStorage.removeItem('ulam-share-hint');
     const root = mountEngine();
-    root.querySelector<HTMLButtonElement>('.bookmark-hint')!.click();
-    const region = root.querySelector('.messages [aria-live="polite"]')!;
-    expect(region.textContent).toMatch(/\+D/);
-    expect(region.textContent).toMatch(/bookmark/i);
+    expect(root.querySelector('.messages [aria-live="polite"]')!.textContent).toBe('');
+  });
+
+  it('says it once when the reader first changes something, then never again', () => {
+    localStorage.removeItem('ulam-share-hint');
+    const root = mountEngine();
+    const polite = () => root.querySelector('.messages [aria-live="polite"]')!.textContent ?? '';
+
+    const picker = root.querySelector<HTMLSelectElement>('.viz-picker')!;
+    picker.value = 'scatter';
+    picker.dispatchEvent(new Event('change'));
+    expect(polite()).toMatch(/address bar/i);
+
+    // Second change, same session: silent.
+    root.querySelector('.messages [aria-live="polite"]')!.textContent = '';
+    picker.value = 'histogram';
+    picker.dispatchEvent(new Event('change'));
+    expect(polite()).toBe('');
+  });
+
+  it('stays silent for someone who has already been told', () => {
+    localStorage.setItem('ulam-share-hint', '1');
+    const root = mountEngine();
+    const picker = root.querySelector<HTMLSelectElement>('.viz-picker')!;
+    picker.value = 'scatter';
+    picker.dispatchEvent(new Event('change'));
+    expect(root.querySelector('.messages [aria-live="polite"]')!.textContent).toBe('');
   });
 });

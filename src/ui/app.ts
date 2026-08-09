@@ -215,6 +215,7 @@ export function mountApp(root: HTMLElement): void {
   }
   picker.value = state.vizId;
   picker.addEventListener('change', () => {
+    hintPending = true;
     state.vizId = picker.value;
     state.params = defaultParams(getVisualizer(state.vizId).params);
     rebuildParams();
@@ -228,7 +229,7 @@ export function mountApp(root: HTMLElement): void {
   // controls cost a whole wrapped row of the topbar -- measured at 151px of
   // chrome, leaving the canvas only 61% of the viewport on a short screen.
   // Behind a disclosure it costs one button.
-  const styleUi = buildStyleControls(style, () => redraw());
+  const styleUi = buildStyleControls(style, userChanged);
   styleUi.el.hidden = true;
   styleUi.el.id = `${uid}-style`;
 
@@ -283,7 +284,7 @@ export function mountApp(root: HTMLElement): void {
     paramsHost.replaceChildren(
       buildParamControls(getVisualizer(state.vizId).params, state.params, (id, value) => {
         state.params[id] = value;
-        redraw();
+        userChanged();
       }),
     );
   }
@@ -461,18 +462,6 @@ export function mountApp(root: HTMLElement): void {
     }
   });
 
-  mkExport('bookmark-hint', 'Bookmark', () => {
-    // There is deliberately no click-to-bookmark here, because no such thing
-    // exists. window.external.AddFavorite was IE-only and window.sidebar
-    // .addPanel was Firefox-only; both were removed years ago, and no
-    // replacement was ever standardised -- browsers do not let a page write to
-    // the bookmark store. Showing the shortcut is the whole of what any site
-    // can honestly do, and it is still worth doing: the URL carries the entire
-    // view, so it is worth saving, and plenty of people do not know the key.
-    const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-    showNotice(`Press ${mac ? '⌘' : 'Ctrl'}+D to bookmark this exact view - the URL carries the whole thing.`);
-  });
-
   const dataTable = buildDataTable();
   dataTable.el.id = `${uid}-data-table`;
   const tableToggle = mkExport('table-toggle', 'Show the numbers', () => {
@@ -549,7 +538,7 @@ export function mountApp(root: HTMLElement): void {
   main.appendChild(exportBar);
   main.appendChild(dataTable.el);
 
-  const bar = buildComparisonBar(comparison, redraw);
+  const bar = buildComparisonBar(comparison, userChanged);
   main.insertBefore(bar.el, canvasWrap);
   bar.update(Boolean(getVisualizer(state.vizId).statistics), supportsSuperimpose(getVisualizer(state.vizId)));
 
@@ -590,6 +579,30 @@ export function mountApp(root: HTMLElement): void {
   // hashchange -> re-apply -> redraw loop would be far worse than a stale view.
   let lastHashWritten = '';
 
+  // Shown once, ever. The URL encodes the whole view, but it is a base64 blob,
+  // so nothing about looking at it suggests that. A label cannot teach this
+  // and a "Bookmark" button cannot do it (no browser has exposed an API for
+  // that in years). What does teach it is saying so at the exact moment it
+  // first becomes true -- when the address changes because the reader changed
+  // the picture.
+  const SHARE_HINT_KEY = 'ulam-share-hint';
+  let hintPending = false;
+  function noteAddressIsShareable(): void {
+    if (!hintPending) return;
+    hintPending = false;
+    try {
+      if (localStorage.getItem(SHARE_HINT_KEY)) return;
+      localStorage.setItem(SHARE_HINT_KEY, '1');
+    } catch { return; } // private mode: skip rather than nag every reload
+    showNotice('The address bar now points at this exact view. Bookmark it to come back, or use Copy link.');
+  }
+
+  /** A change the reader made, as opposed to one the app made for them. */
+  function userChanged(): void {
+    hintPending = true;
+    redraw();
+  }
+
   function syncUrl(): void {
     // While an overlay is up the URL must stay on its reserved hash. Without
     // this, the redraw that paints the engine underneath immediately
@@ -602,8 +615,10 @@ export function mountApp(root: HTMLElement): void {
         mode: comparison.mode, surrogate: comparison.surrogate, seed: comparison.seed,
         ensembleN: comparison.ensembleN, style, viewport,
       });
+      const changed = lastHashWritten !== '' && lastHashWritten !== hash;
       lastHashWritten = hash;
       history.replaceState(null, '', hash);
+      if (changed) noteAddressIsShareable();
     } catch {
       // history may be unavailable or restricted (e.g. sandboxed test envs)
     }
