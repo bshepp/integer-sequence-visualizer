@@ -128,21 +128,28 @@ export function mountApp(root: HTMLElement): void {
 
   const footer = document.createElement('footer');
   footer.className = 'attribution';
-  footer.append('Sequence data from ');
+
+  // The sentence lives in its own element because the footer is a flex row:
+  // loose text nodes would each become an anonymous flex item and the gap
+  // would break the licence text into fragments.
+  const attributionText = document.createElement('span');
+  attributionText.className = 'attribution-text';
+  attributionText.append('Sequence data from ');
   const oeisLink = document.createElement('a');
   oeisLink.href = 'https://oeis.org/';
   oeisLink.target = '_blank';
   oeisLink.rel = 'noopener noreferrer';
   oeisLink.textContent = 'The On-Line Encyclopedia of Integer Sequences';
-  footer.appendChild(oeisLink);
-  footer.append('®, © OEIS Foundation Inc., used under ');
+  attributionText.appendChild(oeisLink);
+  attributionText.append('®, © OEIS Foundation Inc., used under ');
   const ccLink = document.createElement('a');
   ccLink.href = 'https://creativecommons.org/licenses/by-sa/4.0/';
   ccLink.target = '_blank';
   ccLink.rel = 'noopener noreferrer';
   ccLink.textContent = 'CC BY-SA 4.0';
-  footer.appendChild(ccLink);
-  footer.append('. ');
+  attributionText.appendChild(ccLink);
+  attributionText.append('.');
+  footer.appendChild(attributionText);
 
   // Assembled at runtime rather than written into the HTML. The address is
   // already public in the SeqFan archive, so this is not hiding it -- it just
@@ -452,6 +459,18 @@ export function mountApp(root: HTMLElement): void {
     } else {
       showNotice(text);
     }
+  });
+
+  mkExport('bookmark-hint', 'Bookmark', () => {
+    // There is deliberately no click-to-bookmark here, because no such thing
+    // exists. window.external.AddFavorite was IE-only and window.sidebar
+    // .addPanel was Firefox-only; both were removed years ago, and no
+    // replacement was ever standardised -- browsers do not let a page write to
+    // the bookmark store. Showing the shortcut is the whole of what any site
+    // can honestly do, and it is still worth doing: the URL carries the entire
+    // view, so it is worth saving, and plenty of people do not know the key.
+    const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+    showNotice(`Press ${mac ? '⌘' : 'Ctrl'}+D to bookmark this exact view - the URL carries the whole thing.`);
   });
 
   const dataTable = buildDataTable();

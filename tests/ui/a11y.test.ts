@@ -470,3 +470,32 @@ describe('style panel placement', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
   });
 });
+
+describe('bookmark affordance', () => {
+  const mountEngine = () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    root.querySelector<HTMLButtonElement>('.landing-open')?.click();
+    return root;
+  };
+
+  it('offers a bookmark button in the export bar', () => {
+    const root = mountEngine();
+    const b = root.querySelector<HTMLButtonElement>('.bookmark-hint');
+    expect(b, 'no bookmark button').not.toBeNull();
+    expect(b!.tagName).toBe('BUTTON');
+  });
+
+  it('tells you the shortcut rather than pretending to bookmark', () => {
+    // No browser exposes an API to write a bookmark; the IE and Firefox ones
+    // were removed and never replaced. A button that silently did nothing
+    // would be worse than no button.
+    const root = mountEngine();
+    root.querySelector<HTMLButtonElement>('.bookmark-hint')!.click();
+    const region = root.querySelector('.messages [aria-live="polite"]')!;
+    expect(region.textContent).toMatch(/\+D/);
+    expect(region.textContent).toMatch(/bookmark/i);
+  });
+});
