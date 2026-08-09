@@ -74,10 +74,19 @@ export function paintEntry(entry: GalleryEntry, canvas: HTMLCanvasElement, w: nu
   // not say which sequence - or how many terms of it - is not much use.
   const who = entry.sequence.aNumber ?? entry.sequence.name;
   const identity = `${who} · ${entry.sequence.terms.length.toLocaleString()} terms`;
+  // Backed for the same reason the engine's are: the drawing reaches the top
+  // edge of these thumbnails routinely.
   const caption = (text: string, x: number) => {
-    ctx.fillStyle = canvasTheme().muted;
+    ctx.save();
     ctx.font = '11px system-ui';
+    const w = ctx.measureText(text).width;
+    ctx.globalAlpha = 0.82;
+    ctx.fillStyle = canvasTheme().bg;
+    ctx.fillRect(x - 4, 3, w + 8, 15);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = canvasTheme().muted;
     ctx.fillText(text, x, 14);
+    ctx.restore();
   };
 
   if (entry.state.mode === 'side') {

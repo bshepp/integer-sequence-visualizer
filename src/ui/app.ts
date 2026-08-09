@@ -17,7 +17,7 @@ import { lookupById } from '../sequence/oeisClient';
 import { sequenceFromFormula } from '../sequence/formula';
 import { buildExplainPanel } from './explainPanel';
 import { SURROGATE_EXPLAIN } from '../nullmodel/surrogates';
-import { buildReadout, describeHit, drawMarker, correspondingIndex } from './readout';
+import { buildReadout, describeHit, drawMarker, correspondingIndex, drawCanvasLabel } from './readout';
 import { hitIndex, type Hit } from '../viz/hit';
 import { canvasTheme } from '../viz/theme';
 import { initialTheme, applyTheme, buildThemeToggle } from './themeToggle';
@@ -703,11 +703,9 @@ export function mountApp(root: HTMLElement): void {
         showError(`Render failed: ${e instanceof Error ? e.message : String(e)}`);
       }
       ctx.restore();
-      // Drawn after restoring, so labels keep their size at any zoom.
-      ctx.fillStyle = canvasTheme().muted;
-      ctx.font = '12px system-ui';
-      // Top of the panel: the cursor readout owns the bottom-left corner.
-      ctx.fillText(label, 10, 16);
+      // Drawn after restoring, so labels keep their size at any zoom, and
+      // backed so the rendering underneath cannot swallow them.
+      drawCanvasLabel(ctx, label, 10, 16);
       ctx.restore();
     };
 
@@ -749,9 +747,7 @@ export function mountApp(root: HTMLElement): void {
       viz.render(new SequenceView(surr), { ...state.params, ...styleToParams(nullStyle) }, ctx, { width, height });
       ctx.restore();
       viz.render(view, { ...state.params, ...styleToParams(style) }, ctx, { width, height });
-      ctx.fillStyle = canvasTheme().muted;
-      ctx.font = '12px system-ui';
-      ctx.fillText(`${seqLabel(state.seq)} - real (colour) over ${comparison.surrogate} null (grey)`, 10, 16);
+      drawCanvasLabel(ctx, `${seqLabel(state.seq)} - real (colour) over ${comparison.surrogate} null (grey)`, 10, 16);
       if (pinnedIndex !== null && viz.position) {
         const p = viz.position(view, state.params, { width, height }, pinnedIndex);
         if (p) drawMarker(ctx, worldToScreen(viewport, p.x, p.y), canvasTheme().real);

@@ -79,3 +79,39 @@ describe('buildReadout', () => {
     expect(r.el.classList.contains('readout--empty')).toBe(true);
   });
 });
+
+import { drawCanvasLabel } from '../../src/ui/readout';
+import { fakeCtx } from '../helpers/fakeCtx';
+
+describe('drawCanvasLabel', () => {
+  it('paints a backing before the text, so the drawing underneath cannot swallow it', () => {
+    const { ctx, callLog } = fakeCtx();
+    drawCanvasLabel(ctx, 'real - A000002 - 600 terms', 10, 16);
+    const names = callLog.map((c) => c.name);
+    const rectAt = names.indexOf('fillRect');
+    const textAt = names.indexOf('fillText');
+    expect(rectAt, 'no backing drawn').toBeGreaterThanOrEqual(0);
+    expect(textAt, 'no text drawn').toBeGreaterThanOrEqual(0);
+    expect(rectAt).toBeLessThan(textAt);
+  });
+
+  it('sizes the backing from the measured text rather than a guess', () => {
+    const { ctx, callLog } = fakeCtx();
+    drawCanvasLabel(ctx, 'anything', 10, 16);
+    expect(callLog.some((c) => c.name === 'measureText')).toBe(true);
+  });
+
+  it('draws nothing at all for an empty label', () => {
+    const { ctx, callLog } = fakeCtx();
+    drawCanvasLabel(ctx, '', 10, 16);
+    expect(callLog.filter((c) => c.name === 'fillRect' || c.name === 'fillText')).toHaveLength(0);
+  });
+
+  it('restores the context so the backing alpha does not leak into the next draw', () => {
+    const { ctx, callLog } = fakeCtx();
+    drawCanvasLabel(ctx, 'x', 10, 16);
+    const names = callLog.map((c) => c.name);
+    expect(names[0]).toBe('save');
+    expect(names[names.length - 1]).toBe('restore');
+  });
+});

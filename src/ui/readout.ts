@@ -1,6 +1,7 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Hit } from '../viz/hit';
 import { permutationWithMap, type SurrogateType } from '../nullmodel/surrogates';
+import { canvasTheme } from '../viz/theme';
 
 /**
  * Human-readable description of what is under the cursor.
@@ -79,4 +80,34 @@ export function buildReadout(): Readout {
       el.classList.toggle('readout--empty', !text);
     },
   };
+}
+
+/**
+ * A caption drawn over a rendering, with a backing so it survives whatever is
+ * underneath.
+ *
+ * The labels used to sit at the bottom of each panel, where the readout later
+ * collided with them; moving them to the top solved that and created this,
+ * because a drawing can reach the top edge too - and once zoom exists it can
+ * reach anywhere. Neither corner is safe, so the fix is to stop looking for a
+ * safe corner and give the text its own ground.
+ */
+export function drawCanvasLabel(
+  ctx: CanvasRenderingContext2D, text: string, x: number, y: number,
+): void {
+  if (!text) return;
+  const theme = canvasTheme();
+  ctx.save();
+  ctx.font = '12px system-ui';
+  ctx.textBaseline = 'alphabetic';
+  const w = ctx.measureText(text).width;
+  // Same translucency as the readout, so the two read as one family and the
+  // drawing stays faintly visible behind rather than being blanked out.
+  ctx.globalAlpha = 0.82;
+  ctx.fillStyle = theme.bg;
+  ctx.fillRect(x - 5, y - 12, w + 10, 17);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = theme.muted;
+  ctx.fillText(text, x, y);
+  ctx.restore();
 }
