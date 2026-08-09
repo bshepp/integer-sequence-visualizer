@@ -142,7 +142,20 @@ export function mountApp(root: HTMLElement): void {
   ccLink.rel = 'noopener noreferrer';
   ccLink.textContent = 'CC BY-SA 4.0';
   footer.appendChild(ccLink);
-  footer.append('.');
+  footer.append('. ');
+
+  // Assembled at runtime rather than written into the HTML. The address is
+  // already public in the SeqFan archive, so this is not hiding it -- it just
+  // means the trivial scrapers that regex mailto: out of served markup come up
+  // empty, which is most of them.
+  const contact = document.createElement('a');
+  contact.className = 'contact-link';
+  const user = 'bshepp';
+  const host = ['gmail', 'com'].join('.');
+  contact.href = `mailto:${user}@${host}`;
+  contact.textContent = `Contact: ${user}@${host}`;
+  footer.appendChild(contact);
+
   root.appendChild(footer);
 
   // sidebar

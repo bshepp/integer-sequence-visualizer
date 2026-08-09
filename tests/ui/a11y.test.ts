@@ -383,3 +383,61 @@ describe('panel labels identify the sequence', () => {
     expect(label).toContain('Turtle walk');
   });
 });
+
+describe('null model toggle', () => {
+  const mountEngine = () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    root.querySelector<HTMLButtonElement>('.landing-open')?.click();
+    return root;
+  };
+
+  it('surfaces the null model as a pressed-state toggle', () => {
+    const root = mountEngine();
+    const t = root.querySelector<HTMLButtonElement>('.null-toggle')!;
+    expect(t, 'no null toggle').not.toBeNull();
+    expect(t.getAttribute('aria-pressed')).toBeTruthy();
+    expect(t.textContent).toMatch(/null model/i);
+  });
+
+  it('remembers which comparison you were using', () => {
+    // Turning the null off and on again should resume, not reset to a default.
+    const root = mountEngine();
+    const mode = root.querySelector<HTMLSelectElement>('.mode-select')!;
+    const toggle = root.querySelector<HTMLButtonElement>('.null-toggle')!;
+
+    mode.value = 'flip';
+    mode.dispatchEvent(new Event('change'));
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+
+    toggle.click();
+    expect(mode.value).toBe('off');
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+
+    toggle.click();
+    expect(mode.value).toBe('flip');
+  });
+
+  it('starts off, matching the default comparison state', () => {
+    const root = mountEngine();
+    const toggle = root.querySelector<HTMLButtonElement>('.null-toggle')!;
+    const mode = root.querySelector<HTMLSelectElement>('.mode-select')!;
+    // The gallery hero opens in side mode, so read the pair rather than
+    // assuming: whatever the mode is, the toggle must agree with it.
+    expect(toggle.getAttribute('aria-pressed')).toBe(String(mode.value !== 'off'));
+  });
+});
+
+describe('footer contact', () => {
+  it('offers a mailto link assembled at runtime', () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    const link = root.querySelector<HTMLAnchorElement>('.contact-link')!;
+    expect(link, 'no contact link').not.toBeNull();
+    expect(link.getAttribute('href')).toBe('mailto:bshepp@gmail.com');
+  });
+});

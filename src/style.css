@@ -14,7 +14,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .app-header {
   flex: none;
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 14px;
   padding: 11px 16px;
   background: var(--panel);
@@ -249,7 +249,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .busy[hidden] { display: none; }
 .bfile-hint { margin: 6px 0 0; font-size: 11px; line-height: 1.4; color: var(--accent); }
 
-.header-nav { margin-left: auto; display: flex; gap: 8px; }
+.header-nav { margin-left: auto; display: flex; gap: 8px; align-self: center; }
 .header-nav-button {
   background: #24262c; color: var(--text); border: 1px solid #3a3d44;
   border-radius: 4px; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 12px;
@@ -315,8 +315,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 :root[data-theme="light"] .explain-button,
 :root[data-theme="light"] .comparison-bar select,
 :root[data-theme="light"] .comparison-bar input,
-:root[data-theme="light"] .sweep-close,
-:root[data-theme="light"] .theme-toggle { background: #ffffff; border-color: #c8ccd4; }
+:root[data-theme="light"] .sweep-close { background: #ffffff; border-color: #c8ccd4; }
 :root[data-theme="light"] .style-toggle { background: var(--text); color: var(--bg); border-color: var(--text); }
 :root[data-theme="light"] .bfile-button,
 :root[data-theme="light"] .landing-open,
@@ -339,13 +338,23 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 :root[data-theme="light"] .busy { background: rgba(255,255,255,0.92); }
 
 .theme-toggle {
-  background: #24262c; color: var(--text); border: 1px solid #3a3d44;
-  border-radius: 4px; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 12px;
+  background: var(--text); color: var(--bg); border: 1px solid var(--text);
+  border-radius: 4px; padding: 4px 12px; cursor: pointer; font: inherit;
+  font-size: 12px; font-weight: 600;
 }
-.theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.theme-toggle:hover { border-color: var(--accent); }
 .sweep-button { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 5px 12px; cursor: pointer; font: inherit; font-size: 12px; }
 .sweep-button:hover { border-color: var(--accent); color: var(--accent); }
 :root[data-theme="light"] .sweep-button { background: #ffffff; border-color: #c8ccd4; }
 .zoom-level { font: 12px ui-monospace, monospace; color: var(--muted); min-width: 3.5em; text-align: center; }
 .canvas-wrap canvas { cursor: grab; touch-action: none; }
 .canvas-wrap canvas:active { cursor: grabbing; }
+.null-toggle {
+  background: #24262c; color: var(--muted); border: 1px solid #3a3d44;
+  border-radius: 4px; padding: 4px 12px; cursor: pointer; font: inherit;
+  font-size: 12px; font-weight: 600; flex: none;
+}
+.null-toggle--on { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+:root[data-theme="light"] .null-toggle { background: #ffffff; border-color: #c8ccd4; }
+:root[data-theme="light"] .null-toggle--on { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+.contact-link { color: var(--muted); }

@@ -204,6 +204,9 @@ export function buildComparisonBar(
   // it is only ever *invoked* after all of them exist.
   function syncMode(): void {
     const off = state.mode === 'off';
+    nullToggle.textContent = off ? 'Null model: off' : 'Null model: on';
+    nullToggle.classList.toggle('null-toggle--on', !off);
+    nullToggle.setAttribute('aria-pressed', String(!off));
     surrSel.disabled = off;
     seedInput.disabled = off;
     nInput.disabled = state.mode !== 'ensemble';
@@ -215,9 +218,32 @@ export function buildComparisonBar(
     flipBtn.classList.toggle('flip-button--active', state.mode === 'flip');
   }
 
+  // The null model is the whole point of this app, and it was reachable only
+  // by noticing that a dropdown labelled "Compare" had an "off" in it. A
+  // toggle says out loud that there is something to turn on, and remembers
+  // which comparison you were using so turning it back on resumes rather than
+  // resetting.
+  let lastOnMode: Exclude<ComparisonMode, 'off'> = state.mode === 'off' ? 'side' : state.mode;
+
+  const nullToggle = document.createElement('button');
+  nullToggle.className = 'null-toggle';
+  nullToggle.type = 'button';
+  nullToggle.addEventListener('click', () => {
+    if (state.mode === 'off') {
+      state.mode = lastOnMode;
+    } else {
+      lastOnMode = state.mode;
+      state.mode = 'off';
+    }
+    modeSel.value = state.mode;
+    syncMode();
+    onChange();
+  });
+
   const modeSel = mkSelect('mode-select', ['off', 'side', 'over', 'flip', 'ensemble'], state.mode,
     (v) => {
       state.mode = v as ComparisonMode;
+      if (state.mode !== 'off') lastOnMode = state.mode;
       syncMode();
       if (state.mode === 'flip') flipBtn.focus();
     });
@@ -249,7 +275,8 @@ export function buildComparisonBar(
   };
 
   el.append(
-    field('Compare:', modeSel),
+    nullToggle,
+    field('showing', modeSel),
     field('null:', surrSel),
     field('seed', seedInput),
     field('N', nInput),
