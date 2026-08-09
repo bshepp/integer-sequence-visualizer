@@ -443,6 +443,11 @@ export function mountApp(root: HTMLElement): void {
     dataTable.toggle();
     tableToggle.setAttribute('aria-expanded', String(dataTable.isOpen()));
     tableToggle.textContent = dataTable.isOpen() ? 'Hide the numbers' : 'Show the numbers';
+    // drawScene pins the canvas to an explicit pixel width and height, so it
+    // does not follow its flex container on its own. Revealing the table
+    // shrinks the wrapper but left the canvas at its old size, overhanging
+    // the first rows of the table. Redrawing re-measures and re-sizes it.
+    redraw();
   });
   tableToggle.setAttribute('aria-expanded', 'false');
   tableToggle.setAttribute('aria-controls', dataTable.el.id);

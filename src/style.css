@@ -31,7 +31,10 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .sidebar { background: var(--panel); padding: 12px; overflow-y: auto; }
 .main { display: flex; flex-direction: column; min-width: 0; }
 .topbar { display: flex; gap: 12px; align-items: center; padding: 10px 14px; background: var(--panel); border-left: 1px solid #000; flex-wrap: wrap; }
-.canvas-wrap { flex: 1; position: relative; min-height: 0; }
+/* overflow:hidden is a backstop, not the fix: the canvas carries an explicit
+   pixel size, so anything that resizes this wrapper must redraw. If something
+   ever forgets, the canvas clips rather than covering its siblings. */
+.canvas-wrap { flex: 1; position: relative; min-height: 0; overflow: hidden; }
 .canvas-wrap canvas { position: absolute; inset: 0; }
 .tab-bar { display: flex; gap: 4px; margin-bottom: 8px; }
 .tab-button { flex: 1; background: transparent; color: var(--muted); border: 1px solid #333; border-radius: 4px; padding: 4px; cursor: pointer; }
