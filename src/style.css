@@ -527,3 +527,17 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .zoom-group { display: inline-flex; align-items: center; gap: 6px; }
 .zoom-group[hidden] { display: none; }
 .zoom-caption { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+/* Two captions per panel, answering two different questions:
+   bottom right is what the cursor is over, bottom left is what is pinned.
+   Positioned by percentage so they follow the panel divider rather than the
+   canvas edge. */
+.readout--hover.readout--real { left: auto; right: 10px; }
+.readout--pin.readout--real { right: auto; left: 10px; }
+.readout--hover.readout--null,
+.readout--pin.readout--null { display: none; }
+.canvas-wrap--side .readout--hover.readout--real { right: calc(50% + 10px); }
+.canvas-wrap--side .readout--pin.readout--null { display: block; right: auto; left: calc(50% + 10px); }
+.canvas-wrap--side .readout--hover.readout--null { display: block; left: auto; right: 10px; }
+.canvas-wrap--side .readout--hover.readout--null.readout--empty,
+.canvas-wrap--side .readout--pin.readout--null.readout--empty { display: none; }
+.readout { max-width: calc(50% - 20px); }

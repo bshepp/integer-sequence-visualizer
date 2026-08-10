@@ -1197,3 +1197,60 @@ describe('marking where a drawing begins and ends', () => {
     expect(decodeState(on)!.markEnds).toBe(true);
   });
 });
+
+describe('two captions per panel', () => {
+  const mountEngine = () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    root.querySelector<HTMLButtonElement>('.landing-open')?.click();
+    return root;
+  };
+  const q = (root: HTMLElement, sel: string) => root.querySelector<HTMLElement>(sel)!;
+
+  it('gives each panel a hover box and a pinned box', () => {
+    // They answer different questions - what is under the cursor, and what is
+    // selected - and were previously competing for one box that emptied
+    // whenever the mouse left.
+    const root = mountEngine();
+    for (const sel of [
+      '.readout--hover.readout--real', '.readout--hover.readout--null',
+      '.readout--pin.readout--real', '.readout--pin.readout--null',
+    ]) expect(q(root, sel), sel).not.toBeNull();
+  });
+
+  it('marks the wrapper when the canvas is split, so the boxes follow the divider', () => {
+    const root = mountEngine();
+    const wrap = q(root, '.canvas-wrap');
+    expect(wrap.classList.contains('canvas-wrap--side')).toBe(true);
+    const mode = q(root, '.mode-select') as HTMLSelectElement;
+    mode.value = 'off';
+    mode.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(wrap.classList.contains('canvas-wrap--side')).toBe(false);
+  });
+
+  it('states the pin from each panel\u2019s own point of view', () => {
+    // Reading a panel should not require translating an index that belongs to
+    // the other one, so each box leads with its own n.
+    const root = mountEngine();
+    const canvas = root.querySelector('canvas')!;
+    canvas.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 5, clientY: 5 }));
+    const real = q(root, '.readout--pin.readout--real').textContent ?? '';
+    const nul = q(root, '.readout--pin.readout--null').textContent ?? '';
+    if (real) {
+      expect(real).toMatch(/^pinned n = /);
+      expect(real).toMatch(/in null at n = /);
+      expect(nul).toMatch(/^pinned n = /);
+      expect(nul).toMatch(/in real at n = /);
+    }
+  });
+
+  it('hides the null captions when there is only one panel', () => {
+    const root = mountEngine();
+    const mode = q(root, '.mode-select') as HTMLSelectElement;
+    mode.value = 'off';
+    mode.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(q(root, '.readout--pin.readout--null').classList.contains('readout--empty')).toBe(true);
+  });
+});

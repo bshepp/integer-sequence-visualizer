@@ -386,8 +386,28 @@ export function mountApp(root: HTMLElement): void {
   canvasWrap.appendChild(canvas);
   main.appendChild(explain.el);
 
-  const readout = buildReadout();
-  canvasWrap.appendChild(readout.el);
+  /**
+   * Four captions, two per panel, because they answer two different questions
+   * and were competing for one box.
+   *
+   *   bottom right - what is under the cursor, in the panel the cursor is in
+   *   bottom left  - what is pinned, stated from that panel's point of view
+   *
+   * The pinned pair say the same fact twice, each leading with its own index:
+   * the real panel's reads "n = 77 ... null n = 12" and the surrogate's reads
+   * "n = 12 ... real n = 77". Reading a panel should not require translating
+   * a number that belongs to the other one.
+   */
+  const readouts = {
+    hoverReal: buildReadout('readout--hover readout--real'),
+    hoverNull: buildReadout('readout--hover readout--null'),
+    pinReal: buildReadout('readout--pin readout--real'),
+    pinNull: buildReadout('readout--pin readout--null'),
+  };
+  for (const r of Object.values(readouts)) canvasWrap.appendChild(r.el);
+  // Kept so the single-panel modes and the ensemble chart keep one obvious
+  // place to write to.
+  const readout = readouts.hoverReal;
 
   // The term the user pinned by clicking, or null. Survives redraws (a flip
   // included) so the marker anchors the eye while the substrate changes.
@@ -407,6 +427,23 @@ export function mountApp(root: HTMLElement): void {
    * the two halves of one fact were reported in two different places and one
    * of them vanished when you moved the mouse.
    */
+  function pinnedFor(panel: 'real' | 'null'): string | null {
+    if (pinnedIndex === null || !state.seq) return null;
+    const view = new SequenceView(state.seq);
+    const corr = correspondingIndex(pinnedIndex, comparison.surrogate, state.seq.terms, comparison.seed);
+    const term = describeHit({ kind: 'term', index: pinnedIndex }, view);
+    if (comparison.mode === 'off') return panel === 'real' ? `pinned ${term}` : null;
+    const other = corr.traced ? 'same term' : 'index-for-index';
+    return panel === 'real'
+      ? `pinned ${term} - ${other} in null at n = ${corr.index}`
+      : `pinned n = ${corr.index} - ${other} in real at n = ${pinnedIndex}`;
+  }
+
+  function syncPinned(): void {
+    readouts.pinReal.set(pinnedFor('real'));
+    readouts.pinNull.set(comparison.mode === 'side' ? pinnedFor('null') : null);
+  }
+
   function pinnedText(): string | null {
     if (pinnedIndex === null || !state.seq) return null;
     const view = new SequenceView(state.seq);
@@ -504,7 +541,8 @@ export function mountApp(root: HTMLElement): void {
         panX: dragFrom.panX + (e.clientX - dragFrom.x),
         panY: dragFrom.panY + (e.clientY - dragFrom.y),
       }, dragFrom.panel);
-      showPinned();
+      readouts.hoverReal.set(null);
+      readouts.hoverNull.set(null);
       return;
     }
     // Throttle to one hit-test per animation frame: locate() is an O(n) scan
@@ -516,12 +554,18 @@ export function mountApp(root: HTMLElement): void {
       hoverPending = false;
       if (!state.seq) { readout.set(null); return; }
       const found = hitAt(pt);
-      if (!found) { showPinned(); return; }
-      readout.set(`${found.panel === 'null' ? `${comparison.surrogate} null · ` : ''}`
-        + describeHit(found.hit, new SequenceView(found.seq)));
+      if (!found) { readouts.hoverReal.set(null); readouts.hoverNull.set(null); return; }
+      const text = describeHit(found.hit, new SequenceView(found.seq));
+      // Only the panel being pointed at speaks. Naming the panel in the text
+      // is redundant now that the box sits inside it.
+      readouts.hoverReal.set(found.panel === 'real' ? text : null);
+      readouts.hoverNull.set(found.panel === 'null' ? text : null);
     });
   });
-  canvas.addEventListener('pointerleave', () => showPinned());
+  canvas.addEventListener('pointerleave', () => {
+    readouts.hoverReal.set(null);
+    readouts.hoverNull.set(null);
+  });
 
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
@@ -576,7 +620,7 @@ export function mountApp(root: HTMLElement): void {
     const same = idx !== null && idx === pinnedIndex && found!.panel === pinnedPanel;
     pinnedIndex = same ? null : idx;
     if (idx !== null && !same) pinnedPanel = found!.panel;
-    showPinned();
+    syncPinned();
     redraw();
   });
 
@@ -959,7 +1003,18 @@ export function mountApp(root: HTMLElement): void {
   // keeps syncUrl at the end of every redraw regardless of which path ran.
   function redraw(): void {
     drawScene();
+    // Here rather than in userChanged: the captions and the panel-split class
+    // depend on the comparison mode, surrogate and seed, and every path that
+    // can change those already ends in a redraw - including the initial mount
+    // and a restore from a shared address, neither of which calls
+    // userChanged. Rebuilding two short strings per frame costs nothing.
+    syncPanelChrome();
     syncUrl();
+  }
+
+  function syncPanelChrome(): void {
+    canvasWrap.classList.toggle('canvas-wrap--side', comparison.mode === 'side');
+    syncPinned();
   }
 
   /**

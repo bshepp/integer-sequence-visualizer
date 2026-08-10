@@ -84,9 +84,9 @@ export function drawMarker(
 
 export interface Readout { el: HTMLElement; set(text: string | null): void; }
 
-export function buildReadout(): Readout {
+export function buildReadout(extraClass = ''): Readout {
   const el = document.createElement('div');
-  el.className = 'readout readout--empty';
+  el.className = `readout readout--empty${extraClass ? ` ${extraClass}` : ''}`;
   // Polite, not assertive: this updates on every pointer move and must never
   // interrupt a screen reader mid-sentence.
   el.setAttribute('aria-live', 'polite');
