@@ -64,6 +64,13 @@ export const polyarcViz: Visualizer = {
     // Last segment of term `index`, i.e. where that term finished bending.
     return toScreen(pathTransform(pts, size), pts[Math.min(pts.length - 1, (index + 1) * SEGMENTS)]!);
   },
+  origin(seq: SequenceView, params: Params, size: Size) {
+    const pts = polyarcPath(seq, {
+      angle: Number(params.angle), modulus: Number(params.modulus),
+      centered: Boolean(params.centered),
+    });
+    return pts.length ? toScreen(pathTransform(pts, size), pts[0]!) : null;
+  },
   locate(seq: SequenceView, params: Params, size: Size, x: number, y: number) {
     const pts = polyarcPath(seq, {
       angle: Number(params.angle), modulus: Number(params.modulus),

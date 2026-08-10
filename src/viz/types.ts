@@ -42,6 +42,19 @@ export interface Visualizer {
   locate?(seq: SequenceView, params: Params, size: Size, x: number, y: number): Hit | null;
   /** Inverse of locate for a term index - where that term is drawn. */
   position?(seq: SequenceView, params: Params, size: Size, index: number): { x: number; y: number } | null;
+  /**
+   * Where the drawing physically starts, for views that have a starting point
+   * no term owns.
+   *
+   * A cumulative walk begins at an origin and then applies term 0, so
+   * position(0) is the far end of the first segment, not the tip of the line.
+   * Marking position(0) as "the start" therefore lands one step in from the
+   * free end, which is visibly wrong on a walk and was reported as such.
+   *
+   * Views whose first term IS their first mark - a scatter, a spiral, a
+   * histogram - leave this undefined and position(0) is correct for them.
+   */
+  origin?(seq: SequenceView, params: Params, size: Size): { x: number; y: number } | null;
 }
 
 export function defaultParams(specs: ParamSpec[]): Params {

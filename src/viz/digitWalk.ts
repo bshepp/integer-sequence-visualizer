@@ -55,6 +55,10 @@ export const digitWalkViz: Visualizer = {
     const pts = digitWalkPath(seq, base);
     return toScreen(pathTransform(pts, size), pts[at + 1]!);
   },
+  origin(seq: SequenceView, params: Params, size: Size) {
+    const pts = digitWalkPath(seq, Number(params.base));
+    return pts.length ? toScreen(pathTransform(pts, size), pts[0]!) : null;
+  },
   locate(seq: SequenceView, params: Params, size: Size, x: number, y: number) {
     const base = Number(params.base);
     const pts = digitWalkPath(seq, base);

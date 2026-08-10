@@ -941,13 +941,16 @@ export function mountApp(root: HTMLElement): void {
       const view = new SequenceView(seq);
       const n = view.length;
       if (n === 0) return;
-      const mark = (i: number, kind: 'start' | 'end') => {
-        const p = viz.position!(view, state.params, panelSize, i);
+      const put = (p: { x: number; y: number } | null, kind: 'start' | 'end') => {
         if (p) drawEndMark(ctx, worldToScreen(vp, p.x, p.y), kind);
       };
       // End first, so a one-term sequence shows the ring rather than hiding it.
-      mark(n - 1, 'end');
-      mark(0, 'start');
+      put(viz.position!(view, state.params, panelSize, n - 1), 'end');
+      // The path's own start where the view has one: on a cumulative walk
+      // position(0) is the far end of the first segment, a step in from the
+      // tip of the line.
+      put(viz.origin?.(view, state.params, panelSize)
+        ?? viz.position!(view, state.params, panelSize, 0), 'start');
     };
 
     const draw = (

@@ -82,6 +82,10 @@ export const turtleViz: Visualizer = {
     // turtlePath pushes the origin first, so path point i+1 is term i.
     return toScreen(pathTransform(pts, size), pts[index + 1]!);
   },
+  origin(seq: SequenceView, params: Params, size: Size) {
+    const pts = turtlePath(seq, Number(params.angle), Number(params.k));
+    return pts.length ? toScreen(pathTransform(pts, size), pts[0]!) : null;
+  },
   locate(seq: SequenceView, params: Params, size: Size, x: number, y: number) {
     const pts = turtlePath(seq, Number(params.angle), Number(params.k));
     const p = nearestIndex(pts, pathTransform(pts, size), x, y);

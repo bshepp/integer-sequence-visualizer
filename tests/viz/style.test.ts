@@ -179,3 +179,34 @@ describe('per-panel canvas', () => {
     setCanvasTheme('dark');
   });
 });
+
+import { polyarcViz } from '../../src/viz/polyarc';
+import { digitWalkViz } from '../../src/viz/digitWalk';
+
+describe('where a drawing starts', () => {
+  const SIZE = { width: 300, height: 300 };
+  const seq = mk(40);
+
+  it('a cumulative walk starts before its first term, not at it', () => {
+    // position(0) is the far end of the first segment, because the path opens
+    // at an origin and then applies term 0. Marking that as "the start" put
+    // the mark one step in from the tip of the line, which is visible on any
+    // walk and was reported from a screenshot.
+    for (const viz of [turtleViz, polyarcViz, digitWalkViz]) {
+      const params = defaultParams(viz.params);
+      const origin = viz.origin!(seq, params, SIZE)!;
+      const first = viz.position!(seq, params, SIZE, 0)!;
+      expect(origin, `${viz.id} has no origin`).toBeTruthy();
+      const apart = Math.hypot(origin.x - first.x, origin.y - first.y);
+      expect(apart, `${viz.id}: origin and position(0) coincide`).toBeGreaterThan(1);
+    }
+  });
+
+  it('views whose first term is their first mark do not claim an origin', () => {
+    // A scatter or a spiral has no starting point that no term owns, so
+    // position(0) is already correct and drawEnds falls back to it.
+    for (const viz of [scatterViz, ulamViz, histogramViz]) {
+      expect(viz.origin, `${viz.id} should not define origin`).toBeUndefined();
+    }
+  });
+});
