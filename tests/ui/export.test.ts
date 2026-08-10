@@ -132,22 +132,45 @@ describe('export formats carry attribution', () => {
   });
 });
 
-describe('data table', () => {
-  it('renders a real table with a caption and header cells', () => {
+describe('the numbers panel', () => {
+  const asTable = (t: ReturnType<typeof buildDataTable>) =>
+    t.el.querySelector<HTMLButtonElement>('.data-view-toggle')!.click();
+
+  it('shows the sequence as a comma-separated run by default', () => {
+    // "Show me the numbers" wants the sequence read the way a sequence is
+    // written everywhere else, the OEIS included. A row per term turned 500
+    // terms into 500 rows scrolling off the screen.
     const t = buildDataTable();
     t.setSequence(fib);
-    document.body.appendChild(t.el);
-    expect(t.el.querySelector('table')).not.toBeNull();
-    expect(t.el.querySelector('caption')).not.toBeNull();
-    expect(t.el.querySelectorAll('th').length).toBeGreaterThanOrEqual(2);
-    expect(t.el.querySelectorAll('tbody tr')).toHaveLength(7);
+    expect(t.el.querySelector('table'), 'should not start as a table').toBeNull();
+    const list = t.el.querySelector('.data-list')!;
+    expect(list.textContent).toBe('0, 1, 1, 2, 3, 5, 8');
   });
 
-  it('scopes its header cells so a screen reader can associate them', () => {
+  it('states the starting index, which a bare list of values loses', () => {
+    const t = buildDataTable();
+    t.setSequence({ ...fib, offset: 1 });
+    expect(t.el.querySelector('.data-list-note')!.textContent).toMatch(/n = 1/);
+  });
+
+  it('still offers the table, with its header cells scoped', () => {
+    // Index-to-term is a real question that a run of commas answers badly, so
+    // the table stays one click away rather than being removed.
     const t = buildDataTable();
     t.setSequence(fib);
+    asTable(t);
+    expect(t.el.querySelector('table')).not.toBeNull();
+    expect(t.el.querySelectorAll('tbody tr')).toHaveLength(7);
     expect(t.el.querySelector('thead th')!.getAttribute('scope')).toBe('col');
     expect(t.el.querySelector('tbody th')!.getAttribute('scope')).toBe('row');
+  });
+
+  it('keeps the chosen view when the sequence changes', () => {
+    const t = buildDataTable();
+    t.setSequence(fib);
+    asTable(t);
+    t.setSequence({ ...fib, name: 'another' });
+    expect(t.el.querySelector('table'), 'switching sequence reset the view').not.toBeNull();
   });
 
   it('starts closed and toggles', () => {
@@ -157,15 +180,17 @@ describe('data table', () => {
     expect(t.isOpen()).toBe(true);
   });
 
-  it('caps the rows it renders and says so', () => {
+  it('caps what it renders and says so, in either view', () => {
     const long: Sequence = {
       terms: Array.from({ length: 5000 }, (_, i) => BigInt(i)),
       name: 'long', offset: 0, source: 'paste',
     };
     const t = buildDataTable();
     t.setSequence(long);
+    expect(t.el.querySelector('.data-caption')!.textContent).toMatch(/first 500 of 5000/);
+    expect(t.el.querySelector('.data-list')!.textContent!.split(',')).toHaveLength(500);
+    asTable(t);
     expect(t.el.querySelectorAll('tbody tr').length).toBeLessThanOrEqual(500);
-    expect(t.el.querySelector('caption')!.textContent).toMatch(/first 500 of 5000/);
   });
 });
 
