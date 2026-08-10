@@ -392,3 +392,9 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 /* Half-real: read as neither endorsement nor dismissal. */
 .verdict--split { background: #37301d; color: #e8c46a; }
 :root[data-theme="light"] .verdict--split { background: #f7edd4; color: #7a5a10; }
+.landing-credit {
+  max-width: 62ch; margin: -6px auto 18px; text-align: center;
+  font-size: 13px; color: var(--muted);
+}
+.style-hint { font-size: 11px; color: #d8a657; align-self: center; }
+:root[data-theme="light"] .style-hint { color: #8a5a00; }

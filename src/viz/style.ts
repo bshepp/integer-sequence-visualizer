@@ -18,6 +18,13 @@ export interface RenderStyle {
    * asked-for reading rather than one the site quietly imposes.
    */
   showOverlap: boolean;
+  /** Draw the panel's identity caption on the canvas. */
+  showLabels: boolean;
+  /**
+   * Force pure black, overriding every colour setting. For print and for
+   * figures going into a paper, where a hue ramp does not survive the journey.
+   */
+  blackLine: boolean;
 }
 
 export const DEFAULT_STYLE: RenderStyle = {
@@ -30,6 +37,8 @@ export const DEFAULT_STYLE: RenderStyle = {
   hueStart: 0,
   hueEnd: 300,
   showOverlap: false,
+  showLabels: true,
+  blackLine: false,
 };
 
 const JOINS: CanvasLineJoin[] = ['miter', 'round', 'bevel'];
@@ -53,6 +62,8 @@ export function styleToParams(s: RenderStyle): Params {
     styleHueStart: s.hueStart,
     styleHueEnd: s.hueEnd,
     styleShowOverlap: s.showOverlap,
+    styleShowLabels: s.showLabels,
+    styleBlackLine: s.blackLine,
   };
 }
 
@@ -71,6 +82,8 @@ export function styleFromParams(p: Params): RenderStyle {
     hueStart: num(p.styleHueStart, DEFAULT_STYLE.hueStart, 0, 360),
     hueEnd: num(p.styleHueEnd, DEFAULT_STYLE.hueEnd, 0, 360),
     showOverlap: p.styleShowOverlap === true,
+    showLabels: p.styleShowLabels !== false,
+    blackLine: p.styleBlackLine === true,
   };
 }
 
@@ -82,6 +95,10 @@ export function styleFromParams(p: Params): RenderStyle {
  * still visible cannot be an artifact of the palette.
  */
 export function strokeColorAt(s: RenderStyle, t: number): string {
+  // Checked before colorMode, since black is a deliberate override of it
+  // rather than another option alongside it. The controls it supersedes are
+  // disabled while it is on, so nothing appears live that cannot take effect.
+  if (s.blackLine) return '#000000';
   if (s.colorMode === 'none') return canvasTheme().muted;
   // Lightness follows the theme. 60% reads well against a dark canvas and
   // washes out to pastel on a light one, so the light theme darkens the ramp

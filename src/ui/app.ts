@@ -109,7 +109,9 @@ export function mountApp(root: HTMLElement): void {
   const headerNav = document.createElement('nav');
   headerNav.className = 'header-nav';
   headerNav.setAttribute('aria-label', 'Pages');
-  const themeUi = buildThemeToggle(() => redraw());
+  // Refreshes the style panel too: the black-lines hint depends on the theme,
+  // so a theme change with the panel open would leave it stale.
+  const themeUi = buildThemeToggle(() => { styleUi.refresh(); nullStyleUi.refresh(); redraw(); });
   headerNav.appendChild(themeUi.el);
 
   const navGallery = document.createElement('button');
@@ -770,7 +772,7 @@ export function mountApp(root: HTMLElement): void {
       ctx.restore();
       // Drawn after restoring, so labels keep their size at any zoom, and
       // backed so the rendering underneath cannot swallow them.
-      drawCanvasLabel(ctx, label, 10, 16);
+      if (styleFor(panel).showLabels) drawCanvasLabel(ctx, label, 10, 16);
       ctx.restore();
     };
 
@@ -815,7 +817,9 @@ export function mountApp(root: HTMLElement): void {
       viz.render(new SequenceView(surr), { ...state.params, ...styleToParams(overNull) }, ctx, { width, height });
       ctx.restore();
       viz.render(view, { ...state.params, ...styleToParams(style) }, ctx, { width, height });
-      drawCanvasLabel(ctx, `${seqLabel(state.seq)} - real over ${comparison.surrogate} null${styleLinked ? ' (grey)' : ''}`, 10, 16);
+      if (style.showLabels) {
+        drawCanvasLabel(ctx, `${seqLabel(state.seq)} - real over ${comparison.surrogate} null${styleLinked ? ' (grey)' : ''}`, 10, 16);
+      }
       if (pinnedIndex !== null && viz.position) {
         const p = viz.position(view, state.params, { width, height }, pinnedIndex);
         if (p) drawMarker(ctx, worldToScreen(viewport, p.x, p.y), canvasTheme().real);

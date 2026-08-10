@@ -50,11 +50,11 @@ const RESERVED = new Set([
   'seq', 'formula', 'terms', 'paste', 'viz',
   'null', 'surrogate', 'seed', 'ensemble',
   'line', 'join', 'cap', 'colour', 'hue',
-  'zoom', 'pan', 'unlink', 'retread',
+  'zoom', 'pan', 'unlink', 'retread', 'nolabels', 'black',
 ]);
 
 /** Style keys for either panel; the null's are namespaced with a prefix. */
-const STYLE_KEYS = ['line', 'join', 'cap', 'colour', 'hue', 'retread'] as const;
+const STYLE_KEYS = ['line', 'join', 'cap', 'colour', 'hue', 'retread', 'nolabels', 'black'] as const;
 const NULL_PREFIX = 'null.';
 
 function encodeStyle(p: URLSearchParams, st: RenderStyle, prefix = ''): void {
@@ -66,6 +66,9 @@ function encodeStyle(p: URLSearchParams, st: RenderStyle, prefix = ''): void {
     p.set(`${prefix}hue`, `${st.hueStart}-${st.hueEnd}`);
   }
   if (st.showOverlap !== DEFAULT_STYLE.showOverlap) p.set(`${prefix}retread`, '1');
+  // Named for the non-default state, so the common case emits no key at all.
+  if (st.showLabels !== DEFAULT_STYLE.showLabels) p.set(`${prefix}nolabels`, '1');
+  if (st.blackLine !== DEFAULT_STYLE.blackLine) p.set(`${prefix}black`, '1');
 }
 
 function decodeStyle(p: URLSearchParams, prefix = ''): RenderStyle | undefined {
@@ -82,6 +85,8 @@ function decodeStyle(p: URLSearchParams, prefix = ''): RenderStyle | undefined {
     hueStart: Number.isFinite(hueStart) ? hueStart! : DEFAULT_STYLE.hueStart,
     hueEnd: Number.isFinite(hueEnd) ? hueEnd! : DEFAULT_STYLE.hueEnd,
     showOverlap: p.has(`${prefix}retread`),
+    showLabels: !p.has(`${prefix}nolabels`),
+    blackLine: p.has(`${prefix}black`),
   };
 }
 

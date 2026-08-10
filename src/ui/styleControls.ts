@@ -45,6 +45,27 @@ export function buildStyleControls(
     'Widen edges the path walks more than once. A cumulative walk can retrace '
     + 'its own steps, and stacked strokes otherwise look identical to a single one.';
 
+  const labels = document.createElement('input');
+  labels.type = 'checkbox';
+  labels.className = 'style-labels';
+  labels.title = 'Show the sequence and term count drawn on each panel.';
+
+  // Black on the dark canvas is very nearly invisible. Auto-switching the
+  // theme was rejected: a control that silently changes a *different* control
+  // is worse than one that explains itself, which is the same call already
+  // made on the null-model select. So it stays honest and says so instead.
+  const blackHint = document.createElement('span');
+  blackHint.className = 'style-hint';
+  blackHint.hidden = true;
+  blackHint.textContent = 'needs the light theme to be visible';
+
+  const black = document.createElement('input');
+  black.type = 'checkbox';
+  black.className = 'style-black';
+  black.title =
+    'Force pure black, for print and for figures going into a paper. Overrides '
+    + 'the colour settings, and needs the light theme to be visible at all.';
+
   function refresh(): void {
     width.value = String(style.lineWidth);
     join.value = style.lineJoin;
@@ -53,11 +74,20 @@ export function buildStyleControls(
     hueStart.value = String(style.hueStart);
     hueEnd.value = String(style.hueEnd);
     overlap.checked = style.showOverlap;
+    labels.checked = style.showLabels;
+    black.checked = style.blackLine;
+    // Black overrides every colour setting, so leaving those live would put
+    // three controls on screen that cannot change anything - the same defect
+    // already fixed on the hue sliders and the null-model select.
+    mode.disabled = style.blackLine;
+    mode.title = style.blackLine ? 'Turn off black lines to choose a colour' : '';
+    blackHint.hidden = !(style.blackLine
+      && document.documentElement.getAttribute('data-theme') === 'dark');
     // The hue sliders do nothing in 'none' mode, and the end hue does nothing
     // in 'flat' mode. A live-looking control that cannot affect anything reads
     // as broken - the same defect fixed on the null-model select in round 1.
-    hueStart.disabled = style.colorMode === 'none';
-    hueEnd.disabled = style.colorMode !== 'spectrum';
+    hueStart.disabled = style.blackLine || style.colorMode === 'none';
+    hueEnd.disabled = style.blackLine || style.colorMode !== 'spectrum';
   }
 
   width.addEventListener('input', () => { style.lineWidth = Number(width.value); onChange(); });
@@ -71,6 +101,12 @@ export function buildStyleControls(
   hueStart.addEventListener('input', () => { style.hueStart = Number(hueStart.value); onChange(); });
   hueEnd.addEventListener('input', () => { style.hueEnd = Number(hueEnd.value); onChange(); });
   overlap.addEventListener('change', () => { style.showOverlap = overlap.checked; onChange(); });
+  labels.addEventListener('change', () => { style.showLabels = labels.checked; onChange(); });
+  black.addEventListener('change', () => {
+    style.blackLine = black.checked;
+    refresh();
+    onChange();
+  });
 
   el.append(
     labelledControl('Line width', width, { visible: true }),
@@ -80,6 +116,9 @@ export function buildStyleControls(
     labelledControl('Hue from', hueStart, { visible: true }),
     labelledControl('Hue to', hueEnd, { visible: true }),
     labelledControl('Show retreads', overlap, { visible: true }),
+    labelledControl('Labels', labels, { visible: true }),
+    labelledControl('Black lines', black, { visible: true }),
+    blackHint,
   );
   refresh();
   return { el, refresh };

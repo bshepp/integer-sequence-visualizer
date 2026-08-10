@@ -5,8 +5,10 @@ visualization techniques and a first-class **null-model comparison layer** -
 so you can test whether the structure you see is a property of the sequence
 or an artifact of the rendering technique.
 
-Inspired by a [SeqFan thread](docs/seqfan-ncurve-thread.md) on George Whale's
-NCurve tool, which left an open question: *do sequence visualizations tell us
+Prompted by [NCurve](https://openprocessing.org/@GeorgeWhaleResearch/2986029),
+George Whale's OEIS curve visualizer, and by the [SeqFan
+thread](docs/seqfan-ncurve-thread.md) introducing it, which left an open
+question: *do sequence visualizations tell us
 anything useful about the underlying sequences?* This project is the
 experimental apparatus for answering it.
 

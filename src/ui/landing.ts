@@ -125,6 +125,22 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   lede.textContent =
     'Integer sequences make beautiful pictures. Every pattern you see is really there; the question is whether it belongs to the sequence or to the way it is drawn. This tool renders both at once - your sequence, and a null model built from the same numbers - so you can tell which.';
 
+  // The origin credit belongs on the first page a visitor sees, not three
+  // clicks away on About. "Prompted by" rather than "based on" because that is
+  // what is true: NCurve asked the question this site tries to answer, and one
+  // of the nine views here is drawn in its style. Overstating the debt would
+  // read as implying George had a hand in the rest of it.
+  const credit = document.createElement('p');
+  credit.className = 'landing-credit';
+  credit.append('Prompted by ');
+  const ncurve = document.createElement('a');
+  ncurve.href = 'https://openprocessing.org/@GeorgeWhaleResearch/2986029';
+  ncurve.target = '_blank';
+  ncurve.rel = 'noopener noreferrer';
+  ncurve.textContent = 'NCurve';
+  credit.appendChild(ncurve);
+  credit.append(", George Whale's OEIS curve visualizer, and the question he asked about it on the SeqFan mailing list.");
+
   const heroFigure = document.createElement('figure');
   heroFigure.className = 'landing-hero';
   // The hero is an image AND a link into the engine, like every other image
@@ -206,7 +222,7 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   cc.textContent = 'CC BY-SA 4.0';
   attribution.append(cc, '.');
 
-  el.append(h1, lede, heroFigure, heroBody, actions, stripLabel, strip, attribution);
+  el.append(h1, lede, credit, heroFigure, heroBody, actions, stripLabel, strip, attribution);
   requestAnimationFrame(() => paintEntry(hero, heroCanvas, 760, 340));
   return el;
 }

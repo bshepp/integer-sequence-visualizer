@@ -638,3 +638,54 @@ describe('reshuffling the null model', () => {
     expect(btn.textContent).toBe('Reshuffle');
   });
 });
+
+describe('label and black-line style toggles', () => {
+  const mountEngine = () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    root.querySelector<HTMLButtonElement>('.landing-open')?.click();
+    return root;
+  };
+
+  it('labels default on, black lines default off', () => {
+    const root = mountEngine();
+    expect(root.querySelector<HTMLInputElement>('.style-labels')!.checked).toBe(true);
+    expect(root.querySelector<HTMLInputElement>('.style-black')!.checked).toBe(false);
+  });
+
+  it('black lines disable the colour controls they override', () => {
+    // Three live-looking controls that cannot change anything is the defect
+    // already fixed twice elsewhere; black must not reintroduce it.
+    const root = mountEngine();
+    const black = root.querySelector<HTMLInputElement>('.style-black')!;
+    const mode = root.querySelector<HTMLSelectElement>('.style-colormode')!;
+    expect(mode.disabled).toBe(false);
+    black.click();
+    expect(mode.disabled).toBe(true);
+    expect(root.querySelector<HTMLInputElement>('.style-hue-start')!.disabled).toBe(true);
+    black.click();
+    expect(mode.disabled).toBe(false);
+  });
+
+  it('both survive a share link, and defaults stay out of it', () => {
+    const plain = encodeState({
+      seqRef: null, vizId: 'turtle', params: {}, mode: 'off',
+      surrogate: 'permutation', seed: 1, style: { ...DEFAULT_STYLE },
+    });
+    expect(plain).not.toContain('nolabels');
+    expect(plain).not.toContain('black');
+
+    const set = encodeState({
+      seqRef: null, vizId: 'turtle', params: {}, mode: 'off',
+      surrogate: 'permutation', seed: 1,
+      style: { ...DEFAULT_STYLE, showLabels: false, blackLine: true },
+    });
+    expect(set).toContain('nolabels=1');
+    expect(set).toContain('black=1');
+    const back = decodeState(set)!.style!;
+    expect(back.showLabels).toBe(false);
+    expect(back.blackLine).toBe(true);
+  });
+});
