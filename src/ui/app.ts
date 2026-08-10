@@ -571,7 +571,10 @@ export function mountApp(root: HTMLElement): void {
   feedback.href = 'https://github.com/bshepp/integer-sequence-visualizer/issues/new';
   feedback.target = '_blank';
   feedback.rel = 'noopener noreferrer';
-  feedback.textContent = 'Report a problem';
+  // "or request a feature": a missing feature is an issue too, and the bare
+  // "Report a problem" reads as bug-reports-only, which turns away the half of
+  // the feedback worth more.
+  feedback.textContent = 'Report a problem or request a feature';
   exportBar.appendChild(feedback);
 
   main.appendChild(exportBar);
