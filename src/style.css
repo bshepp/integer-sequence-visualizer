@@ -377,12 +377,29 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 /* The captions only earn their space once there are two panels to tell apart. */
 .style-panels--split .style-group-label { display: inline; }
 .style-group[hidden] { display: none; }
-.link-toggle {
-  background: #24262c; color: var(--muted); border: 1px solid #3a3d44;
-  border-radius: 4px; padding: 5px 12px; cursor: pointer; font: inherit; font-size: 12px;
+/* Matches .style-toggle exactly: it sits in the same bar, does the same kind
+   of job (open/alter the style panel), and reading as a lesser control than
+   the button beside it made it look like a different class of thing. Pressed
+   takes the accent fill, the same way .style-toggle--open does. */
+/* Scoped to .comparison-bar on purpose, not for tidiness: the generic
+   ".comparison-bar button" rule above is (0,1,1) and would otherwise outrank a
+   bare ".link-toggle" at (0,1,0). .style-toggle escapes that only because it
+   lives in the topbar. Do not "simplify" these selectors. */
+.comparison-bar .link-toggle {
+  background: var(--text); color: var(--bg); border: 1px solid var(--text);
+  border-radius: 4px; padding: 4px 12px; cursor: pointer; font: inherit;
+  font-size: 12px; font-weight: 600; flex: none;
 }
-.link-toggle[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
-:root[data-theme="light"] .link-toggle { background: #ffffff; border-color: #c8ccd4; }
+.comparison-bar .link-toggle:hover { border-color: var(--accent); }
+.comparison-bar .link-toggle[aria-pressed="true"] {
+  background: var(--accent); border-color: var(--accent); color: var(--bg);
+}
+:root[data-theme="light"] .comparison-bar .link-toggle {
+  background: var(--text); color: var(--bg); border-color: var(--text);
+}
+:root[data-theme="light"] .comparison-bar .link-toggle[aria-pressed="true"] {
+  background: var(--accent); border-color: var(--accent); color: #ffffff;
+}
 .reshuffle-button {
   background: #24262c; color: var(--text); border: 1px solid #3a3d44;
   border-radius: 4px; padding: 5px 12px; cursor: pointer; font: inherit; font-size: 12px;
