@@ -34,7 +34,7 @@ describe('RenderStyle param round-trip', () => {
   it('survives encode/decode unchanged', () => {
     const s: RenderStyle = {
       lineWidth: 3, lineJoin: 'bevel', lineCap: 'square',
-      colorMode: 'flat', hueStart: 40, hueEnd: 300,
+      colorMode: 'flat', hueStart: 40, hueEnd: 300, showOverlap: false
     };
     expect(styleFromParams(styleToParams(s))).toEqual(s);
   });
@@ -59,7 +59,7 @@ describe('strokeColorAt', () => {
   });
 
   it('respects a reversed range', () => {
-    const rev: RenderStyle = { ...s, hueStart: 300, hueEnd: 0 };
+    const rev: RenderStyle = { ...s, hueStart: 300, hueEnd: 0, showOverlap: false };
     expect(strokeColorAt(rev, 0)).toContain('hsl(300');
     expect(strokeColorAt(rev, 1)).toContain('hsl(0');
   });
@@ -83,7 +83,7 @@ describe('visualizers honour RenderStyle', () => {
       ...defaultParams(turtleViz.params),
       ...styleToParams({
         lineWidth: 4, lineJoin: 'round', lineCap: 'square',
-        colorMode: 'flat', hueStart: 200, hueEnd: 200,
+        colorMode: 'flat', hueStart: 200, hueEnd: 200, showOverlap: false
       }),
     }, ctx, { width: 300, height: 300 });
     expect(sets.lineWidth).toContain(4);
@@ -102,7 +102,7 @@ describe('visualizers honour RenderStyle', () => {
         ...defaultParams(viz.params),
         ...styleToParams({
           lineWidth: 1, lineJoin: 'miter', lineCap: 'butt',
-          colorMode: 'none', hueStart: 0, hueEnd: 300,
+          colorMode: 'none', hueStart: 0, hueEnd: 300, showOverlap: false
         }),
       }, ctx, { width: 300, height: 300 });
       const colours = [...(sets.fillStyle ?? []), ...(sets.strokeStyle ?? [])].map(String);

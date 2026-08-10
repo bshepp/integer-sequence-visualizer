@@ -12,6 +12,12 @@ export interface RenderStyle {
   hueStart: number;
   /** Hue in degrees at the end of the path. */
   hueEnd: number;
+  /**
+   * Widen re-traversed edges so stacked strokes are distinguishable.
+   * Off by default: it changes what the line weight means, which should be an
+   * asked-for reading rather than one the site quietly imposes.
+   */
+  showOverlap: boolean;
 }
 
 export const DEFAULT_STYLE: RenderStyle = {
@@ -23,6 +29,7 @@ export const DEFAULT_STYLE: RenderStyle = {
   colorMode: 'spectrum',
   hueStart: 0,
   hueEnd: 300,
+  showOverlap: false,
 };
 
 const JOINS: CanvasLineJoin[] = ['miter', 'round', 'bevel'];
@@ -45,6 +52,7 @@ export function styleToParams(s: RenderStyle): Params {
     styleColorMode: s.colorMode,
     styleHueStart: s.hueStart,
     styleHueEnd: s.hueEnd,
+    styleShowOverlap: s.showOverlap,
   };
 }
 
@@ -62,6 +70,7 @@ export function styleFromParams(p: Params): RenderStyle {
     colorMode: pick(p.styleColorMode, MODES, DEFAULT_STYLE.colorMode),
     hueStart: num(p.styleHueStart, DEFAULT_STYLE.hueStart, 0, 360),
     hueEnd: num(p.styleHueEnd, DEFAULT_STYLE.hueEnd, 0, 360),
+    showOverlap: p.styleShowOverlap === true,
   };
 }
 

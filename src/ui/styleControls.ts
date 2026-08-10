@@ -38,6 +38,13 @@ export function buildStyleControls(
   hueEnd.className = 'style-hue-end';
   hueEnd.min = '0'; hueEnd.max = '360'; hueEnd.step = '1';
 
+  const overlap = document.createElement('input');
+  overlap.type = 'checkbox';
+  overlap.className = 'style-overlap';
+  overlap.title =
+    'Widen edges the path walks more than once. A cumulative walk can retrace '
+    + 'its own steps, and stacked strokes otherwise look identical to a single one.';
+
   function refresh(): void {
     width.value = String(style.lineWidth);
     join.value = style.lineJoin;
@@ -45,6 +52,7 @@ export function buildStyleControls(
     mode.value = style.colorMode;
     hueStart.value = String(style.hueStart);
     hueEnd.value = String(style.hueEnd);
+    overlap.checked = style.showOverlap;
     // The hue sliders do nothing in 'none' mode, and the end hue does nothing
     // in 'flat' mode. A live-looking control that cannot affect anything reads
     // as broken - the same defect fixed on the null-model select in round 1.
@@ -62,6 +70,7 @@ export function buildStyleControls(
   });
   hueStart.addEventListener('input', () => { style.hueStart = Number(hueStart.value); onChange(); });
   hueEnd.addEventListener('input', () => { style.hueEnd = Number(hueEnd.value); onChange(); });
+  overlap.addEventListener('change', () => { style.showOverlap = overlap.checked; onChange(); });
 
   el.append(
     labelledControl('Line width', width, { visible: true }),
@@ -70,6 +79,7 @@ export function buildStyleControls(
     labelledControl('Colour', mode, { visible: true }),
     labelledControl('Hue from', hueStart, { visible: true }),
     labelledControl('Hue to', hueEnd, { visible: true }),
+    labelledControl('Show retreads', overlap, { visible: true }),
   );
   refresh();
   return { el, refresh };

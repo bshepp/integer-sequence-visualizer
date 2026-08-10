@@ -1,6 +1,7 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
 import { pathTransform, toScreen, nearestIndex } from './pathTransform';
+import { edgeUses } from './overlap';
 import { applyStyle, strokeColorAt, styleFromParams, DEFAULT_STYLE, type RenderStyle } from './style';
 
 export function turtlePath(seq: SequenceView, angleDeg: number, k: number): Array<{ x: number; y: number }> {
@@ -28,8 +29,29 @@ export function strokePath(
   // exactly the numbers this draws with.
   const t = pathTransform(pts, size);
   applyStyle(ctx, style);
+
+  // Drawn as nested bands rather than one fat stroke. Segments are painted in
+  // path order, so giving the first visit the widest stroke and each later one
+  // a narrower stroke on the same centreline leaves every visit's colour
+  // showing as a band. That fixes the second half of the problem: widening
+  // alone would say how often an edge was walked, but the last visit would
+  // still paint over the colours of all the earlier ones.
+  //
+  // Nothing is displaced, so this adds no geometry that is not really there -
+  // the line is still exactly where the line is.
+  const uses = style.showOverlap ? edgeUses(pts) : null;
+  // Past a few bands the widths are too close to tell apart, so deeper visits
+  // share the widest stroke. The count stops being readable there; the 3D lift
+  // in issue #1 is the version that does not saturate.
+  const MAX_BANDS = 4;
+
   for (let i = 1; i < pts.length; i++) {
     ctx.strokeStyle = strokeColorAt(style, i / Math.max(1, pts.length - 1));
+    if (uses) {
+      const u = uses[i - 1]!;
+      const depth = Math.min(u.total - u.rank, MAX_BANDS - 1);
+      ctx.lineWidth = style.lineWidth * (1 + depth);
+    }
     const a = toScreen(t, pts[i - 1]!), b = toScreen(t, pts[i]!);
     ctx.beginPath();
     ctx.moveTo(a.x, a.y);

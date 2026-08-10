@@ -50,11 +50,11 @@ const RESERVED = new Set([
   'seq', 'formula', 'terms', 'paste', 'viz',
   'null', 'surrogate', 'seed', 'ensemble',
   'line', 'join', 'cap', 'colour', 'hue',
-  'zoom', 'pan', 'unlink',
+  'zoom', 'pan', 'unlink', 'retread',
 ]);
 
 /** Style keys for either panel; the null's are namespaced with a prefix. */
-const STYLE_KEYS = ['line', 'join', 'cap', 'colour', 'hue'] as const;
+const STYLE_KEYS = ['line', 'join', 'cap', 'colour', 'hue', 'retread'] as const;
 const NULL_PREFIX = 'null.';
 
 function encodeStyle(p: URLSearchParams, st: RenderStyle, prefix = ''): void {
@@ -65,6 +65,7 @@ function encodeStyle(p: URLSearchParams, st: RenderStyle, prefix = ''): void {
   if (st.hueStart !== DEFAULT_STYLE.hueStart || st.hueEnd !== DEFAULT_STYLE.hueEnd) {
     p.set(`${prefix}hue`, `${st.hueStart}-${st.hueEnd}`);
   }
+  if (st.showOverlap !== DEFAULT_STYLE.showOverlap) p.set(`${prefix}retread`, '1');
 }
 
 function decodeStyle(p: URLSearchParams, prefix = ''): RenderStyle | undefined {
@@ -80,6 +81,7 @@ function decodeStyle(p: URLSearchParams, prefix = ''): RenderStyle | undefined {
     colorMode: (p.get(`${prefix}colour`) ?? DEFAULT_STYLE.colorMode) as RenderStyle['colorMode'],
     hueStart: Number.isFinite(hueStart) ? hueStart! : DEFAULT_STYLE.hueStart,
     hueEnd: Number.isFinite(hueEnd) ? hueEnd! : DEFAULT_STYLE.hueEnd,
+    showOverlap: p.has(`${prefix}retread`),
   };
 }
 
