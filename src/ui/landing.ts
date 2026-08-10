@@ -6,6 +6,7 @@ import { getVisualizer } from '../viz/registry';
 import { surrogateSequence } from './comparison';
 import { canvasTheme, withCanvas } from '../viz/theme';
 import { buildFeedbackLink } from './feedbackLink';
+import { NCURVE_URL } from './links';
 
 /** Reserved literal hashes, checked before decodeState so they cannot collide. */
 export const EXAMPLES_HASH = 'examples';
@@ -145,7 +146,7 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   credit.className = 'landing-credit';
   credit.append('Prompted by ');
   const ncurve = document.createElement('a');
-  ncurve.href = 'https://openprocessing.org/@GeorgeWhaleResearch/2986029';
+  ncurve.href = NCURVE_URL;
   ncurve.target = '_blank';
   ncurve.rel = 'noopener noreferrer';
   ncurve.textContent = 'NCurve';

@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 import { buildLanding } from '../../src/ui/landing';
 import { CITATIONS } from '../../src/ui/about';
 
-const NCURVE = 'https://openprocessing.org/@GeorgeWhaleResearch/2986029';
+const NCURVE = NCURVE_URL;
 
 /**
  * The debt to NCurve is the one piece of attribution that has to be right.
@@ -37,6 +37,19 @@ describe('NCurve credit', () => {
     const readme = readFileSync(resolve(__dirname, '../../README.md'), 'utf8');
     expect(readme).toContain(NCURVE);
     expect(readme).toContain('George Whale');
+  });
+
+  it('is a link where the About page first names it, not only in the citations', () => {
+    // The citation list is at the bottom of a long page, which is a long way
+    // from where a reader first wonders what NCurve is.
+    const el = buildAbout({ onExamples() {}, onEngine() {} });
+    const body = el.querySelector('.about-body')!;
+    const first = [...body.querySelectorAll('a')].find((a) => a.textContent === 'NCurve');
+    expect(first, 'NCurve is not a link in the body').toBeTruthy();
+    expect(first!.href).toBe(NCURVE_URL);
+    // And it is in the opening section rather than buried further down.
+    const opening = body.querySelector('p')!;
+    expect(opening.contains(first!), 'the link is not in the first paragraph').toBe(true);
   });
 
   it('is in the citations, credited to George Whale', () => {
@@ -126,6 +139,7 @@ describe('a cold load lands on the page the address names', () => {
 });
 
 import { FEEDBACK_LABEL } from '../../src/ui/feedbackLink';
+import { NCURVE_URL } from '../../src/ui/links';
 
 describe('feedback is reachable from every page', () => {
   const ISSUES = 'https://github.com/bshepp/integer-sequence-visualizer/issues/new';

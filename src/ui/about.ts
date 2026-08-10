@@ -1,4 +1,5 @@
 import { buildFeedbackLink } from './feedbackLink';
+import { NCURVE_URL } from './links';
 
 export interface Citation {
   /** Rendered verbatim; keep exactly as published. */
@@ -42,7 +43,7 @@ export const CITATIONS: Citation[] = [
   },
   {
     text: 'George Whale, NCurve - an app rendering OEIS sequences as polyarc curves.',
-    href: 'https://openprocessing.org/@GeorgeWhaleResearch/2986029',
+    href: NCURVE_URL,
     note: 'The tool that prompted the question this project was built to answer.',
   },
 ];
@@ -67,6 +68,25 @@ function link(href: string, text: string): HTMLAnchorElement {
   a.rel = 'noopener noreferrer';
   a.textContent = text;
   return a;
+}
+
+/**
+ * The opening paragraph, built by hand rather than through PARA so that the
+ * first mention of NCurve is the link. It is named three times on this page
+ * and was reachable only from the citation list at the bottom, which is a long
+ * way from where a reader first wonders what it is.
+ */
+function questionOpening(): HTMLParagraphElement {
+  const p = document.createElement('p');
+  p.append('In August 2026, George Whale introduced ');
+  p.appendChild(link(NCURVE_URL, 'NCurve'));
+  p.append(
+    ' on the SeqFan mailing list. It is an app that draws OEIS sequences as '
+    + 'polyarc curves. He asked whether such visualizations tell us, at a '
+    + 'glance, anything useful or significant about the structure and character '
+    + 'of the underlying sequences. Nobody answered. This site is an attempt to.',
+  );
+  return p;
 }
 
 export interface AboutOptions {
@@ -139,7 +159,7 @@ export function buildAbout(opts: AboutOptions): HTMLElement {
 
   body.append(
     section('The question', 'about-question'),
-    PARA('In August 2026, George Whale introduced NCurve on the SeqFan mailing list. It is an app that draws OEIS sequences as polyarc curves. He asked whether such visualizations tell us, at a glance, anything useful or significant about the structure and character of the underlying sequences. Nobody answered. This site is an attempt to.'),
+    questionOpening(),
     PARA('The difficulty is that a drawing of a sequence is also a drawing of the drawing method. A square spiral imposes a spiral; a cumulative walk imposes drift. The pattern on the screen is real either way, and staring harder will not tell you whether it belongs to these numbers or to any numbers put through the same machinery.'),
 
     section('The method', 'about-method'),
