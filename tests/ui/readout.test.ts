@@ -115,3 +115,43 @@ describe('drawCanvasLabel', () => {
     expect(names[names.length - 1]).toBe('restore');
   });
 });
+
+import { realIndexFor } from '../../src/ui/readout';
+
+describe('realIndexFor', () => {
+  const terms = Array.from({ length: 200 }, (_, i) => BigInt(i));
+
+  it('inverts correspondingIndex for every index', () => {
+    // Pinning from the null panel converts a surrogate slot back to the real
+    // term that supplied it. If this is off by even one the pin lands on a
+    // plausible neighbour rather than failing visibly, so it is checked
+    // exhaustively rather than sampled.
+    for (let real = 0; real < terms.length; real++) {
+      const slot = correspondingIndex(real, 'permutation', terms, 5);
+      expect(slot.traced).toBe(true);
+      const back = realIndexFor(slot.index, 'permutation', terms, 5);
+      expect(back.index, `real ${real} -> slot ${slot.index} -> ${back.index}`).toBe(real);
+      expect(back.traced).toBe(true);
+    }
+  });
+
+  it('is a bijection: no two slots map back to the same term', () => {
+    const seen = new Set<number>();
+    for (let slot = 0; slot < terms.length; slot++) {
+      seen.add(realIndexFor(slot, 'permutation', terms, 5).index);
+    }
+    expect(seen.size).toBe(terms.length);
+  });
+
+  it('falls back to index-for-index where terms are not preserved', () => {
+    // Difference and matched surrogates hold entirely new values, so there is
+    // no term to trace and the UI must say so rather than implying one.
+    for (const surrogate of ['difference', 'matched'] as const) {
+      expect(realIndexFor(42, surrogate, terms, 5)).toEqual({ index: 42, traced: false });
+    }
+  });
+
+  it('does not claim a trace for a slot that does not exist', () => {
+    expect(realIndexFor(9999, 'permutation', terms, 5).traced).toBe(false);
+  });
+});

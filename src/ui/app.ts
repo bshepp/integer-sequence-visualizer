@@ -17,7 +17,7 @@ import { lookupById } from '../sequence/oeisClient';
 import { sequenceFromFormula } from '../sequence/formula';
 import { buildExplainPanel } from './explainPanel';
 import { SURROGATE_EXPLAIN } from '../nullmodel/surrogates';
-import { buildReadout, describeHit, drawMarker, correspondingIndex, drawCanvasLabel, drawEndMark } from './readout';
+import { buildReadout, describeHit, drawMarker, correspondingIndex, realIndexFor, drawCanvasLabel, drawEndMark } from './readout';
 import { hitIndex, type Hit } from '../viz/hit';
 import { canvasTheme, withCanvas } from '../viz/theme';
 import { initialTheme, applyTheme, buildThemeToggle } from './themeToggle';
@@ -392,6 +392,38 @@ export function mountApp(root: HTMLElement): void {
   // The term the user pinned by clicking, or null. Survives redraws (a flip
   // included) so the marker anchors the eye while the substrate changes.
   let pinnedIndex: number | null = null;
+  // Which panel the pin was made in. The index above is always the REAL one,
+  // so the drawing paths are untouched; this only decides how the readout
+  // words itself, since "the same term, over there" reads backwards if you
+  // clicked the surrogate.
+  let pinnedPanel: 'real' | 'null' = 'real';
+
+  /**
+   * The standing description of the pinned term, shown whenever the cursor is
+   * not over something more specific.
+   *
+   * Names both sides every time. Previously the real panel's pin had no
+   * caption at all and the null's counterpart was drawn onto the canvas, so
+   * the two halves of one fact were reported in two different places and one
+   * of them vanished when you moved the mouse.
+   */
+  function pinnedText(): string | null {
+    if (pinnedIndex === null || !state.seq) return null;
+    const view = new SequenceView(state.seq);
+    const corr = correspondingIndex(pinnedIndex, comparison.surrogate, state.seq.terms, comparison.seed);
+    const here = describeHit({ kind: 'term', index: pinnedIndex }, view);
+    if (comparison.mode === 'off') return `pinned ${here}`;
+    const surr = comparison.surrogate;
+    if (pinnedPanel === 'null') {
+      return corr.traced
+        ? `pinned in ${surr} null at n = ${corr.index} - same term in real: ${here}`
+        : `pinned in ${surr} null at n = ${corr.index} - index-for-index in real: ${here}`;
+    }
+    return corr.traced
+      ? `pinned ${here} - same term in ${surr} null at n = ${corr.index}`
+      : `pinned ${here} - ${surr} null does not preserve terms, showing n = ${corr.index}`;
+  }
+  const showPinned = (): void => readout.set(pinnedText());
   let viewport: Viewport = { ...IDENTITY_VIEWPORT };
   // The null panel's own zoom and pan, used only once the two are unlinked.
   // Kept alongside rather than derived, for the same reason the null's style
@@ -472,7 +504,7 @@ export function mountApp(root: HTMLElement): void {
         panX: dragFrom.panX + (e.clientX - dragFrom.x),
         panY: dragFrom.panY + (e.clientY - dragFrom.y),
       }, dragFrom.panel);
-      readout.set(null);
+      showPinned();
       return;
     }
     // Throttle to one hit-test per animation frame: locate() is an O(n) scan
@@ -484,12 +516,12 @@ export function mountApp(root: HTMLElement): void {
       hoverPending = false;
       if (!state.seq) { readout.set(null); return; }
       const found = hitAt(pt);
-      readout.set(found
-        ? `${found.panel === 'null' ? `${comparison.surrogate} null · ` : ''}${describeHit(found.hit, new SequenceView(found.seq))}`
-        : null);
+      if (!found) { showPinned(); return; }
+      readout.set(`${found.panel === 'null' ? `${comparison.surrogate} null · ` : ''}`
+        + describeHit(found.hit, new SequenceView(found.seq)));
     });
   });
-  canvas.addEventListener('pointerleave', () => readout.set(null));
+  canvas.addEventListener('pointerleave', () => showPinned());
 
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
@@ -530,11 +562,21 @@ export function mountApp(root: HTMLElement): void {
     // The end of a pan is not a click on a term.
     if (downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 4) return;
     const found = hitAt(canvasPoint(e));
-    // Pin only from the real panel: a surrogate index moves when the seed
-    // changes, so pinning one would silently point somewhere else later.
-    const idx = found && found.panel === 'real' ? hitIndex(found.hit) : null;
+    const raw = found ? hitIndex(found.hit) : null;
+    // Either panel now. A surrogate index is meaningless on its own - it moves
+    // the moment the seed changes - so it is converted to the real index it
+    // came from and only that is stored. Everything downstream keeps working
+    // in real indices, and re-seeding moves the pin to wherever that same term
+    // went rather than leaving it pointing at a stranger.
+    const idx = raw === null ? null
+      : found!.panel === 'null'
+        ? realIndexFor(raw, comparison.surrogate, state.seq.terms, comparison.seed).index
+        : raw;
     // Clicking the same term again clears the pin.
-    pinnedIndex = idx !== null && idx === pinnedIndex ? null : idx;
+    const same = idx !== null && idx === pinnedIndex && found!.panel === pinnedPanel;
+    pinnedIndex = same ? null : idx;
+    if (idx !== null && !same) pinnedPanel = found!.panel;
+    showPinned();
     redraw();
   });
 
@@ -1058,14 +1100,6 @@ export function mountApp(root: HTMLElement): void {
           const m = worldToScreen(viewportFor('null'), sp.x, sp.y);
           drawMarker(ctx, { x: m.x + width / 2 + 1, y: m.y }, corr.traced ? canvasTheme().real : canvasTheme().muted);
         }
-        ctx.fillStyle = canvasTheme().muted;
-        ctx.font = '11px system-ui';
-        ctx.fillText(
-          corr.traced
-            ? `same term, moved to n = ${corr.index}`
-            : 'index-for-index (this null does not preserve terms)',
-          width / 2 + 11, height - 26,
-        );
       }
     } else if (comparison.mode === 'over') {
       // Captured before the callback below: state.seq is a mutable property,

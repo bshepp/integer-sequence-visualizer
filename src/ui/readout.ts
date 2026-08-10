@@ -46,6 +46,24 @@ export function correspondingIndex(
   return index === undefined ? { index: realIndex, traced: false } : { index, traced: true };
 }
 
+/**
+ * The reverse of correspondingIndex: which real term ended up at `nullIndex`.
+ *
+ * Needed because a term can now be pinned from either panel. permutationWithMap
+ * returns map[real] = slot, so answering the other direction means inverting
+ * it; an O(n) scan is nothing on a click.
+ */
+export function realIndexFor(
+  nullIndex: number, surrogate: SurrogateType, terms: bigint[], seed: number,
+): { index: number; traced: boolean } {
+  if (surrogate !== 'permutation') return { index: nullIndex, traced: false };
+  const { map } = permutationWithMap(terms, seed);
+  for (let real = 0; real < map.length; real++) {
+    if (map[real] === nullIndex) return { index: real, traced: true };
+  }
+  return { index: nullIndex, traced: false };
+}
+
 export function drawMarker(
   ctx: CanvasRenderingContext2D, pt: { x: number; y: number }, color: string,
 ): void {
