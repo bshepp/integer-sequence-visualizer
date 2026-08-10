@@ -516,3 +516,6 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .data-list { margin: 0; font-variant-numeric: tabular-nums; font-size: 13px; line-height: 1.7; word-break: break-word; color: var(--text); user-select: text; }
 .data-list-note { margin: 8px 0 0; font-size: 11px; color: var(--muted); }
 :root[data-theme="light"] .data-view-toggle { background: #ffffff; border-color: #c8ccd4; }
+.zoom-group { display: inline-flex; align-items: center; gap: 6px; }
+.zoom-group[hidden] { display: none; }
+.zoom-caption { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }

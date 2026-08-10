@@ -1028,7 +1028,7 @@ describe('splitting zoom and pan between the panels', () => {
   });
 });
 
-describe('the zoom readout answers for both panels', () => {
+describe('zoom controls follow the panels', () => {
   const mountEngine = () => {
     history.replaceState(null, '', location.pathname);
     const root = document.createElement('div');
@@ -1037,39 +1037,75 @@ describe('the zoom readout answers for both panels', () => {
     root.querySelector<HTMLButtonElement>('.landing-open')?.click();
     return root;
   };
+  const g = (root: HTMLElement, which: 'both' | 'real' | 'null') =>
+    root.querySelector<HTMLElement>(`.zoom-group--${which}`)!;
+  const pct = (el: HTMLElement) => el.querySelector('.zoom-level')!.textContent;
+  const press = (el: HTMLElement, cls: string) =>
+    el.querySelector<HTMLButtonElement>(cls)!.click();
   const viewBtn = (root: HTMLElement) =>
     root.querySelector<HTMLButtonElement>('.view-link-toggle')!;
 
-  it('shows one figure while linked and two once split', () => {
-    // Reporting only the real panel's zoom while the other sits at a different
-    // magnification is a lie by omission, and the buttons beside it move both.
+  it('shows one shared set while the panels move together', () => {
     const root = mountEngine();
-    const label = root.querySelector<HTMLElement>('.zoom-level')!;
-    expect(label.textContent).toBe('100%');
-    viewBtn(root).click();
-    expect(label.textContent).toBe('100% / 100%');
-    viewBtn(root).click();
-    expect(label.textContent).toBe('100%');
+    expect(g(root, 'both').hidden).toBe(false);
+    expect(g(root, 'real').hidden, 'per-panel sets should be hidden when linked').toBe(true);
+    expect(g(root, 'null').hidden).toBe(true);
+    expect(pct(g(root, 'both'))).toBe('100%');
   });
 
-  it('the buttons say they act on both', () => {
+  it('swaps to one set per panel when the view is split', () => {
+    // A single set governing two independent frames has to either pick a
+    // panel silently or move both, and moving both is not what splitting was
+    // for. Duplicating them does change the bar's width on press, knowingly.
     const root = mountEngine();
+    viewBtn(root).click();
+    expect(g(root, 'both').hidden).toBe(true);
+    expect(g(root, 'real').hidden).toBe(false);
+    expect(g(root, 'null').hidden).toBe(false);
+  });
+
+  it('each set moves only its own panel', () => {
+    const root = mountEngine();
+    viewBtn(root).click();
+    press(g(root, 'null'), '.zoom-in');
+    expect(pct(g(root, 'real')), 'the real panel should not have moved').toBe('100%');
+    expect(pct(g(root, 'null'))).not.toBe('100%');
+    press(g(root, 'real'), '.zoom-in');
+    expect(pct(g(root, 'real'))).not.toBe('100%');
+  });
+
+  it('a Reset clears the panel it belongs to', () => {
+    const root = mountEngine();
+    viewBtn(root).click();
+    press(g(root, 'null'), '.zoom-in');
+    press(g(root, 'real'), '.zoom-in');
+    press(g(root, 'null'), '.zoom-reset');
+    expect(pct(g(root, 'null'))).toBe('100%');
+    expect(pct(g(root, 'real')), 'the real panel should be untouched').not.toBe('100%');
+  });
+
+  it('the shared set says it moves both, and does', () => {
+    const root = mountEngine();
+    const both = g(root, 'both');
     for (const cls of ['.zoom-in', '.zoom-out', '.zoom-reset']) {
-      const b = root.querySelector<HTMLButtonElement>(cls)!;
-      expect(b.getAttribute('aria-label'), cls).toMatch(/both/i);
+      expect(both.querySelector(cls)!.getAttribute('aria-label'), cls).toMatch(/both/i);
     }
+    press(both, '.zoom-in');
+    expect(pct(both)).not.toBe('100%');
+    press(both, '.zoom-reset');
+    expect(pct(both)).toBe('100%');
   });
 
-  it('+ moves both and preserves the difference; Reset clears both', () => {
+  it('offers no null controls in "over", where there is only one viewport', () => {
+    // Superimposed, both sequences share every pixel through one frame, so a
+    // second set of controls would govern nothing.
     const root = mountEngine();
-    const label = root.querySelector<HTMLElement>('.zoom-level')!;
     viewBtn(root).click();
-    root.querySelector<HTMLButtonElement>('.zoom-in')!.click();
-    const [real, nul] = label.textContent!.split(' / ');
-    expect(real).toBe(nul); // equal frames scale together
-    expect(real).not.toBe('100%');
-    root.querySelector<HTMLButtonElement>('.zoom-reset')!.click();
-    expect(label.textContent).toBe('100% / 100%');
+    const mode = root.querySelector<HTMLSelectElement>('.mode-select')!;
+    mode.value = 'over';
+    mode.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(g(root, 'null').hidden).toBe(true);
+    expect(g(root, 'real').hidden).toBe(false);
   });
 });
 

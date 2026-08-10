@@ -638,69 +638,98 @@ export function mountApp(root: HTMLElement): void {
 
   exportSep();
 
-  const zoomLabel = document.createElement('span');
-  zoomLabel.className = 'zoom-level';
-  zoomLabel.setAttribute('role', 'status');
-
-  /**
-   * The zoom readout, which has to answer for two viewports once they are
-   * split. Showing only the real panel's would be a quiet lie: the buttons
-   * beside it move both, and the other panel can sit at a completely
-   * different magnification with nothing on screen admitting it.
-   */
-  function syncZoomLabel(): void {
-    const pct = (v: Viewport) => `${Math.round(v.zoom * 100)}%`;
-    if (viewportLinked) {
-      zoomLabel.textContent = pct(viewport);
-      zoomLabel.title = 'Zoom, shared by both panels';
-      return;
-    }
-    zoomLabel.textContent = `${pct(viewport)} / ${pct(nullViewport)}`;
-    zoomLabel.title = `Real ${pct(viewport)}, null ${pct(nullViewport)}. `
-      + 'The buttons either side move both by the same factor; Reset clears both.';
-  }
-
-  function setViewport(v: Viewport, panel: 'real' | 'null' = 'real'): void {
-    if (panel === 'null' && !viewportLinked) nullViewport = clampViewport(v);
-    else viewport = clampViewport(v);
-    syncZoomLabel();
-    redraw();
-  }
-
-  /** Applies the same relative change to both panels, for the +/- buttons. */
-  function zoomBoth(factor: number): void {
-    const c = canvasCentre();
-    if (!viewportLinked) nullViewport = clampViewport(zoomAt(nullViewport, factor, c.x, c.y));
-    setViewport(zoomAt(viewport, factor, c.x, c.y));
-  }
-
   const canvasCentre = () => {
     const r = canvasWrap.getBoundingClientRect();
     return { x: Math.max(200, r.width) / 2, y: Math.max(200, r.height) / 2 };
   };
 
-  const mkZoom = (cls: string, label: string, aria: string, onClick: () => void) => {
-    const b = document.createElement('button');
-    b.className = cls;
-    b.type = 'button';
-    b.textContent = label;
-    b.setAttribute('aria-label', aria);
-    b.addEventListener('click', onClick);
-    exportBar.appendChild(b);
-    return b;
+  const zoomOf = (panel: 'real' | 'null'): Viewport =>
+    (panel === 'null' ? nullViewport : viewport);
+
+  function setViewport(v: Viewport, panel: 'real' | 'null' = 'real'): void {
+    if (panel === 'null' && !viewportLinked) nullViewport = clampViewport(v);
+    else viewport = clampViewport(v);
+    syncZoomBars();
+    redraw();
+  }
+
+  /**
+   * One set of zoom controls. Three of these exist: a shared set while the
+   * panels move together, and one per panel once they are split.
+   *
+   * Duplicating them breaks the rule that a control must not change size when
+   * pressed - the bar visibly regroups when you split the view - and that is
+   * the right trade here. A single set governing two independent frames has
+   * to either pick a panel silently or move both, and moving both is not what
+   * splitting them was for.
+   */
+  const mkZoomGroup = (target: 'both' | 'real' | 'null', caption: string) => {
+    const wrap = document.createElement('span');
+    wrap.className = `zoom-group zoom-group--${target}`;
+    if (caption) {
+      const cap = document.createElement('span');
+      cap.className = 'zoom-caption';
+      cap.textContent = caption;
+      wrap.appendChild(cap);
+    }
+    const label = document.createElement('span');
+    label.className = 'zoom-level';
+    label.setAttribute('role', 'status');
+
+    const scale = (factor: number) => {
+      const c = canvasCentre();
+      if (target !== 'null') setViewport(zoomAt(viewport, factor, c.x, c.y), 'real');
+      if (target !== 'real' && !viewportLinked) {
+        setViewport(zoomAt(nullViewport, factor, c.x, c.y), 'null');
+      }
+    };
+    const btn = (cls: string, text: string, aria: string, onClick: () => void) => {
+      const b = document.createElement('button');
+      b.className = cls;
+      b.type = 'button';
+      b.textContent = text;
+      b.setAttribute('aria-label', aria);
+      b.addEventListener('click', onClick);
+      wrap.appendChild(b);
+      return b;
+    };
+    const who = target === 'both' ? ', both panels' : `, ${target} panel`;
+    btn('zoom-out', '−', `Zoom out${who}`, () => scale(1 / 1.4));
+    wrap.appendChild(label);
+    btn('zoom-in', '+', `Zoom in${who}`, () => scale(1.4));
+    btn('zoom-reset', 'Reset', `Reset zoom and pan${who}`, () => {
+      if (target !== 'null') viewport = { ...IDENTITY_VIEWPORT };
+      if (target !== 'real') nullViewport = { ...IDENTITY_VIEWPORT };
+      setViewport(viewport, 'real');
+    });
+
+    exportBar.appendChild(wrap);
+    return {
+      wrap,
+      refresh() {
+        const v = target === 'null' ? zoomOf('null') : viewport;
+        label.textContent = `${Math.round(v.zoom * 100)}%`;
+      },
+    };
   };
 
-  // Both panels, deliberately. Making these real-only when split would leave
-  // no keyboard or pointer-free route to zoom the null panel at all.
-  mkZoom('zoom-out', '−', 'Zoom out, both panels', () => zoomBoth(1 / 1.4));
-  exportBar.appendChild(zoomLabel);
-  mkZoom('zoom-in', '+', 'Zoom in, both panels', () => zoomBoth(1.4));
-  mkZoom('zoom-reset', 'Reset', 'Reset zoom and pan on both panels', () => {
-    // Both, always. "Reset" that left the other panel askew would be a lie.
-    nullViewport = { ...IDENTITY_VIEWPORT };
-    setViewport({ ...IDENTITY_VIEWPORT });
-  });
-  syncZoomLabel();
+  // Shared first, so it is the one a bare ".zoom-in" resolves to and the one
+  // present in the common case.
+  const zoomShared = mkZoomGroup('both', '');
+  const zoomReal = mkZoomGroup('real', 'real');
+  const zoomNull = mkZoomGroup('null', 'null');
+
+  function syncZoomBars(): void {
+    zoomShared.wrap.hidden = !viewportLinked;
+    zoomReal.wrap.hidden = viewportLinked;
+    // 'over' draws both sequences on one canvas through one viewport, so a
+    // second set of controls there would govern nothing.
+    zoomNull.wrap.hidden = viewportLinked || comparison.mode === 'over';
+    zoomShared.refresh();
+    zoomReal.refresh();
+    zoomNull.refresh();
+  }
+  syncZoomBars();
 
   const feedback = buildFeedbackLink();
   exportSep();
@@ -770,7 +799,7 @@ export function mountApp(root: HTMLElement): void {
     // it already was rather than jumping back to 100% the moment you split it.
     if (!viewportLinked) nullViewport = { ...viewport };
     syncViewLink();
-    syncZoomLabel();
+    syncZoomBars();
     userChanged();
     redraw();
   });
@@ -853,6 +882,10 @@ export function mountApp(root: HTMLElement): void {
   /** A change the reader made, as opposed to one the app made for them. */
   function userChanged(): void {
     hintPending = true;
+    // The comparison mode decides whether a null panel exists at all, so the
+    // zoom controls have to be re-evaluated here and not only when a viewport
+    // moves: switching to 'over' leaves one viewport and the null set must go.
+    syncZoomBars();
     redraw();
   }
 
@@ -1258,7 +1291,7 @@ export function mountApp(root: HTMLElement): void {
       viewportLinked = !decoded.nullViewport;
       if (decoded.nullViewport) nullViewport = clampViewport(decoded.nullViewport);
       syncViewLink();
-      syncZoomLabel();
+      syncZoomBars();
       bar.refresh();
       bar.update(Boolean(getVisualizer(state.vizId).statistics), supportsSuperimpose(getVisualizer(state.vizId)));
     }
