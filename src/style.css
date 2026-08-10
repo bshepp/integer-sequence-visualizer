@@ -306,7 +306,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .citation-list li { margin-bottom: 16px; }
 .citation-text { margin: 0 0 3px !important; color: var(--text) !important; }
 .citation-note { margin: 0 !important; font-size: 12.5px; color: var(--muted) !important; }
-.about-attribution { margin-top: 28px !important; font-size: 12px; border-top: 1px solid #3a3d44; padding-top: 14px; }
+.about-attribution { margin-top: 28px !important; font-size: 13px; border-top: 1px solid #3a3d44; padding-top: 14px; }
 .page-nav { display: flex; gap: 8px; justify-content: flex-end; }
 .page-nav-button {
   background: #24262c; color: var(--text); border: 1px solid #3a3d44;
@@ -489,5 +489,8 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .about-who { margin: 6px 0 12px; color: var(--muted); font-size: 14px; line-height: 1.5; }
 .about-who + .about-who { margin-bottom: 24px; }
 .landing-feedback { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
-.about-feedback { margin: 14px 0 0; font-size: 13px; }
+/* Same size as the attribution above it: the two are footer items of equal
+   standing and were a pixel apart, which reads as a mistake rather than as
+   hierarchy. Centred because it is a standalone action rather than prose. */
+.about-feedback { margin: 14px 0 0; font-size: 13px; text-align: center; }
 .landing-feedback:hover, .about-feedback-link:hover { color: var(--accent); }
