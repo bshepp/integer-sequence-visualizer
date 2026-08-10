@@ -873,3 +873,72 @@ describe('the null model has its own (i)', () => {
       .not.toMatch(/multiset/i);
   });
 });
+
+describe('the info buttons toggle', () => {
+  const mountEngine = () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    root.querySelector<HTMLButtonElement>('.landing-open')?.click();
+    return root;
+  };
+  const parts = (root: HTMLElement) => ({
+    viz: root.querySelector<HTMLButtonElement>('.topbar .explain-button')!,
+    nul: root.querySelector<HTMLButtonElement>('.comparison-bar .explain-button')!,
+    panel: root.querySelector<HTMLElement>('.explain-panel')!,
+  });
+
+  it('a second press on the same button closes it', () => {
+    const { viz, panel } = parts(mountEngine());
+    viz.click();
+    expect(panel.hidden).toBe(false);
+    viz.click();
+    expect(panel.hidden).toBe(true);
+  });
+
+  it('pressing the other button swaps the contents rather than closing', () => {
+    // "Show me the other explanation" is not "hide this one". Treating every
+    // press as a toggle would make the second button appear broken.
+    const { viz, nul, panel } = parts(mountEngine());
+    viz.click();
+    const first = panel.querySelector('.explain-title')!.textContent;
+    nul.click();
+    expect(panel.hidden, 'switching should not close the panel').toBe(false);
+    expect(panel.querySelector('.explain-title')!.textContent).not.toBe(first);
+    nul.click();
+    expect(panel.hidden).toBe(true);
+  });
+
+  it('both buttons report their own state, and neither lies after a switch', () => {
+    const { viz, nul } = parts(mountEngine());
+    expect(viz.getAttribute('aria-expanded')).toBe('false');
+    viz.click();
+    expect(viz.getAttribute('aria-expanded')).toBe('true');
+    nul.click();
+    expect(viz.getAttribute('aria-expanded'), 'viz still claims to be open').toBe('false');
+    expect(nul.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('closing from inside the panel clears both buttons', () => {
+    // The close button and Escape are routes the buttons do not know about,
+    // so the panel has to tell them.
+    const { nul, panel } = parts(mountEngine());
+    nul.click();
+    expect(nul.getAttribute('aria-expanded')).toBe('true');
+    panel.querySelector<HTMLButtonElement>('.explain-close')!.click();
+    expect(panel.hidden).toBe(true);
+    expect(nul.getAttribute('aria-expanded')).toBe('false');
+    // And the next press must open rather than no-op.
+    nul.click();
+    expect(panel.hidden).toBe(false);
+  });
+
+  it('points at the panel it governs', () => {
+    const root = mountEngine();
+    const { viz, nul, panel } = parts(root);
+    expect(panel.id).toBeTruthy();
+    expect(viz.getAttribute('aria-controls')).toBe(panel.id);
+    expect(nul.getAttribute('aria-controls')).toBe(panel.id);
+  });
+});

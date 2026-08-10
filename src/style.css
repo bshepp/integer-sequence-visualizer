@@ -122,11 +122,13 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .attribution a:hover, .attribution a:focus-visible { color: var(--accent); }
 
 .explain-button {
-  width: 24px; height: 24px; border-radius: 50%;
+  width: 28px; height: 28px; border-radius: 50%; padding: 0;
   background: #24262c; color: var(--accent);
   border: 1px solid #3a3d44; cursor: pointer;
-  font: 600 13px/1 system-ui; flex: none;
+  font: 600 15px/1 system-ui; flex: none;
 }
+/* Pressed state, since these now toggle rather than only open. */
+.explain-button[aria-expanded="true"] { border-color: var(--accent); color: var(--bg); background: var(--accent); }
 /* Shares the picker row and truncates rather than claiming a row of its own:
    flex-basis:100% here was half of the 151px topbar. */
 .viz-short {
@@ -442,10 +444,13 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 /* Same specificity fix as .link-toggle above: the generic ".comparison-bar
    button" rule is (0,1,1) and would otherwise repaint this flat. */
 .comparison-bar .explain-button {
-  width: 24px; height: 24px; border-radius: 50%; padding: 0;
+  width: 28px; height: 28px; border-radius: 50%; padding: 0;
   background: #24262c; color: var(--accent);
   border: 1px solid #3a3d44; cursor: pointer;
-  font: 600 13px/1 system-ui; flex: none;
+  font: 600 15px/1 system-ui; flex: none;
+}
+.comparison-bar .explain-button[aria-expanded="true"] {
+  border-color: var(--accent); color: var(--bg); background: var(--accent);
 }
 :root[data-theme="light"] .comparison-bar .explain-button { background: #ffffff; border-color: #c8ccd4; }
 .comparison-bar .link-toggle:hover { border-color: var(--accent); }

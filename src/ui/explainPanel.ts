@@ -5,7 +5,13 @@ export interface ExplainPanel {
   isOpen(): boolean;
 }
 
-export function buildExplainPanel(): ExplainPanel {
+/**
+ * @param onHide Called whenever the panel closes by any route, including its
+ *   own close button and Escape. The buttons that open it track their own
+ *   aria-expanded, and without this they would keep claiming "expanded" after
+ *   a close they did not initiate.
+ */
+export function buildExplainPanel(onHide?: () => void): ExplainPanel {
   const el = document.createElement('div');
   el.className = 'explain-panel';
   el.hidden = true;
@@ -30,7 +36,11 @@ export function buildExplainPanel(): ExplainPanel {
   el.append(close, heading, body);
   el.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
 
-  function hide(): void { el.hidden = true; }
+  function hide(): void {
+    const wasOpen = !el.hidden;
+    el.hidden = true;
+    if (wasOpen) onHide?.();
+  }
 
   return {
     el,
