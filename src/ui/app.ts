@@ -610,13 +610,28 @@ export function mountApp(root: HTMLElement): void {
   zoomLabel.className = 'zoom-level';
   zoomLabel.setAttribute('role', 'status');
 
+  /**
+   * The zoom readout, which has to answer for two viewports once they are
+   * split. Showing only the real panel's would be a quiet lie: the buttons
+   * beside it move both, and the other panel can sit at a completely
+   * different magnification with nothing on screen admitting it.
+   */
+  function syncZoomLabel(): void {
+    const pct = (v: Viewport) => `${Math.round(v.zoom * 100)}%`;
+    if (viewportLinked) {
+      zoomLabel.textContent = pct(viewport);
+      zoomLabel.title = 'Zoom, shared by both panels';
+      return;
+    }
+    zoomLabel.textContent = `${pct(viewport)} / ${pct(nullViewport)}`;
+    zoomLabel.title = `Real ${pct(viewport)}, null ${pct(nullViewport)}. `
+      + 'The buttons either side move both by the same factor; Reset clears both.';
+  }
+
   function setViewport(v: Viewport, panel: 'real' | 'null' = 'real'): void {
     if (panel === 'null' && !viewportLinked) nullViewport = clampViewport(v);
     else viewport = clampViewport(v);
-    // Always the real panel's zoom: with two viewports the readout has to pick
-    // one, and the label sits in the export bar next to controls that act on
-    // the real panel.
-    zoomLabel.textContent = `${Math.round(viewport.zoom * 100)}%`;
+    syncZoomLabel();
     redraw();
   }
 
@@ -643,15 +658,17 @@ export function mountApp(root: HTMLElement): void {
     return b;
   };
 
-  mkZoom('zoom-out', '−', 'Zoom out', () => zoomBoth(1 / 1.4));
+  // Both panels, deliberately. Making these real-only when split would leave
+  // no keyboard or pointer-free route to zoom the null panel at all.
+  mkZoom('zoom-out', '−', 'Zoom out, both panels', () => zoomBoth(1 / 1.4));
   exportBar.appendChild(zoomLabel);
-  mkZoom('zoom-in', '+', 'Zoom in', () => zoomBoth(1.4));
-  mkZoom('zoom-reset', 'Reset', 'Reset zoom and pan', () => {
+  mkZoom('zoom-in', '+', 'Zoom in, both panels', () => zoomBoth(1.4));
+  mkZoom('zoom-reset', 'Reset', 'Reset zoom and pan on both panels', () => {
     // Both, always. "Reset" that left the other panel askew would be a lie.
     nullViewport = { ...IDENTITY_VIEWPORT };
     setViewport({ ...IDENTITY_VIEWPORT });
   });
-  zoomLabel.textContent = '100%';
+  syncZoomLabel();
 
   const feedback = buildFeedbackLink();
   exportBar.appendChild(feedback);
@@ -717,6 +734,7 @@ export function mountApp(root: HTMLElement): void {
     // it already was rather than jumping back to 100% the moment you split it.
     if (!viewportLinked) nullViewport = { ...viewport };
     syncViewLink();
+    syncZoomLabel();
     userChanged();
     redraw();
   });
@@ -1169,6 +1187,7 @@ export function mountApp(root: HTMLElement): void {
       viewportLinked = !decoded.nullViewport;
       if (decoded.nullViewport) nullViewport = clampViewport(decoded.nullViewport);
       syncViewLink();
+      syncZoomLabel();
       bar.refresh();
       bar.update(Boolean(getVisualizer(state.vizId).statistics), supportsSuperimpose(getVisualizer(state.vizId)));
     }

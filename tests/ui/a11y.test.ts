@@ -1027,3 +1027,48 @@ describe('splitting zoom and pan between the panels', () => {
     expect(decodeState(url)!.nullViewport).toEqual({ zoom: 1, panX: 0, panY: 0 });
   });
 });
+
+describe('the zoom readout answers for both panels', () => {
+  const mountEngine = () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    root.querySelector<HTMLButtonElement>('.landing-open')?.click();
+    return root;
+  };
+  const viewBtn = (root: HTMLElement) =>
+    [...root.querySelectorAll<HTMLButtonElement>('.link-toggle')].find((b) => /View:/.test(b.textContent!))!;
+
+  it('shows one figure while linked and two once split', () => {
+    // Reporting only the real panel's zoom while the other sits at a different
+    // magnification is a lie by omission, and the buttons beside it move both.
+    const root = mountEngine();
+    const label = root.querySelector<HTMLElement>('.zoom-level')!;
+    expect(label.textContent).toBe('100%');
+    viewBtn(root).click();
+    expect(label.textContent).toBe('100% / 100%');
+    viewBtn(root).click();
+    expect(label.textContent).toBe('100%');
+  });
+
+  it('the buttons say they act on both', () => {
+    const root = mountEngine();
+    for (const cls of ['.zoom-in', '.zoom-out', '.zoom-reset']) {
+      const b = root.querySelector<HTMLButtonElement>(cls)!;
+      expect(b.getAttribute('aria-label'), cls).toMatch(/both/i);
+    }
+  });
+
+  it('+ moves both and preserves the difference; Reset clears both', () => {
+    const root = mountEngine();
+    const label = root.querySelector<HTMLElement>('.zoom-level')!;
+    viewBtn(root).click();
+    root.querySelector<HTMLButtonElement>('.zoom-in')!.click();
+    const [real, nul] = label.textContent!.split(' / ');
+    expect(real).toBe(nul); // equal frames scale together
+    expect(real).not.toBe('100%');
+    root.querySelector<HTMLButtonElement>('.zoom-reset')!.click();
+    expect(label.textContent).toBe('100% / 100%');
+  });
+});
