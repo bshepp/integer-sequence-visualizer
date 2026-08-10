@@ -502,3 +502,76 @@ describe('accessibility of the app chrome', () => {
     expect(root.querySelector<HTMLSelectElement>('.viz-picker')!.getAttribute('aria-label')).toBeTruthy();
   });
 });
+
+describe('the b-file term slider', () => {
+  const mk = () => buildSequencePanel({ onSequence: () => {}, onError: () => {} });
+  const oeis = { terms: [1n], aNumber: 'A000045', name: 'Fibonacci numbers', offset: 0, source: 'oeis' as const };
+  const parts = (p: ReturnType<typeof mk>) => ({
+    slider: p.el.querySelector<HTMLInputElement>('.bfile-slider')!,
+    box: p.el.querySelector<HTMLInputElement>('.bfile-cap')!,
+    pending: p.el.querySelector<HTMLElement>('.bfile-pending')!,
+  });
+  const drag = (slider: HTMLInputElement, v: number) => {
+    slider.value = String(v);
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
+  it('is disabled until an OEIS sequence is loaded, like the box it mirrors', () => {
+    const p = mk();
+    const { slider, box } = parts(p);
+    expect(slider, 'no term slider').not.toBeNull();
+    expect(slider.disabled).toBe(true);
+    p.setInfo(oeis);
+    expect(slider.disabled).toBe(false);
+    expect(box.disabled).toBe(false);
+  });
+
+  it('is log-scaled, so the small counts that matter are not crushed', () => {
+    // On a linear slider everything under 1000 would live in the first 1% of
+    // travel, yet the difference between 200 and 2000 terms changes these
+    // pictures far more than 90,000 versus 100,000 does.
+    const p = mk(); p.setInfo(oeis);
+    const { slider, box } = parts(p);
+    drag(slider, 0);
+    expect(Number(box.value)).toBe(50);
+    drag(slider, 1000);
+    expect(Number(box.value)).toBe(100000);
+    drag(slider, 500);
+    const mid = Number(box.value);
+    expect(mid).toBeGreaterThan(1000);
+    expect(mid, 'midpoint should be nowhere near the linear midpoint').toBeLessThan(10000);
+  });
+
+  it('rounds to figures a person would have typed', () => {
+    const p = mk(); p.setInfo(oeis);
+    const { slider, box } = parts(p);
+    for (const v of [100, 300, 600, 900]) {
+      drag(slider, v);
+      const n = Number(box.value);
+      const step = n < 1000 ? 10 : n < 10000 ? 100 : 1000;
+      expect(n % step, `${n} is not a round figure`).toBe(0);
+    }
+  });
+
+  it('tracks the box both ways', () => {
+    const p = mk(); p.setInfo(oeis);
+    const { slider, box } = parts(p);
+    const before = slider.value;
+    box.value = '2500';
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(slider.value).not.toBe(before);
+    // Typing must not have its own value rewritten underneath it.
+    expect(box.value).toBe('2500');
+  });
+
+  it('asks for a Load only once something has actually been changed', () => {
+    const p = mk(); p.setInfo(oeis);
+    const { slider, pending } = parts(p);
+    expect(pending.hidden, 'a message that is always on says nothing').toBe(true);
+    expect(pending.getAttribute('role')).toBe('status');
+    drag(slider, 700);
+    expect(pending.hidden).toBe(false);
+    expect(pending.textContent).toMatch(/Load all terms/i);
+    expect(pending.textContent).toMatch(/\d/);
+  });
+});

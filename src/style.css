@@ -54,9 +54,15 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .preset-button { background: #24262c; color: var(--accent); border: 1px solid #3a3d44; border-radius: 12px; padding: 3px 10px; cursor: pointer; font-size: 12px; }
 .section-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin: 16px 0 6px; }
 .section-label:first-child { margin-top: 0; }
-.info-card { font-size: 13px; }
+/* The one block in the sidebar that is read rather than clicked: it carries
+   the A-number, the term count and the OEIS name, which are the facts you
+   check against what is on screen. 13px was sized to match the controls around
+   it, but it is prose and was the hardest thing in the panel to read. Nothing
+   here is a responsive concession - the stylesheet has no width media queries
+   at all - so there was no reason for it to stay small. */
+.info-card { font-size: 15px; line-height: 1.45; }
 .info-name { font-weight: 600; }
-.info-meta { color: var(--muted); margin-bottom: 4px; }
+.info-meta { color: var(--muted); margin-bottom: 5px; font-size: 14px; }
 .bfile-box { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
 /* Sized like the tab-pane controls above it, but deliberately the accent
    colour: this is the action that makes the pictures worth looking at, and it
@@ -258,6 +264,13 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 }
 .busy[hidden] { display: none; }
 .bfile-hint { margin: 6px 0 0; font-size: 11px; line-height: 1.4; color: var(--accent); }
+.bfile-slider { width: 100%; margin: 2px 0 0; }
+.bfile-slider:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Amber, not the accent: this is an unfinished action rather than a piece of
+   advice, and it sits directly above .bfile-hint which is already accent. */
+.bfile-pending { margin: 4px 0 0; font-size: 11px; line-height: 1.4; color: #d8a657; }
+.bfile-pending[hidden] { display: none; }
+:root[data-theme="light"] .bfile-pending { color: #8a5a00; }
 
 .header-nav { margin-left: auto; display: flex; gap: 8px; align-self: center; }
 .header-nav-button {

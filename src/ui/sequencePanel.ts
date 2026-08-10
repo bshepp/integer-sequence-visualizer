@@ -233,6 +233,57 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
   bfileCap.value = '10000';
   bfileCap.className = 'bfile-cap';
 
+  // A slider as well as the box, because the useful range spans three orders
+  // of magnitude and "how many terms" is a question you answer by feel rather
+  // than by typing an exact figure. Log-scaled: on a linear slider everything
+  // under a thousand would be crushed into the first 1% of travel, and the
+  // difference between 200 and 2000 terms changes these pictures far more
+  // than the difference between 90,000 and 100,000 does.
+  const CAP_MIN = 50, CAP_MAX = 100000;
+  const capToSlider = (n: number): number =>
+    Math.round(1000 * (Math.log10(n) - Math.log10(CAP_MIN))
+      / (Math.log10(CAP_MAX) - Math.log10(CAP_MIN)));
+  const sliderToCap = (t: number): number => {
+    const raw = 10 ** (Math.log10(CAP_MIN)
+      + (t / 1000) * (Math.log10(CAP_MAX) - Math.log10(CAP_MIN)));
+    // Rounded to something a person would have typed, at a precision that
+    // scales with the magnitude: 1-unit steps are meaningless at 90,000.
+    const step = raw < 1000 ? 10 : raw < 10000 ? 100 : 1000;
+    return Math.max(CAP_MIN, Math.round(raw / step) * step);
+  };
+
+  const bfileSlider = document.createElement('input');
+  bfileSlider.type = 'range';
+  bfileSlider.className = 'bfile-slider';
+  bfileSlider.min = '0';
+  bfileSlider.max = '1000';
+  bfileSlider.step = '1';
+  bfileSlider.value = String(capToSlider(10000));
+
+  // Says the cap is set but not yet fetched. Only appears once the control has
+  // actually been moved: shown from the start it would be permanent furniture
+  // reading as an error, and a message that is always on says nothing.
+  const bfilePending = document.createElement('p');
+  bfilePending.className = 'bfile-pending';
+  bfilePending.hidden = true;
+  bfilePending.setAttribute('role', 'status');
+
+  let capDirty = false;
+  const showPending = (): void => {
+    const n = Math.max(1, Number(bfileCap.value) || 1);
+    bfilePending.hidden = !capDirty;
+    bfilePending.textContent = `Press "Load all terms" to fetch up to ${n.toLocaleString()} terms.`;
+  };
+  const setCap = (n: number, from: 'slider' | 'box'): void => {
+    const clamped = Math.max(1, Math.min(CAP_MAX, Math.round(n) || 1));
+    if (from !== 'box') bfileCap.value = String(clamped);
+    if (from !== 'slider') bfileSlider.value = String(capToSlider(Math.max(CAP_MIN, clamped)));
+    capDirty = true;
+    showPending();
+  };
+  bfileSlider.addEventListener('input', () => setCap(sliderToCap(Number(bfileSlider.value)), 'slider'));
+  bfileCap.addEventListener('input', () => setCap(Number(bfileCap.value), 'box'));
+
   const bfileHint = document.createElement('p');
   bfileHint.className = 'bfile-hint';
   bfileHint.textContent = 'Most sequences only get interesting with more terms - this fetches the full list from OEIS.';
@@ -251,17 +302,31 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     fetchBFile(seq.aNumber, Math.max(1, Number(bfileCap.value)))
       .then((terms) => handlers.onSequence(withTerms(seq, terms)))
       .catch((e) => handlers.onError(e instanceof Error ? e.message : String(e)))
-      .finally(() => { syncBfile(); });
+      .finally(() => {
+        // Cleared whether the fetch succeeded or failed: on failure the banner
+        // says what went wrong, and leaving "press Load" up underneath it
+        // would read as if nothing had been tried.
+        capDirty = false;
+        showPending();
+        syncBfile();
+      });
   });
 
   function syncBfile(): void {
     const available = loadedSeq?.source === 'oeis' && Boolean(loadedSeq.aNumber);
     bfileBtn.disabled = !available;
     bfileCap.disabled = !available;
+    bfileSlider.disabled = !available;
     bfileBtn.title = available ? '' : 'Load an OEIS sequence first';
   }
 
-  bfileBox.append(bfileBtn, labelledControl('Maximum terms to fetch', bfileCap), bfileHint);
+  bfileBox.append(
+    bfileBtn,
+    labelledControl('Maximum terms to fetch', bfileCap),
+    labelledControl('Maximum terms to fetch (slider)', bfileSlider, { visible: false }),
+    bfilePending,
+    bfileHint,
+  );
   el.appendChild(bfileBox);
   syncBfile();
 
