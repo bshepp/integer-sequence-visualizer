@@ -124,3 +124,41 @@ describe('a cold load lands on the page the address names', () => {
     expect(root.querySelector('.landing')).not.toBeNull();
   });
 });
+
+import { FEEDBACK_LABEL } from '../../src/ui/feedbackLink';
+
+describe('feedback is reachable from every page', () => {
+  const ISSUES = 'https://github.com/bshepp/integer-sequence-visualizer/issues/new';
+  const noop = () => {};
+
+  it('is on the gallery and the About page, not only in the engine', () => {
+    // These are the two pages a visitor is most likely to arrive on - the
+    // gallery from a shared link, About from a citation - and neither offered
+    // any way to say something back.
+    const landing = buildLanding({ onOpen: noop, onPick: noop, onAbout: noop });
+    const about = buildAbout({ onGallery: noop, onEngine: noop });
+    for (const [name, el] of [['landing', landing], ['about', about]] as const) {
+      const a = el.querySelector<HTMLAnchorElement>(`a[href="${ISSUES}"]`);
+      expect(a, `no feedback link on the ${name}`).not.toBeNull();
+      expect(a!.textContent).toBe(FEEDBACK_LABEL);
+      expect(a!.rel).toContain('noopener');
+      expect(a!.target).toBe('_blank');
+    }
+  });
+
+  it('says the same thing in all three places', () => {
+    // Three hand-written copies is how a label and a URL drift apart, and a
+    // broken feedback link fails silently on the one person who bothered.
+    const root = (() => {
+      history.replaceState(null, '', location.pathname);
+      const r = document.createElement('div');
+      document.body.appendChild(r);
+      mountApp(r);
+      r.querySelector<HTMLButtonElement>('.landing-open')?.click();
+      return r;
+    })();
+    const engine = root.querySelector<HTMLAnchorElement>(`.export-bar a[href="${ISSUES}"]`);
+    expect(engine, 'engine lost its feedback link').not.toBeNull();
+    expect(engine!.textContent).toBe(FEEDBACK_LABEL);
+  });
+});

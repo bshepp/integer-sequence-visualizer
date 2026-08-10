@@ -1,3 +1,5 @@
+import { buildFeedbackLink } from './feedbackLink';
+
 export interface Citation {
   /** Rendered verbatim; keep exactly as published. */
   text: string;
@@ -85,6 +87,33 @@ export function buildAbout(opts: AboutOptions): HTMLElement {
   const h1 = document.createElement('h1');
   h1.className = 'about-title';
   h1.textContent = 'About Ulam';
+
+  // "About Ulam" reads as a biography until you know otherwise, and the site
+  // is named after a person most visitors will not be able to place. These two
+  // paragraphs settle who he was, why his name is on this, and that the page
+  // is about the software.
+  const who = document.createElement('p');
+  who.className = 'about-who';
+  who.append('Named for ');
+  who.appendChild(link('https://en.wikipedia.org/wiki/Stanis%C5%82aw_Ulam', 'Stanislaw Ulam'));
+  who.append(
+    ' (1909-1984), a Polish-American mathematician who worked on the Manhattan '
+    + 'Project and co-invented the Monte Carlo method. This page is about the '
+    + 'software, not the man.',
+  );
+
+  const whyName = document.createElement('p');
+  whyName.className = 'about-who';
+  whyName.textContent =
+    'The name is owed to a doodle. Sitting through a dull talk in 1963, Ulam '
+    + 'wrote the integers in a square spiral and noticed the primes falling '
+    + 'along diagonal lines; he published it with Myron Stein and Mark Wells '
+    + 'the following year. That is the founding example of what this site is '
+    + 'for: a drawing of numbers that appears to show something, and thereby '
+    + 'raises the question of whether it really does. The other half of the '
+    + 'debt is Monte Carlo. Every null model here is a few hundred random '
+    + 'draws used to establish what an ordinary result looks like, which is '
+    + 'his method as well.';
 
   const nav = document.createElement('div');
   nav.className = 'page-nav';
@@ -175,12 +204,17 @@ export function buildAbout(opts: AboutOptions): HTMLElement {
   attribution.append('.');
   body.appendChild(attribution);
 
+  const feedback = document.createElement('p');
+  feedback.className = 'about-feedback';
+  feedback.appendChild(buildFeedbackLink('about-feedback-link'));
+  body.appendChild(feedback);
+
   // One measure for the whole page: per-element max-width in `ch` units
   // misaligns, because a ch is relative to the element's own font size and the
   // heading is twice the body size.
   const inner = document.createElement('div');
   inner.className = 'about-inner';
-  inner.append(nav, h1, body);
+  inner.append(nav, h1, who, whyName, body);
   el.append(inner);
   return el;
 }

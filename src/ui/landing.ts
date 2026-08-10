@@ -5,6 +5,7 @@ import { SequenceView, type Sequence } from '../sequence/sequence';
 import { getVisualizer } from '../viz/registry';
 import { surrogateSequence } from './comparison';
 import { canvasTheme, withCanvas } from '../viz/theme';
+import { buildFeedbackLink } from './feedbackLink';
 
 /** Reserved literal hashes, checked before decodeState so they cannot collide. */
 export const GALLERY_HASH = 'gallery';
@@ -238,7 +239,9 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
     nav.appendChild(opts.themeToggle);
     el.appendChild(nav);
   }
-  el.append(h1, lede, credit, heroFigure, heroBody, actions, stripLabel, strip, attribution);
+  const feedback = buildFeedbackLink('landing-feedback');
+
+  el.append(h1, lede, credit, heroFigure, heroBody, actions, stripLabel, strip, attribution, feedback);
   requestAnimationFrame(() => paintEntry(hero, heroCanvas, 760, 340));
   return el;
 }

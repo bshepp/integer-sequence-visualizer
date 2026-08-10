@@ -33,6 +33,7 @@ import { sequenceRows, toCSV, toJSON, downloadBlob } from './exportData';
 import { exportCanvasPng } from './exportImage';
 import { buildDataTable } from './dataTable';
 import { citationFor } from './citation';
+import { buildFeedbackLink } from './feedbackLink';
 import { DEFAULT_STYLE, styleToParams, styleFromParams, type RenderStyle } from '../viz/style';
 import { heroEntry } from '../gallery/entries';
 import type { GalleryEntry } from '../gallery/types';
@@ -612,15 +613,7 @@ export function mountApp(root: HTMLElement): void {
   mkZoom('zoom-reset', 'Reset', 'Reset zoom and pan', () => setViewport({ ...IDENTITY_VIEWPORT }));
   zoomLabel.textContent = '100%';
 
-  const feedback = document.createElement('a');
-  feedback.className = 'feedback-link';
-  feedback.href = 'https://github.com/bshepp/integer-sequence-visualizer/issues/new';
-  feedback.target = '_blank';
-  feedback.rel = 'noopener noreferrer';
-  // "or request a feature": a missing feature is an issue too, and the bare
-  // "Report a problem" reads as bug-reports-only, which turns away the half of
-  // the feedback worth more.
-  feedback.textContent = 'Report a problem or request a feature';
+  const feedback = buildFeedbackLink();
   exportBar.appendChild(feedback);
 
   main.appendChild(exportBar);

@@ -484,3 +484,10 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 /* Set apart from the two navigation actions beside it: a display preference
    grouped with them read as a third way to leave the page. */
 .page-nav .theme-toggle { margin-left: 12px; }
+/* Directly under the title, set as a standfirst rather than body copy: it
+   answers "who?" before the page starts assuming you know. */
+.about-who { margin: 6px 0 12px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.about-who + .about-who { margin-bottom: 24px; }
+.landing-feedback { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+.about-feedback { margin: 14px 0 0; font-size: 13px; }
+.landing-feedback:hover, .about-feedback-link:hover { color: var(--accent); }
