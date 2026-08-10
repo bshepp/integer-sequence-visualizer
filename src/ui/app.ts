@@ -280,7 +280,9 @@ export function mountApp(root: HTMLElement): void {
     nullStylePanel.hidden = styleLinked || stylePanels.hidden;
     stylePanels.classList.toggle('style-panels--split', !styleLinked);
     nullStylePanel.classList.toggle('style-panels--split', !styleLinked);
-    linkBtn.textContent = styleLinked ? 'Null style: linked' : 'Null style: separate';
+    // Short, and the two labels are pinned to one width in CSS: a button that
+    // changes size when you press it shifts everything after it in the bar.
+    linkBtn.textContent = styleLinked ? 'Style: linked' : 'Style: split';
     linkBtn.setAttribute('aria-pressed', String(!styleLinked));
     linkBtn.title = styleLinked
       ? 'Give the null model its own line and colour settings'
@@ -311,10 +313,10 @@ export function mountApp(root: HTMLElement): void {
   explainBtn.textContent = 'i';
   explainBtn.addEventListener('click', () => {
     const viz = getVisualizer(state.vizId);
-    explain.show(
-      viz.name,
-      `${viz.explain.long}\n\nNull model - ${comparison.surrogate}: ${SURROGATE_EXPLAIN[comparison.surrogate].long}`,
-    );
+    // The null model half of this moved to its own (i) in the comparison bar,
+    // beside the controls it actually describes. It was two bars away from
+    // every one of them here.
+    explain.show(viz.name, viz.explain.long);
   });
   topbar.appendChild(explainBtn);
   // Style sits between the (i) button and the visualizer's own parameters:
@@ -650,7 +652,30 @@ export function mountApp(root: HTMLElement): void {
     if (!styleLinked && stylePanels.hidden) styleToggle.click();
     else userChanged();
   });
-  bar.el.appendChild(linkBtn);
+  // The null model's own (i), beside the switch that turns it on. The
+  // visualizer's (i) was carrying the null explanation as a trailing
+  // paragraph, which put it two bars away from every control it describes;
+  // this is the same regrouping applied to the style panel.
+  //
+  // Deliberately NOT disabled when the null model is off, unlike everything
+  // else in this bar. The other controls do nothing while it is off; this one
+  // answers "what is this thing I am being invited to turn on", which is
+  // exactly the question someone has before they turn it on.
+  const nullInfoBtn = document.createElement('button');
+  nullInfoBtn.className = 'explain-button';
+  nullInfoBtn.type = 'button';
+  nullInfoBtn.textContent = 'i';
+  nullInfoBtn.setAttribute('aria-label', 'What is a null model?');
+  nullInfoBtn.addEventListener('click', () => {
+    explain.show('Null model', [
+      'Any drawing of a sequence is also a drawing of the drawing method. A null model is the control: the same sequence with one thing deliberately destroyed. If a feature survives the destruction, it did not depend on what was destroyed.',
+      `Currently showing the ${comparison.surrogate} surrogate. ${SURROGATE_EXPLAIN[comparison.surrogate].long}`,
+      'One surrogate is one sample, and a single draw can mislead in either direction. Reshuffle draws another for a second opinion. Sweep runs a few hundred and reports where the real sequence falls against the whole spread, which is the number worth quoting.',
+    ].join('\n\n'));
+  });
+  bar.el.querySelector('.null-toggle')!.after(nullInfoBtn);
+  // Moves rather than copies: linkBtn is already in the bar by this point.
+  nullInfoBtn.after(linkBtn);
   syncStyleLink();
 
   // The hash the app itself last wrote via syncUrl. The hashchange handler

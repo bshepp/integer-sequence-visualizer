@@ -822,3 +822,54 @@ describe('the relocated null style panel cannot collapse the canvas', () => {
     expect(main).toMatch(/flex-direction:\s*column/);
   });
 });
+
+describe('the null model has its own (i)', () => {
+  const mountEngine = () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    root.querySelector<HTMLButtonElement>('.landing-open')?.click();
+    return root;
+  };
+
+  it('sits between the on/off switch and the style toggle', () => {
+    const root = mountEngine();
+    const bar = root.querySelector('.comparison-bar')!;
+    const kids = [...bar.children].map((c) => c.className.split(' ')[0]);
+    expect(kids.slice(0, 3)).toEqual(['null-toggle', 'explain-button', 'link-toggle']);
+  });
+
+  it('explains the null model and names the surrogate in play', () => {
+    const root = mountEngine();
+    root.querySelector<HTMLButtonElement>('.comparison-bar .explain-button')!.click();
+    const panel = root.querySelector<HTMLElement>('.explain-panel')!;
+    expect(panel.hidden).toBe(false);
+    expect(panel.querySelector('.explain-title')!.textContent).toMatch(/null model/i);
+    const body = panel.querySelector('.explain-body')!.textContent!;
+    expect(body).toMatch(/permutation/i);
+    expect(body).toMatch(/Sweep/);
+  });
+
+  it('stays available while the null model is off, unlike the rest of the bar', () => {
+    // Every other control here does nothing while it is off. This one answers
+    // "what is the thing I am being invited to switch on", which is precisely
+    // the question asked before switching it on.
+    const root = mountEngine();
+    root.querySelector<HTMLButtonElement>('.null-toggle')!.click();   // off
+    const info = root.querySelector<HTMLButtonElement>('.comparison-bar .explain-button')!;
+    expect(root.querySelector<HTMLSelectElement>('.surrogate-select')!.disabled).toBe(true);
+    expect(info.disabled).toBe(false);
+    info.click();
+    expect(root.querySelector<HTMLElement>('.explain-panel')!.hidden).toBe(false);
+  });
+
+  it('the visualizer (i) no longer carries the null explanation', () => {
+    const root = mountEngine();
+    root.querySelector<HTMLButtonElement>('.topbar .explain-button')!.click();
+    const body = root.querySelector('.explain-body')!.textContent!;
+    expect(body.length).toBeGreaterThan(40);
+    expect(body, 'null text should live on the null button now')
+      .not.toMatch(/multiset/i);
+  });
+});
