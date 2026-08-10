@@ -113,28 +113,36 @@ export function drawCanvasLabel(
 }
 
 /**
- * A small solid dot for marking a run of terms, rather than the ring-plus-
- * crosshair used for a single pinned point.
+ * The two endpoints of a drawing: a hollow ring where it begins, a solid disc
+ * where it ends.
  *
- * Deliberately quieter than drawMarker: this gets drawn ten or twenty times at
- * once, and the pinned marker's 12px crosshairs repeated that often would
- * bury the drawing they are meant to annotate. The dark halo keeps it legible
- * on a pale canvas and against a line of its own colour.
+ * Distinguished by shape rather than colour, for two reasons. The spectrum
+ * ramp already encodes direction, so a second colour scheme either duplicates
+ * it or - as the first version did - contradicts it, putting a cool dot on the
+ * warm end of the line. And colour cannot work at all in 'flat' or 'none'
+ * mode, which is exactly where knowing the direction matters most.
+ *
+ * Drawn in the text colour against a halo of the canvas colour, so both read
+ * on a black or a white ground and neither competes with the drawing's hue.
  */
-export function drawEndDot(
-  ctx: CanvasRenderingContext2D, pt: { x: number; y: number }, color: string, emphasis = false,
+export function drawEndMark(
+  ctx: CanvasRenderingContext2D, pt: { x: number; y: number }, kind: 'start' | 'end',
 ): void {
-  const r = emphasis ? 6.5 : 4;
+  const r = 6;
   ctx.save();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = canvasTheme().bg;
   ctx.beginPath();
   ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  ctx.fill();
-  // Haloed in the canvas colour rather than a fixed black: the ring exists to
-  // punch the dot free of a line running underneath it, and a black halo on a
-  // black canvas does nothing but shave two pixels off the visible dot.
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = canvasTheme().bg;
+  ctx.stroke();                       // halo first, punching the mark free
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = canvasTheme().text;
+  ctx.beginPath();
+  ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+  if (kind === 'end') {
+    ctx.fillStyle = canvasTheme().text;
+    ctx.fill();
+  }
   ctx.stroke();
   ctx.restore();
 }

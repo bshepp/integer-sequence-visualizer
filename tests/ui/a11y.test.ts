@@ -1123,7 +1123,7 @@ describe('the style link toggle is never a dead control', () => {
   });
 });
 
-describe('marking the first and last terms', () => {
+describe('marking where a drawing begins and ends', () => {
   const mountEngine = () => {
     history.replaceState(null, '', location.pathname);
     const root = document.createElement('div');
@@ -1132,32 +1132,18 @@ describe('marking the first and last terms', () => {
     root.querySelector<HTMLButtonElement>('.landing-open')?.click();
     return root;
   };
-  const parts = (root: HTMLElement) => ({
-    btn: root.querySelector<HTMLButtonElement>('.ends-toggle')!,
-    count: root.querySelector<HTMLInputElement>('.ends-count')!,
-  });
 
-  it('is off by default, with the count inert until it can do something', () => {
+  it('is a single toggle, off by default', () => {
+    // Just the two endpoints. A run of ten collapsed onto three or four
+    // lattice points on any walk that retraces itself, which told you nothing
+    // the endpoints alone do not, and needed a count control to say so.
     const root = mountEngine();
-    const { btn, count } = parts(root);
+    const btn = root.querySelector<HTMLButtonElement>('.ends-toggle')!;
     expect(btn, 'no mark-ends control').not.toBeNull();
     expect(btn.getAttribute('aria-pressed')).toBe('false');
-    expect(count.disabled, 'the count should not look live while the marks are off').toBe(true);
+    expect(root.querySelector('.ends-count'), 'the count control should be gone').toBeNull();
     btn.click();
     expect(btn.getAttribute('aria-pressed')).toBe('true');
-    expect(count.disabled).toBe(false);
-  });
-
-  it('clamps a nonsense count rather than drawing nothing', () => {
-    const root = mountEngine();
-    const { btn, count } = parts(root);
-    btn.click();
-    const cases: Array<[string, string]> = [['0', '1'], ['-5', '1'], ['9999', '500'], ['abc', '1']];
-    for (const [typed, expected] of cases) {
-      count.value = typed;
-      count.dispatchEvent(new Event('change', { bubbles: true }));
-      expect(count.value, `typed "${typed}"`).toBe(expected);
-    }
   });
 
   it('rides in the address only when switched on', () => {
@@ -1169,15 +1155,9 @@ describe('marking the first and last terms', () => {
 
     const on = encodeState({
       seqRef: null, vizId: 'turtle', params: {}, mode: 'off',
-      surrogate: 'permutation', seed: 1, markEnds: 25,
+      surrogate: 'permutation', seed: 1, markEnds: true,
     });
-    expect(on).toContain('ends=25');
-    expect(decodeState(on)!.markEnds).toBe(25);
-  });
-
-  it('ignores a malformed count in a shared address', () => {
-    expect(decodeState('viz=turtle&ends=banana')!.markEnds).toBeUndefined();
-    expect(decodeState('viz=turtle&ends=0')!.markEnds).toBeUndefined();
-    expect(decodeState('viz=turtle&ends=99999')!.markEnds).toBe(500);
+    expect(on).toContain('ends=1');
+    expect(decodeState(on)!.markEnds).toBe(true);
   });
 });

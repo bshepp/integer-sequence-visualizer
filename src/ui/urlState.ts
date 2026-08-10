@@ -23,8 +23,8 @@ export interface UrlState {
   nullStyle?: RenderStyle;
   /** Present only when the null model has its own zoom and pan. */
   nullViewport?: Viewport;
-  /** How many terms are marked at each end; absent when the marks are off. */
-  markEnds?: number;
+  /** True when the first and last terms are marked. */
+  markEnds?: boolean;
 }
 
 /**
@@ -168,7 +168,7 @@ export function encodeState(s: UrlState): string {
     if (v.zoom !== IDENTITY_VIEWPORT.zoom) p.set(`${prefix}zoom`, String(Math.round(v.zoom * 1000) / 1000));
     if (v.panX !== 0 || v.panY !== 0) p.set(`${prefix}pan`, `${Math.round(v.panX)},${Math.round(v.panY)}`);
   };
-  if (s.markEnds !== undefined) p.set('ends', String(s.markEnds));
+  if (s.markEnds) p.set('ends', '1');
   putViewport(s.viewport, '');
   if (s.nullViewport) {
     // Carried separately for the same reason unlink= is: splitting the view
@@ -231,8 +231,7 @@ export function decodeState(hash: string): UrlState | null {
       panY: Number.isFinite(panY) ? panY! : 0,
     };
   };
-  const ends = num(p.get('ends'));
-  if (ends !== undefined && ends >= 1) state.markEnds = Math.min(500, Math.round(ends));
+  if (p.has('ends')) state.markEnds = true;
   const vp = readViewport('');
   if (vp) state.viewport = vp;
   if (p.has('splitview')) state.nullViewport = readViewport(NULL_PREFIX) ?? { ...IDENTITY_VIEWPORT };
