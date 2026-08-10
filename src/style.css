@@ -124,8 +124,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .explain-button {
   width: 28px; height: 28px; border-radius: 50%; padding: 0;
   background: #24262c; color: var(--accent);
-  border: 1px solid #3a3d44; cursor: pointer;
-  font: 600 15px/1 system-ui; flex: none;
+  border: 1px solid #3a3d44; cursor: pointer; flex: none;
 }
 /* Pressed state, since these now toggle rather than only open. */
 .explain-button[aria-expanded="true"] { border-color: var(--accent); color: var(--bg); background: var(--accent); }
@@ -256,7 +255,14 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 :root[data-theme="light"] .export-sep { background: #d6dae2; }
 /* The glyph, not the circle: these are 28px discs already and only the letter
    was hard to read at 15px regular. */
-.explain-button, .comparison-bar .explain-button { font: 700 17px/1 Georgia, "Times New Roman", serif; font-style: italic; }
+/* The one place either info button's glyph is styled. It used to be set in
+   each button's own box rule as well, and because ".comparison-bar
+   .explain-button" is written later at the same specificity, the null model's
+   copy silently kept the sans-serif while the topbar's took the serif. Both
+   box rules now leave the font alone. */
+.explain-button, .comparison-bar .explain-button {
+  font: 700 17px/1 Georgia, "Times New Roman", serif; font-style: italic;
+}
 .feedback-link { margin-left: auto; color: var(--muted); font-size: 12px; }
 .data-table { max-height: 320px; overflow-y: auto; background: var(--panel); border-left: 1px solid #000; padding: 10px 14px; }
 .data-table[hidden] { display: none; }
@@ -453,8 +459,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .comparison-bar .explain-button {
   width: 28px; height: 28px; border-radius: 50%; padding: 0;
   background: #24262c; color: var(--accent);
-  border: 1px solid #3a3d44; cursor: pointer;
-  font: 600 15px/1 system-ui; flex: none;
+  border: 1px solid #3a3d44; cursor: pointer; flex: none;
 }
 .comparison-bar .explain-button[aria-expanded="true"] {
   border-color: var(--accent); color: var(--bg); background: var(--accent);
