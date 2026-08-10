@@ -754,10 +754,14 @@ export function mountApp(root: HTMLElement): void {
     if (!styleLinked) Object.assign(nullStyle, style);
     nullStyleUi.refresh();
     syncStyleLink();
-    // Opening the panel on unlink: the button has just created a second set
-    // of controls, and hiding them would make it look like nothing happened.
-    if (!styleLinked && stylePanels.hidden) styleToggle.click();
-    else userChanged();
+    // Always reveal the controls this button just rearranged, in BOTH
+    // directions. It used to open the panel only when unlinking, which left
+    // relinking with the panel closed changing nothing but its own caption -
+    // a control that visibly does nothing when pressed. That state is easy to
+    // reach: split, close the panel, press again. A shared unlink=1 link opens
+    // in it.
+    if (stylePanels.hidden) styleToggle.click();
+    userChanged();
   });
   // The null model's own (i), beside the switch that turns it on. The
   // visualizer's (i) was carrying the null explanation as a trailing

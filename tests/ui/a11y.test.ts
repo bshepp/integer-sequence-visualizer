@@ -1072,3 +1072,53 @@ describe('the zoom readout answers for both panels', () => {
     expect(label.textContent).toBe('100% / 100%');
   });
 });
+
+describe('the style link toggle is never a dead control', () => {
+  const mountEngine = () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    root.querySelector<HTMLButtonElement>('.landing-open')?.click();
+    return root;
+  };
+  const parts = (root: HTMLElement) => ({
+    link: [...root.querySelectorAll<HTMLButtonElement>('.comparison-bar .link-toggle')]
+      .find((b) => !b.classList.contains('view-link-toggle'))!,
+    style: root.querySelector<HTMLButtonElement>('.style-toggle')!,
+    top: root.querySelector<HTMLElement>('.style-panels:not(.style-panels--null)')!,
+    nul: root.querySelector<HTMLElement>('.style-panels--null')!,
+  });
+
+  it('every press changes what is on screen, from every starting state', () => {
+    // The bug: with the panel closed, unlinking opened it but relinking
+    // changed only the caption. That state is easy to reach - split, close the
+    // panel, press again - and a shared unlink=1 link opens straight into it.
+    const root = mountEngine();
+    const { link, style, top, nul } = parts(root);
+    const visible = () => `${top.hidden}/${nul.hidden}`;
+
+    const sequence = ['split', 'closeStyle', 'relink', 'split', 'relink'] as const;
+    for (const act of sequence) {
+      const before = visible();
+      if (act === 'closeStyle') style.click();
+      else link.click();
+      expect(visible(), `"${act}" left the panels unchanged`).not.toBe(before);
+    }
+  });
+
+  it('leaves the style panel open after any link press', () => {
+    const root = mountEngine();
+    const { link, style, top } = parts(root);
+    style.click();                    // ensure closed if it started open
+    const startClosed = top.hidden;
+    if (!startClosed) style.click();
+    expect(top.hidden).toBe(true);
+    link.click();
+    expect(top.hidden, 'unlinking should reveal the controls').toBe(false);
+    style.click();
+    expect(top.hidden).toBe(true);
+    link.click();
+    expect(top.hidden, 'relinking should reveal them too').toBe(false);
+  });
+});
