@@ -370,13 +370,26 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .style-panels { flex-basis: 100%; display: flex; flex-direction: column; gap: 6px; }
 .style-panels[hidden] { display: none; }
 .style-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+/* Reads as part of the null-model band it now sits under, rather than as a
+   stray row floating above the drawing. */
+.style-panels--null {
+  background: var(--panel); border-top: 1px solid #2a2d34;
+  padding: 6px 14px; margin: 0;
+}
+:root[data-theme="light"] .style-panels--null { border-top-color: #d6dae2; }
 .style-group-label {
   display: none; min-width: 3em; font-size: 11px; font-weight: 600;
   text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
   /* Aligned to the first row of controls rather than centred on the group:
      once the controls wrap to two rows a centred caption floats between them
      and stops reading as a heading for either. */
-  flex: none; align-self: flex-start; padding-top: 7px;
+  /* Baseline-aligned with the control row beside it. align-items:center on
+     the group already centres it; the earlier padding-top pushed it below. */
+  flex: none; align-self: center;
+  /* Brighter than the control captions on purpose: this names which panel you
+     are editing, and reading at the same weight as "Line shape" made it look
+     like one more field label rather than the heading for all of them. */
+  color: var(--text);
 }
 /* .style-controls carries flex-basis:100% from when it sat directly in the
    topbar and had to claim a whole row. Nested inside .style-group that makes

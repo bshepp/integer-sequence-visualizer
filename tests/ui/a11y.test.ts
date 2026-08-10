@@ -358,7 +358,9 @@ describe('export bar', () => {
     const toggle = root.querySelector<HTMLButtonElement>('.table-toggle')!;
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     const panel = root.querySelector<HTMLElement>('.data-table')!;
-    expect(toggle.getAttribute('aria-controls')).toBe(panel.id);
+    // A list, not a single id: the button opens this panel and the null
+    // one that now lives under the comparison bar.
+    expect(toggle.getAttribute('aria-controls')!.split(/\s+/)).toContain(panel.id);
     toggle.click();
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(panel.hidden).toBe(false);
@@ -466,7 +468,9 @@ describe('style panel placement', () => {
     const panel = root.querySelector<HTMLElement>('.style-panels')!;
     expect(panel.hidden).toBe(true);
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(toggle.getAttribute('aria-controls')).toBe(panel.id);
+    // A list, not a single id: the button opens this panel and the null
+    // one that now lives under the comparison bar.
+    expect(toggle.getAttribute('aria-controls')!.split(/\s+/)).toContain(panel.id);
     toggle.click();
     expect(panel.hidden).toBe(false);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
@@ -716,5 +720,67 @@ describe('per-panel canvas in the address', () => {
   it('falls back to theme for a malformed value rather than a blank canvas', () => {
     const back = decodeState('viz=turtle&canvas=chartreuse')!;
     expect(back.style?.canvas ?? 'theme').toBe('theme');
+  });
+});
+
+describe('the null style panel sits with the null model controls', () => {
+  const mountEngine = () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    root.querySelector<HTMLButtonElement>('.landing-open')?.click();
+    return root;
+  };
+
+  it('comes after the comparison bar in the document, not up in the topbar', () => {
+    // Grouped by what the control belongs to rather than what kind of control
+    // it is: everything shaping the null should read as one block.
+    const root = mountEngine();
+    const bar = root.querySelector('.comparison-bar')!;
+    const nullPanel = root.querySelector('.style-panels--null')!;
+    expect(nullPanel, 'no relocated null style panel').not.toBeNull();
+    // Node.DOCUMENT_POSITION_FOLLOWING === 4
+    expect(bar.compareDocumentPosition(nullPanel) & 4).toBeTruthy();
+    // And the real one is still in the topbar.
+    const real = root.querySelector('.style-panels:not(.style-panels--null)')!;
+    expect(real.closest('.topbar')).not.toBeNull();
+    expect(nullPanel.closest('.topbar')).toBeNull();
+  });
+
+  it('is never visible while the styles are linked', () => {
+    const root = mountEngine();
+    const top = root.querySelector<HTMLElement>('.style-panels:not(.style-panels--null)')!;
+    const nul = root.querySelector<HTMLElement>('.style-panels--null')!;
+    const style = root.querySelector<HTMLButtonElement>('.style-toggle')!;
+    const link = root.querySelector<HTMLButtonElement>('.link-toggle')!;
+
+    style.click();                       // open, still linked
+    expect(top.hidden).toBe(false);
+    expect(nul.hidden, 'null panel showing while linked').toBe(true);
+
+    link.click();                        // unlink
+    expect(nul.hidden).toBe(false);
+    link.click();                        // relink
+    expect(nul.hidden).toBe(true);
+    expect(top.hidden).toBe(false);
+  });
+
+  it('is governed by the same Style button, which says so', () => {
+    const root = mountEngine();
+    const top = root.querySelector<HTMLElement>('.style-panels:not(.style-panels--null)')!;
+    const nul = root.querySelector<HTMLElement>('.style-panels--null')!;
+    const style = root.querySelector<HTMLButtonElement>('.style-toggle')!;
+    root.querySelector<HTMLButtonElement>('.link-toggle')!.click();  // unlink (auto-opens)
+    expect(top.hidden).toBe(false);
+    expect(nul.hidden).toBe(false);
+    style.click();                       // close both
+    expect(top.hidden).toBe(true);
+    expect(nul.hidden, 'null panel left behind when the panel closed').toBe(true);
+
+    // A control governing two regions has to name both.
+    const controls = style.getAttribute('aria-controls')!.split(/\s+/);
+    expect(controls).toHaveLength(2);
+    for (const id of controls) expect(root.querySelector(`#${id}`), id).not.toBeNull();
   });
 });

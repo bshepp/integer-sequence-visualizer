@@ -260,13 +260,26 @@ export function mountApp(root: HTMLElement): void {
   };
   const realGroup = styleGroup('Real', styleUi.el);
   const nullGroup = styleGroup('Null', nullStyleUi.el);
-  stylePanels.append(realGroup, nullGroup);
+  stylePanels.append(realGroup);
+
+  // The null's style lives under the null model's own bar rather than beside
+  // the real one in the topbar. Grouping by what a control belongs to beats
+  // grouping by what kind of control it is: everything that shapes the null
+  // now reads as one block, and the topbar stops growing a second row for a
+  // panel that is usually not even in use.
+  const nullStylePanel = document.createElement('div');
+  nullStylePanel.className = 'style-panels style-panels--null';
+  nullStylePanel.hidden = true;
+  nullStylePanel.id = `${uid}-null-style`;
+  nullStylePanel.appendChild(nullGroup);
 
   function syncStyleLink(): void {
     // With one style there is nothing to label; the captions only earn their
     // space once there are two panels to tell apart.
     nullGroup.hidden = styleLinked;
+    nullStylePanel.hidden = styleLinked || stylePanels.hidden;
     stylePanels.classList.toggle('style-panels--split', !styleLinked);
+    nullStylePanel.classList.toggle('style-panels--split', !styleLinked);
     linkBtn.textContent = styleLinked ? 'Null style: linked' : 'Null style: separate';
     linkBtn.setAttribute('aria-pressed', String(!styleLinked));
     linkBtn.title = styleLinked
@@ -279,9 +292,13 @@ export function mountApp(root: HTMLElement): void {
   styleToggle.type = 'button';
   styleToggle.textContent = 'Style';
   styleToggle.setAttribute('aria-expanded', 'false');
-  styleToggle.setAttribute('aria-controls', stylePanels.id);
+  // Two ids: the button now opens a panel in the topbar and another under the
+  // comparison bar, and aria-controls takes a list precisely so a control that
+  // governs two regions can say so.
+  styleToggle.setAttribute('aria-controls', `${stylePanels.id} ${uid}-null-style`);
   styleToggle.addEventListener('click', () => {
     stylePanels.hidden = !stylePanels.hidden;
+    nullStylePanel.hidden = stylePanels.hidden || styleLinked;
     styleToggle.setAttribute('aria-expanded', String(!stylePanels.hidden));
     styleToggle.classList.toggle('style-toggle--open', !stylePanels.hidden);
     redraw();
@@ -584,6 +601,7 @@ export function mountApp(root: HTMLElement): void {
 
   const bar = buildComparisonBar(comparison, userChanged);
   main.insertBefore(bar.el, canvasWrap);
+  main.insertBefore(nullStylePanel, canvasWrap);
   bar.update(Boolean(getVisualizer(state.vizId).statistics), supportsSuperimpose(getVisualizer(state.vizId)));
 
   const sweepBtn = document.createElement('button');
