@@ -116,6 +116,8 @@ export interface LandingOptions {
   onOpen(): void;
   onPick(entry: GalleryEntry): void;
   onAbout(): void;
+  /** See AboutOptions.themeToggle - this page hides the engine's copy too. */
+  themeToggle?: HTMLElement;
 }
 
 export function buildLanding(opts: LandingOptions): HTMLElement {
@@ -230,6 +232,12 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   cc.textContent = 'CC BY-SA 4.0';
   attribution.append(cc, '.');
 
+  if (opts.themeToggle) {
+    const nav = document.createElement('div');
+    nav.className = 'landing-nav';
+    nav.appendChild(opts.themeToggle);
+    el.appendChild(nav);
+  }
   el.append(h1, lede, credit, heroFigure, heroBody, actions, stripLabel, strip, attribution);
   requestAnimationFrame(() => paintEntry(hero, heroCanvas, 760, 340));
   return el;

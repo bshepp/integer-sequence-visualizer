@@ -1166,9 +1166,17 @@ export function mountApp(root: HTMLElement): void {
     applyHash(hash, entry.sequence);
   }
 
+  // A fresh switch per overlay, since the overlay is rebuilt on every visit.
+  // Its onChange refreshes the engine's copy: that one is inert behind the
+  // overlay and would otherwise still be captioned for the old theme when the
+  // visitor returns to it.
+  const overlayThemeToggle = (): HTMLElement =>
+    buildThemeToggle(() => { themeUi.refresh(); styleUi.refresh(); nullStyleUi.refresh(); redraw(); }).el;
+
   function showLanding(): void {
     if (landingDismissed || overlayEl) return;
     overlayEl = buildLanding({
+      themeToggle: overlayThemeToggle(),
       onAbout: () => goTo(ABOUT_HASH),
       // "Open the full engine" lands on the hero's own view rather than an
       // empty canvas telling the visitor to load a sequence - which is the
@@ -1183,6 +1191,7 @@ export function mountApp(root: HTMLElement): void {
   function showAbout(): void {
     overlayEl?.remove();
     overlayEl = buildAbout({
+      themeToggle: overlayThemeToggle(),
       onGallery: () => goTo(GALLERY_HASH),
       onEngine: () => { dismissOverlay(false); openEntry(heroEntry()); picker.focus(); },
     });

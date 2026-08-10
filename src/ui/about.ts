@@ -70,6 +70,12 @@ function link(href: string, text: string): HTMLAnchorElement {
 export interface AboutOptions {
   onGallery(): void;
   onEngine(): void;
+  /**
+   * The theme switch, built by the caller so there is one implementation of
+   * it. This page covers the engine and marks it inert, so without a copy
+   * here the switch is simply unreachable from the About page.
+   */
+  themeToggle?: HTMLElement;
 }
 
 export function buildAbout(opts: AboutOptions): HTMLElement {
@@ -93,6 +99,10 @@ export function buildAbout(opts: AboutOptions): HTMLElement {
   toEngine.textContent = 'Open the engine →';
   toEngine.addEventListener('click', () => opts.onEngine());
   nav.append(toGallery, toEngine);
+  // Leading, matching where it sits in the engine's own header. Not a
+  // .page-nav-button, so the initial focus target below is still the first
+  // real navigation control rather than a theme switch.
+  if (opts.themeToggle) nav.prepend(opts.themeToggle);
 
   const body = document.createElement('div');
   body.className = 'about-body';

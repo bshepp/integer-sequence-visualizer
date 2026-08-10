@@ -478,3 +478,6 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 }
 .style-hint { font-size: 11px; color: #d8a657; align-self: center; }
 :root[data-theme="light"] .style-hint { color: #8a5a00; }
+/* Top-right of the landing, matching where the switch sits in the engine
+   header. Absolute so it does not join the centred column flow. */
+.landing-nav { position: absolute; top: 18px; right: 22px; }
