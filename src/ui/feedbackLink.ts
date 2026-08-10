@@ -2,7 +2,7 @@
  * The one feedback link, used on all three pages.
  *
  * It was inline in the engine's export bar and nowhere else, so the two pages
- * a visitor is most likely to arrive on - the gallery from a shared link, the
+ * a visitor is most likely to arrive on - the worked examples from a shared link, the
  * About page from a citation - offered no way to say anything back. Built here
  * rather than copied three times: three copies is how the label and the URL
  * drift apart, and a broken feedback link is worse than none because it fails

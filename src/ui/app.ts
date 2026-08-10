@@ -26,7 +26,7 @@ import {
   type Viewport,
 } from './viewport';
 import type { Size } from '../viz/types';
-import { buildLanding, shouldShowLanding, routeFor, GALLERY_HASH, ABOUT_HASH } from './landing';
+import { buildLanding, shouldShowLanding, routeFor, EXAMPLES_HASH, ABOUT_HASH } from './landing';
 import { buildAbout } from './about';
 import { buildStyleControls } from './styleControls';
 import { sequenceRows, toCSV, toJSON, downloadBlob } from './exportData';
@@ -35,8 +35,8 @@ import { buildDataTable } from './dataTable';
 import { citationFor } from './citation';
 import { buildFeedbackLink } from './feedbackLink';
 import { DEFAULT_STYLE, styleToParams, styleFromParams, type RenderStyle } from '../viz/style';
-import { heroEntry } from '../gallery/entries';
-import type { GalleryEntry } from '../gallery/types';
+import { heroEntry } from '../examples/entries';
+import type { ExampleEntry } from '../examples/types';
 
 const MODES = ['off', 'side', 'over', 'flip', 'ensemble'];
 const SURROGATES = ['permutation', 'difference', 'matched'];
@@ -115,17 +115,17 @@ export function mountApp(root: HTMLElement): void {
   const themeUi = buildThemeToggle(() => { styleUi.refresh(); nullStyleUi.refresh(); redraw(); });
   headerNav.appendChild(themeUi.el);
 
-  const navGallery = document.createElement('button');
-  navGallery.className = 'header-nav-button';
-  navGallery.type = 'button';
-  navGallery.textContent = 'Gallery';
-  navGallery.addEventListener('click', () => goTo(GALLERY_HASH));
+  const navExamples = document.createElement('button');
+  navExamples.className = 'header-nav-button';
+  navExamples.type = 'button';
+  navExamples.textContent = 'Worked examples';
+  navExamples.addEventListener('click', () => goTo(EXAMPLES_HASH));
   const navAbout = document.createElement('button');
   navAbout.className = 'header-nav-button';
   navAbout.type = 'button';
   navAbout.textContent = 'About';
   navAbout.addEventListener('click', () => goTo(ABOUT_HASH));
-  headerNav.append(navGallery, navAbout);
+  headerNav.append(navExamples, navAbout);
 
   header.append(wordmark, tagline, headerNav);
   root.appendChild(header);
@@ -1038,7 +1038,7 @@ export function mountApp(root: HTMLElement): void {
   // against the registry, params are merged over defaults, mode/surrogate
   // fall back if unrecognized, and decodeState itself returns null for
   // anything that isn't valid encoded JSON (leaving current state untouched).
-  // `presetSeq` short-circuits the sequence restore at the end: a gallery
+  // `presetSeq` short-circuits the sequence restore at the end: an example
   // entry already carries its own bundled terms, and the bulk data file caps
   // stored terms per sequence - so letting the normal lookup run would swap
   // the 600-term walk the visitor just clicked for an 80-term one. Same
@@ -1047,7 +1047,7 @@ export function mountApp(root: HTMLElement): void {
     const route = routeFor(hash);
     if (route === 'about') { showAbout(); return; }
     if (route === 'landing') {
-      // Explicitly navigating to #gallery is a deliberate request to see it,
+      // Explicitly navigating to #examples is a deliberate request to see it,
       // so it overrides the session's "already dismissed" flag. That flag
       // exists to stop the landing re-mounting after an incidental redraw --
       // a parameter tweak or a resize -- not to make the link a dead end.
@@ -1151,7 +1151,7 @@ export function mountApp(root: HTMLElement): void {
     if (focusEngine) picker.focus();
   }
 
-  function openEntry(entry: GalleryEntry): void {
+  function openEntry(entry: ExampleEntry): void {
     dismissOverlay(false);
     const hash = '#' + encodeState(entry.state);
     lastHashWritten = hash;
@@ -1185,7 +1185,7 @@ export function mountApp(root: HTMLElement): void {
     overlayEl?.remove();
     overlayEl = buildAbout({
       themeToggle: overlayThemeToggle(),
-      onGallery: () => goTo(GALLERY_HASH),
+      onExamples: () => goTo(EXAMPLES_HASH),
       onEngine: () => { dismissOverlay(false); openEntry(heroEntry()); picker.focus(); },
     });
     setEngineInert(true);
@@ -1231,7 +1231,7 @@ export function mountApp(root: HTMLElement): void {
     //
     // Routed by which page, not merely "not the engine". This used to call
     // showLanding() for both, so a cold load of #about - the address you would
-    // send someone to show them the citations - opened the gallery instead.
+    // send someone to show them the citations - opened the examples instead.
     // hashchange handled it correctly, so it only ever went wrong on the first
     // load, which is exactly the case a shared link exercises.
     if (initialRoute === 'about') showAbout();

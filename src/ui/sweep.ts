@@ -101,7 +101,7 @@ export function buildSweepView(opts: {
 
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        // Matches the engine and the gallery: every drawing on the site sits
+        // Matches the engine and the examples page: every drawing on the site sits
         // on the same ground, so a sweep cell can be compared with the main
         // view without the background being one of the differences.
         withCanvas('black', () => {

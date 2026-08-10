@@ -41,12 +41,12 @@ export function longestRun(seq: SequenceView): number {
  * evenly (unusual regularity), high means classes clump into sectors.
  *
  * Deterministic and pure: no RNG, so the same sequence always measures the
- * same value and the evidence recorded in the gallery reproduces exactly.
+ * same value and the recorded evidence reproduces exactly.
  *
  * NOTE: this statistic does NOT distinguish Kolakoski from its own
  * permutation null - measured 2.28e-5 against a band of 5.6e-7..1.32e-3, well
  * inside. It is kept because that negative result is worth having on record
- * (tests/gallery/verdicts.test.ts pins it), and because the reason is
+ * (tests/examples/verdicts.test.ts pins it), and because the reason is
  * instructive: the spiral distributes any two-valued sequence over roughly
  * the same directions regardless of order, so a direction-based statistic is
  * nearly blind to arrangement. switchRate is what actually separates them.
@@ -87,7 +87,7 @@ export function angularVariance(seq: SequenceView, modulus: number): number {
  * the same amount every pair of terms, which is what makes a walk close into
  * a regular figure instead of wandering.
  *
- * Deterministic and pure, so recorded gallery evidence reproduces exactly.
+ * Deterministic and pure, so recorded evidence reproduces exactly.
  *
  * Uses the conventional (biased) estimator: n-1 cross terms over n variance
  * terms, so a perfect alternation of length n reads -(n-1)/n rather than a
@@ -105,7 +105,7 @@ export function residueAlternation(seq: SequenceView, modulus: number): number {
  * The bare estimator, over any series of numbers. Split out from
  * residueAlternation because the pentagram experiment needs to run it over
  * thousands of shuffled residue arrays that never become a SequenceView, and
- * two copies of a statistic is how a gallery claim and its own experiment
+ * two copies of a statistic is how a published claim and its own experiment
  * quietly stop agreeing.
  */
 export function alternation(values: number[]): number {

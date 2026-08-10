@@ -1,4 +1,4 @@
-import { heroEntry } from '../gallery/entries';
+import { heroEntry } from '../examples/entries';
 import { paintEntry } from './landing';
 
 const W = 1200, H = 630;

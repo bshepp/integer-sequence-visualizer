@@ -70,7 +70,7 @@ describe('viewport maths', () => {
 // @vitest-environment jsdom
 import { mountApp } from '../../src/ui/app';
 import { turtleViz } from '../../src/viz/turtle';
-import { kolakoski } from '../../src/gallery/sequences';
+import { kolakoski } from '../../src/examples/sequences';
 import { SequenceView, type Sequence } from '../../src/sequence/sequence';
 
 const mkView = (terms: bigint[]) =>

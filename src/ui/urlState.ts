@@ -178,7 +178,7 @@ export function decodeState(hash: string): UrlState | null {
   const p = new URLSearchParams(raw);
   const vizId = p.get('viz');
   // Without a visualizer there is no view to restore, which is also how a
-  // reserved page word like "gallery" is rejected here rather than being
+  // reserved page word like "examples" is rejected here rather than being
   // mistaken for a state.
   if (!vizId) return null;
 

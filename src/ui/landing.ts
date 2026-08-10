@@ -1,5 +1,5 @@
-import { GALLERY, heroEntry } from '../gallery/entries';
-import type { GalleryEntry } from '../gallery/types';
+import { EXAMPLES, heroEntry } from '../examples/entries';
+import type { ExampleEntry } from '../examples/types';
 import { decodeState } from './urlState';
 import { SequenceView, type Sequence } from '../sequence/sequence';
 import { getVisualizer } from '../viz/registry';
@@ -8,7 +8,7 @@ import { canvasTheme, withCanvas } from '../viz/theme';
 import { buildFeedbackLink } from './feedbackLink';
 
 /** Reserved literal hashes, checked before decodeState so they cannot collide. */
-export const GALLERY_HASH = 'gallery';
+export const EXAMPLES_HASH = 'examples';
 export const ABOUT_HASH = 'about';
 
 export type Route = 'landing' | 'about' | 'engine';
@@ -22,7 +22,7 @@ export type Route = 'landing' | 'about' | 'engine';
 export function routeFor(hash: string): Route {
   const raw = hash.startsWith('#') ? hash.slice(1) : hash;
   if (raw === ABOUT_HASH) return 'about';
-  if (raw === '' || raw === GALLERY_HASH) return 'landing';
+  if (raw === '' || raw === EXAMPLES_HASH) return 'landing';
   return decodeState(raw) === null ? 'landing' : 'engine';
 }
 
@@ -30,7 +30,7 @@ export function shouldShowLanding(hash: string): boolean {
   return routeFor(hash) === 'landing';
 }
 
-const VERDICT_LABEL: Record<GalleryEntry['verdict'], string> = {
+const VERDICT_LABEL: Record<ExampleEntry['verdict'], string> = {
   real: 'Survives the null',
   artifact: 'Drawn by the layout',
   split: 'Half real, half technique',
@@ -44,7 +44,7 @@ const VERDICT_LABEL: Record<GalleryEntry['verdict'], string> = {
  * something the code no longer produces, which is precisely the drift the
  * verdict tests exist to prevent.
  */
-export function paintEntry(entry: GalleryEntry, canvas: HTMLCanvasElement, w: number, h: number): void {
+export function paintEntry(entry: ExampleEntry, canvas: HTMLCanvasElement, w: number, h: number): void {
   // Drawings are black-backed everywhere, page chrome follows the theme. A
   // light-mode visitor gets a light page with dark plates in it, which is the
   // arrangement a printed paper uses and keeps every image on the site looking
@@ -52,7 +52,7 @@ export function paintEntry(entry: GalleryEntry, canvas: HTMLCanvasElement, w: nu
   withCanvas('black', () => paintEntryInner(entry, canvas, w, h));
 }
 
-function paintEntryInner(entry: GalleryEntry, canvas: HTMLCanvasElement, w: number, h: number): void {
+function paintEntryInner(entry: ExampleEntry, canvas: HTMLCanvasElement, w: number, h: number): void {
   const dpr = window.devicePixelRatio || 1;
   canvas.width = w * dpr;
   canvas.height = h * dpr;
@@ -115,7 +115,7 @@ function paintEntryInner(entry: GalleryEntry, canvas: HTMLCanvasElement, w: numb
 
 export interface LandingOptions {
   onOpen(): void;
-  onPick(entry: GalleryEntry): void;
+  onPick(entry: ExampleEntry): void;
   onAbout(): void;
   /** See AboutOptions.themeToggle - this page hides the engine's copy too. */
   themeToggle?: HTMLElement;
@@ -194,18 +194,18 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
 
   const stripLabel = document.createElement('h2');
   stripLabel.className = 'landing-strip-label';
-  stripLabel.textContent = 'More examples: click any to open it in the engine';
+  stripLabel.textContent = 'More worked examples: click any to open it in the engine';
 
   const strip = document.createElement('div');
-  strip.className = 'gallery-strip';
-  for (const entry of GALLERY.slice(1)) {
+  strip.className = 'examples-strip';
+  for (const entry of EXAMPLES.slice(1)) {
     const btn = document.createElement('button');
-    btn.className = 'gallery-thumb';
+    btn.className = 'example-thumb';
     btn.type = 'button';
     const canvas = document.createElement('canvas');
     canvas.setAttribute('aria-hidden', 'true');
     const label = document.createElement('span');
-    label.className = 'gallery-thumb-label';
+    label.className = 'example-thumb-label';
     const tag = document.createElement('span');
     tag.className = `verdict verdict--${entry.verdict}`;
     tag.textContent = VERDICT_LABEL[entry.verdict];

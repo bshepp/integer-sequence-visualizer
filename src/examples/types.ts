@@ -4,7 +4,7 @@ import type { SurrogateType } from '../nullmodel/surrogates';
 
 /**
  * A recorded measurement backing a verdict - everything needed to reproduce
- * the claim deterministically, so tests/gallery/verdicts.test.ts can recompute
+ * the claim deterministically, so tests/examples/verdicts.test.ts can recompute
  * it rather than trusting the caption.
  */
 export interface Evidence {
@@ -32,7 +32,7 @@ export type Verdict =
   /** Not measured. Say so; do not guess. */
   | 'open';
 
-export interface GalleryEntry {
+export interface ExampleEntry {
   id: string;
   title: string;
   /** The exact engine view. Clicking the entry applies this hash. */

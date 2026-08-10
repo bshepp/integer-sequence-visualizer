@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { edgeUses, edgeReuse } from '../../src/viz/overlap';
 import { turtlePath } from '../../src/viz/turtle';
 import { SequenceView, type Sequence } from '../../src/sequence/sequence';
-import { kolakoski } from '../../src/gallery/sequences';
+import { kolakoski } from '../../src/examples/sequences';
 import { permutationSurrogate } from '../../src/nullmodel/surrogates';
 
 const asSeq = (terms: bigint[]): SequenceView =>

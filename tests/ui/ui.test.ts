@@ -111,7 +111,7 @@ describe('buildSequencePanel', () => {
     const labels = Array.from(el.querySelectorAll('.section-label')).map((n) => n.textContent);
     // "Loaded" sits directly under what loaded it, rather than below a shelf
     // of two dozen presets that pushes it off a short screen.
-    expect(labels).toEqual(['Load a sequence', 'Loaded', 'Gallery']);
+    expect(labels).toEqual(['Load a sequence', 'Loaded', 'Presets']);
     // Regression guard: section labels must not have displaced the elements
     // existing tests and app.ts rely on.
     expect(el.querySelectorAll('.tab-button').length).toBe(3);

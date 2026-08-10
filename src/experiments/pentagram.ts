@@ -1,8 +1,8 @@
 import { permutationSurrogate } from '../nullmodel/surrogates';
-import { alternation } from '../gallery/statistics';
+import { alternation } from '../examples/statistics';
 
 // Re-exported so this module reads as the single place the pentagram question
-// is answered, while the statistic itself stays shared with the gallery
+// is answered, while the statistic itself stays shared with the worked-example
 // evidence that quotes it.
 export { alternation };
 

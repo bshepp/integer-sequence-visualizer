@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { shouldShowLanding, buildLanding, GALLERY_HASH } from '../../src/ui/landing';
+import { shouldShowLanding, buildLanding, EXAMPLES_HASH } from '../../src/ui/landing';
 import { encodeState } from '../../src/ui/urlState';
-import { GALLERY } from '../../src/gallery/entries';
+import { EXAMPLES } from '../../src/examples/entries';
 import { registerAll } from '../../src/viz/all';
 import { clearRegistry } from '../../src/viz/registry';
 
@@ -15,11 +15,11 @@ describe('landing routing', () => {
   });
 
   it('shows for the reserved gallery hash', () => {
-    expect(shouldShowLanding('#' + GALLERY_HASH)).toBe(true);
+    expect(shouldShowLanding('#' + EXAMPLES_HASH)).toBe(true);
   });
 
   it('skips for a decodable engine state', () => {
-    expect(shouldShowLanding('#' + encodeState(GALLERY[0]!.state))).toBe(false);
+    expect(shouldShowLanding('#' + encodeState(EXAMPLES[0]!.state))).toBe(false);
   });
 
   it('shows for an undecodable hash rather than opening a broken engine', () => {
@@ -27,20 +27,20 @@ describe('landing routing', () => {
   });
 
   it('the reserved hash cannot collide with a real encoded state', () => {
-    for (const e of GALLERY) expect(encodeState(e.state)).not.toBe(GALLERY_HASH);
+    for (const e of EXAMPLES) expect(encodeState(e.state)).not.toBe(EXAMPLES_HASH);
   });
 });
 
 describe('landing content', () => {
   it('renders one button per non-hero entry plus the engine link', () => {
     const el = buildLanding({ onOpen: () => {}, onPick: () => {}, onAbout: () => {} });
-    expect(el.querySelectorAll('.gallery-thumb')).toHaveLength(GALLERY.length - 1);
+    expect(el.querySelectorAll('.example-thumb')).toHaveLength(EXAMPLES.length - 1);
     expect(el.querySelector('.landing-open')).not.toBeNull();
   });
 
   it('every thumbnail is a real button with an accessible name', () => {
     const el = buildLanding({ onOpen: () => {}, onPick: () => {}, onAbout: () => {} });
-    for (const t of el.querySelectorAll('.gallery-thumb')) {
+    for (const t of el.querySelectorAll('.example-thumb')) {
       expect(t.tagName).toBe('BUTTON');
       expect((t.textContent ?? '').trim().length).toBeGreaterThan(0);
     }
@@ -49,9 +49,9 @@ describe('landing content', () => {
   it('calls onPick with the entry when a thumbnail is clicked', () => {
     const onPick = vi.fn();
     const el = buildLanding({ onOpen: () => {}, onPick, onAbout: () => {} });
-    el.querySelector<HTMLButtonElement>('.gallery-thumb')!.click();
+    el.querySelector<HTMLButtonElement>('.example-thumb')!.click();
     expect(onPick).toHaveBeenCalledTimes(1);
-    expect(GALLERY).toContain(onPick.mock.calls[0]![0]);
+    expect(EXAMPLES).toContain(onPick.mock.calls[0]![0]);
   });
 
   it('calls onOpen from the engine button', () => {
@@ -91,9 +91,9 @@ describe('three-page routing', () => {
   it('maps each hash to exactly one page', () => {
     expect(routeFor('')).toBe('landing');
     expect(routeFor('#')).toBe('landing');
-    expect(routeFor('#' + GALLERY_HASH)).toBe('landing');
+    expect(routeFor('#' + EXAMPLES_HASH)).toBe('landing');
     expect(routeFor('#' + ABOUT_HASH)).toBe('about');
-    expect(routeFor('#' + encodeState(GALLERY[0]!.state))).toBe('engine');
+    expect(routeFor('#' + encodeState(EXAMPLES[0]!.state))).toBe('engine');
   });
 
   it('sends an undecodable hash to the landing rather than a broken engine', () => {
@@ -101,16 +101,16 @@ describe('three-page routing', () => {
   });
 
   it('reserved words cannot collide with an encoded state', () => {
-    for (const e of GALLERY) {
+    for (const e of EXAMPLES) {
       const encoded = encodeState(e.state);
-      expect(encoded).not.toBe(GALLERY_HASH);
+      expect(encoded).not.toBe(EXAMPLES_HASH);
       expect(encoded).not.toBe(ABOUT_HASH);
     }
   });
 });
 
 describe('about page', () => {
-  const build = () => buildAbout({ onGallery: () => {}, onEngine: () => {} });
+  const build = () => buildAbout({ onExamples: () => {}, onEngine: () => {} });
 
   it('offers navigation to both other pages', () => {
     const el = build();
@@ -120,12 +120,12 @@ describe('about page', () => {
   });
 
   it('calls the right handler for each destination', () => {
-    const onGallery = vi.fn(), onEngine = vi.fn();
-    const el = buildAbout({ onGallery, onEngine });
+    const onExamples = vi.fn(), onEngine = vi.fn();
+    const el = buildAbout({ onExamples, onEngine });
     const [gallery, engine] = [...el.querySelectorAll<HTMLButtonElement>('.page-nav-button')];
     gallery!.click();
     engine!.click();
-    expect(onGallery).toHaveBeenCalledTimes(1);
+    expect(onExamples).toHaveBeenCalledTimes(1);
     expect(onEngine).toHaveBeenCalledTimes(1);
   });
 

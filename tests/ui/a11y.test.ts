@@ -184,7 +184,7 @@ describe('sequence panel structure and status', () => {
   it('section labels are real headings', () => {
     const el = build();
     const headings = [...el.querySelectorAll('h2')].map((h) => h.textContent);
-    expect(headings).toEqual(expect.arrayContaining(['Load a sequence', 'Gallery', 'Loaded']));
+    expect(headings).toEqual(expect.arrayContaining(['Load a sequence', 'Presets', 'Loaded']));
   });
 
   it('search status is a live region', () => {
@@ -260,7 +260,7 @@ describe('whole-app accessibility conformance', () => {
 
   it('routes every click target through a real interactive element', () => {
     const root = mount();
-    for (const sel of ['.gallery-thumb', '.preset-button', '.tab-button', '.landing-open', '.landing-hero-button']) {
+    for (const sel of ['.example-thumb', '.preset-button', '.tab-button', '.landing-open', '.landing-hero-button']) {
       for (const el of root.querySelectorAll(sel)) {
         expect(['BUTTON', 'A'], `${sel} is a ${el.tagName}`).toContain(el.tagName);
       }
@@ -306,7 +306,7 @@ describe('modal layers contain focus completely', () => {
   });
 });
 
-describe('#gallery is a working link, not just a startup route', () => {
+describe('#examples is a working link, not just a startup route', () => {
   it('reopens the landing after it has been dismissed', () => {
     // jsdom shares one location across the file; a prior test's engine hash
     // would otherwise mean the landing never mounts here in the first place.
@@ -319,7 +319,10 @@ describe('#gallery is a working link, not just a startup route', () => {
     expect(root.querySelector('.landing')).toBeNull();
 
     // Same-document navigation to the reserved hash must bring it back.
-    location.hash = '#gallery';
+    // Deliberately the real reserved word: an unrecognised hash also lands
+    // here by falling through decodeState, so testing #gallery after the
+    // rename would have passed without exercising the route at all.
+    location.hash = '#examples';
     window.dispatchEvent(new HashChangeEvent('hashchange'));
     expect(root.querySelector('.landing')).not.toBeNull();
   });

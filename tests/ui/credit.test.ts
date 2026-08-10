@@ -68,7 +68,7 @@ describe('the theme switch reaches every page', () => {
   });
 
   it('is on the About page, after the navigation and not stealing its focus', () => {
-    const el = buildAbout({ onGallery() {}, onEngine() {}, themeToggle: (() => {
+    const el = buildAbout({ onExamples() {}, onEngine() {}, themeToggle: (() => {
       const b = document.createElement('button');
       b.className = 'theme-toggle';
       return b;
@@ -136,7 +136,7 @@ describe('feedback is reachable from every page', () => {
     // gallery from a shared link, About from a citation - and neither offered
     // any way to say something back.
     const landing = buildLanding({ onOpen: noop, onPick: noop, onAbout: noop });
-    const about = buildAbout({ onGallery: noop, onEngine: noop });
+    const about = buildAbout({ onExamples: noop, onEngine: noop });
     for (const [name, el] of [['landing', landing], ['about', about]] as const) {
       const a = el.querySelector<HTMLAnchorElement>(`a[href="${ISSUES}"]`);
       expect(a, `no feedback link on the ${name}`).not.toBeNull();

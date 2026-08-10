@@ -70,7 +70,7 @@ function link(href: string, text: string): HTMLAnchorElement {
 }
 
 export interface AboutOptions {
-  onGallery(): void;
+  onExamples(): void;
   onEngine(): void;
   /**
    * The theme switch, built by the caller so there is one implementation of
@@ -117,17 +117,17 @@ export function buildAbout(opts: AboutOptions): HTMLElement {
 
   const nav = document.createElement('div');
   nav.className = 'page-nav';
-  const toGallery = document.createElement('button');
-  toGallery.className = 'page-nav-button';
-  toGallery.type = 'button';
-  toGallery.textContent = 'Gallery';
-  toGallery.addEventListener('click', () => opts.onGallery());
+  const toExamples = document.createElement('button');
+  toExamples.className = 'page-nav-button';
+  toExamples.type = 'button';
+  toExamples.textContent = 'Worked examples';
+  toExamples.addEventListener('click', () => opts.onExamples());
   const toEngine = document.createElement('button');
   toEngine.className = 'page-nav-button page-nav-button--primary';
   toEngine.type = 'button';
   toEngine.textContent = 'Open the engine';
   toEngine.addEventListener('click', () => opts.onEngine());
-  nav.append(toGallery, toEngine);
+  nav.append(toExamples, toEngine);
   // Trailing, and set apart in CSS: it is a display preference sitting beside
   // two navigation actions, and grouping it with them implied it was a third
   // way to leave the page. Also keeps it clear of the initial focus target,
@@ -144,7 +144,7 @@ export function buildAbout(opts: AboutOptions): HTMLElement {
 
     section('The method', 'about-method'),
     PARA('Every rendering here can be placed beside a null model of itself: the same terms in a random order, the same steps between terms reordered, or fresh numbers matched to the same trend and spread. If a pattern survives having the sequence scrambled underneath it, the technique produced the pattern rather than the numbers.'),
-    PARA('That test is necessary but not sufficient, and the gallery includes a deliberate counterexample: a(n) = n on a spiral produces striking structure that the null model endorses, because shuffling really does destroy it. Yet every sequence climbing by a constant draws the same picture, so it distinguishes nothing. A null model tells you whether a pattern survived a particular scrambling. It cannot tell you whether the pattern is worth anything.'),
+    PARA('That test is necessary but not sufficient, and the worked examples include a deliberate counterexample: a(n) = n on a spiral produces striking structure that the null model endorses, because shuffling really does destroy it. Yet every sequence climbing by a constant draws the same picture, so it distinguishes nothing. A null model tells you whether a pattern survived a particular scrambling. It cannot tell you whether the pattern is worth anything.'),
 
     section('How the randomness works', 'about-randomness'),
     PARA('Nothing here uses the browser\'s random number generator. Every null model is drawn by a mulberry32 generator started from the seed shown in the null model bar, and shuffles are Fisher-Yates over that stream. The consequence worth knowing is that the randomness is reproducible: the same sequence, surrogate and seed always produce the same null model, on any machine and on any day. That is why a shared link reproduces the exact picture it was shared for, and why every measurement quoted on this site can be recomputed rather than taken on trust.'),

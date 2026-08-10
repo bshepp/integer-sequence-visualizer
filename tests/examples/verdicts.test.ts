@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { GALLERY } from '../../src/gallery/entries';
-import { switchRate, longestRun, angularVariance, residueAlternation } from '../../src/gallery/statistics';
+import { EXAMPLES } from '../../src/examples/entries';
+import { switchRate, longestRun, angularVariance, residueAlternation } from '../../src/examples/statistics';
 import { makeSurrogate } from '../../src/nullmodel/surrogates';
 import { SequenceView, type Sequence } from '../../src/sequence/sequence';
-import type { Evidence } from '../../src/gallery/types';
+import type { Evidence } from '../../src/examples/types';
 
 /** Statistic name -> implementation, for reproducing recorded evidence. */
 const STATISTICS: Record<string, (seq: SequenceView, params: Record<string, unknown>) => number> = {
@@ -31,8 +31,8 @@ function nullBand(
   return { lo: at(0.025), hi: at(0.975) };
 }
 
-describe('gallery verdicts are computed, not asserted', () => {
-  const claimed = GALLERY.filter((e) => e.evidence);
+describe('verdicts are computed, not asserted', () => {
+  const claimed = EXAMPLES.filter((e) => e.evidence);
 
   it('has at least one measured claim', () => {
     expect(claimed.length).toBeGreaterThan(0);
@@ -66,7 +66,7 @@ describe('gallery verdicts are computed, not asserted', () => {
   }
 
   it("every 'artifact' without evidence explains itself in prose", () => {
-    for (const e of GALLERY) {
+    for (const e of EXAMPLES) {
       if (e.verdict === 'artifact' && !e.evidence) {
         expect(e.body.length, `${e.id}`).toBeGreaterThan(150);
       }
@@ -80,7 +80,7 @@ describe('negative result: angular variance does not separate Kolakoski', () => 
   // Pinning it stops a later contributor from adopting it as evidence, and
   // makes the failure visible if the statistic or the sequence ever changes.
   it('measures inside its own permutation null band', () => {
-    const entry = GALLERY[0]!;
+    const entry = EXAMPLES[0]!;
     const ev: Evidence = { statistic: 'angularVariance', measured: 0, bandLo: 0, bandHi: 0,
       surrogate: 'permutation', n: 200, seed: 1 };
     const params = entry.state.params;
@@ -96,7 +96,7 @@ describe('definitional facts asserted rather than claimed', () => {
     // Follows from the definition (it encodes its own run lengths, and its
     // terms are 1 and 2), so this is checked rather than measured against a
     // band -- but the hero's body states it, so it is still tested.
-    const entry = GALLERY.find((e) => e.id === 'kolakoski-spiral')!;
+    const entry = EXAMPLES.find((e) => e.id === 'kolakoski-spiral')!;
     expect(longestRun(new SequenceView(entry.sequence))).toBe(2);
   });
 });

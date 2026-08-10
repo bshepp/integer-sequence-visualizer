@@ -12,7 +12,7 @@ import { polyarcViz } from '../../src/viz/polyarc';
 import { digitWalkViz } from '../../src/viz/digitWalk';
 import { histogramViz } from '../../src/viz/histogram';
 import { autocorrViz } from '../../src/viz/autocorrelation';
-import { kolakoski } from '../../src/gallery/sequences';
+import { kolakoski } from '../../src/examples/sequences';
 import type { Params, Visualizer } from '../../src/viz/types';
 
 const SIZE = { width: 400, height: 300 };

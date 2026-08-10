@@ -337,7 +337,7 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
   el.appendChild(info);
 
   // presets shelf
-  el.appendChild(sectionLabel('Gallery'));
+  el.appendChild(sectionLabel('Presets'));
   const shelf = document.createElement('div');
   shelf.className = 'presets-shelf';
   for (const p of PRESETS) {

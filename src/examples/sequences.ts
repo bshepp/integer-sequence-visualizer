@@ -5,7 +5,7 @@ import type { Sequence } from '../sequence/sequence';
  *
  * Generated rather than pasted so it is exactly right at any length, and
  * still labelled with its A-number so the OEIS attribution and entry link
- * survive - the reason gallery entries bundle a full Sequence rather than a
+ * survive - the reason example entries bundle a full Sequence rather than a
  * bare term list.
  */
 export function kolakoski(n: number): bigint[] {
@@ -101,7 +101,7 @@ export function oeisSeq(aNumber: string, name: string, terms: bigint[]): Sequenc
  * Fifteen terms, which is what the OEIS entry itself lists and therefore what
  * clicking through to the engine loads. That matters here more than usual:
  * the figure this sequence draws is a short-run picture and looks materially
- * different with more terms, so bundling a longer list would make the gallery
+ * different with more terms, so bundling a longer list would make the
  * thumbnail a promise the engine does not keep.
  */
 export const A000464_TERMS: bigint[] = [

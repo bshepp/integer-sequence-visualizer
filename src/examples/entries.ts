@@ -1,14 +1,14 @@
-import type { GalleryEntry } from './types';
+import type { ExampleEntry } from './types';
 import { kolakoski, fibonacci, naturals, primes, recaman, thueMorse, ruler, norgard, oeisSeq, A000464_TERMS } from './sequences';
 
 const N = 600;
 
 // Every caption that claims something about structure is backed by a
-// measurement in `evidence`, recomputed in tests/gallery/verdicts.test.ts.
+// measurement in `evidence`, recomputed in tests/examples/verdicts.test.ts.
 // Entries we have not measured carry verdict 'open' and say so - an honest
 // and rather more interesting thing for this particular landing page to
 // admit than a guess would be.
-export const GALLERY: GalleryEntry[] = [
+export const EXAMPLES: ExampleEntry[] = [
   {
     id: 'kolakoski-spiral',
     title: 'Structure that survives the null',
@@ -168,6 +168,6 @@ export const GALLERY: GalleryEntry[] = [
   },
 ];
 
-export function heroEntry(): GalleryEntry {
-  return GALLERY[0]!;
+export function heroEntry(): ExampleEntry {
+  return EXAMPLES[0]!;
 }

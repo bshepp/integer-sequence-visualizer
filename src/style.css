@@ -191,15 +191,15 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
   padding: 10px 22px; font: 600 15px system-ui; cursor: pointer; margin-top: 4px;
 }
 .landing-strip-label { margin: 20px 0 0; font-size: 13px; font-weight: 400; color: var(--muted); }
-.gallery-strip { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; max-width: 1100px; }
-.gallery-thumb {
+.examples-strip { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; max-width: 1100px; }
+.example-thumb {
   background: var(--panel); border: 1px solid #3a3d44; border-radius: 6px;
   padding: 8px; cursor: pointer; color: var(--text);
   display: flex; flex-direction: column; gap: 6px; width: 238px; text-align: left;
 }
-.gallery-thumb:hover { border-color: var(--accent); }
-.gallery-thumb canvas { border-radius: 4px; max-width: 100%; }
-.gallery-thumb-label { font-size: 12px; line-height: 1.4; }
+.example-thumb:hover { border-color: var(--accent); }
+.example-thumb canvas { border-radius: 4px; max-width: 100%; }
+.example-thumb-label { font-size: 12px; line-height: 1.4; }
 .verdict {
   font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
   padding: 1px 5px; border-radius: 3px; white-space: nowrap;
@@ -358,7 +358,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 :root[data-theme="light"] .verdict--open { background: #e7e9ee; color: #565c66; }
 :root[data-theme="light"] .sweep-overlay { background: rgba(255,255,255,0.85); }
 :root[data-theme="light"] .sweep-cell,
-:root[data-theme="light"] .gallery-thumb,
+:root[data-theme="light"] .example-thumb,
 :root[data-theme="light"] .explain-panel { background: #ffffff; border-color: #c8ccd4; }
 :root[data-theme="light"] .busy { background: rgba(255,255,255,0.92); }
 

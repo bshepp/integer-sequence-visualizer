@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { runLineShapeExperiment } from '../../src/experiments/lineShape';
 import { SequenceView, type Sequence } from '../../src/sequence/sequence';
-import { kolakoski } from '../../src/gallery/sequences';
+import { kolakoski } from '../../src/examples/sequences';
 
 const view = new SequenceView({
   terms: kolakoski(400), aNumber: 'A000002', name: 'Kolakoski', offset: 0, source: 'oeis',
