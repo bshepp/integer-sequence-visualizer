@@ -706,20 +706,27 @@ describe('per-panel canvas in the address', () => {
       seqRef: null, vizId: 'turtle', params: {}, mode: 'side',
       surrogate: 'permutation', seed: 1,
       style: { ...DEFAULT_STYLE, canvas: 'white' },
-      nullStyle: { ...DEFAULT_STYLE, canvas: 'black' },
+      // 'theme' rather than 'black': black is the default now, so it is the
+      // one value the encoder is supposed to leave out.
+      nullStyle: { ...DEFAULT_STYLE, canvas: 'theme' },
     });
     expect(split).toContain('canvas=white');
-    expect(split).toContain('null.canvas=black');
+    expect(split).toContain('null.canvas=theme');
     const back = decodeState(split)!;
     expect(back.style!.canvas).toBe('white');
-    expect(back.nullStyle!.canvas).toBe('black');
+    expect(back.nullStyle!.canvas).toBe('theme');
     // The namespaced key must not leak into the visualizer's parameters.
     expect(back.params['null.canvas']).toBeUndefined();
   });
 
-  it('falls back to theme for a malformed value rather than a blank canvas', () => {
+  it('falls back to the default for a malformed value, never passes it through', () => {
+    // The failure this guards is a garbage value reaching withCanvas, where
+    // anything that is not 'theme' or 'white' resolves to black by accident
+    // rather than by decision.
     const back = decodeState('viz=turtle&canvas=chartreuse')!;
-    expect(back.style?.canvas ?? 'theme').toBe('theme');
+    const c = back.style?.canvas ?? DEFAULT_STYLE.canvas;
+    expect(c).toBe(DEFAULT_STYLE.canvas);
+    expect(['theme', 'white', 'black']).toContain(c);
   });
 });
 

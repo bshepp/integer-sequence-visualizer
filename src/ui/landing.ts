@@ -4,7 +4,7 @@ import { decodeState } from './urlState';
 import { SequenceView, type Sequence } from '../sequence/sequence';
 import { getVisualizer } from '../viz/registry';
 import { surrogateSequence } from './comparison';
-import { canvasTheme } from '../viz/theme';
+import { canvasTheme, withCanvas } from '../viz/theme';
 
 /** Reserved literal hashes, checked before decodeState so they cannot collide. */
 export const GALLERY_HASH = 'gallery';
@@ -44,6 +44,14 @@ const VERDICT_LABEL: Record<GalleryEntry['verdict'], string> = {
  * verdict tests exist to prevent.
  */
 export function paintEntry(entry: GalleryEntry, canvas: HTMLCanvasElement, w: number, h: number): void {
+  // Drawings are black-backed everywhere, page chrome follows the theme. A
+  // light-mode visitor gets a light page with dark plates in it, which is the
+  // arrangement a printed paper uses and keeps every image on the site looking
+  // the same to everybody.
+  withCanvas('black', () => paintEntryInner(entry, canvas, w, h));
+}
+
+function paintEntryInner(entry: GalleryEntry, canvas: HTMLCanvasElement, w: number, h: number): void {
   const dpr = window.devicePixelRatio || 1;
   canvas.width = w * dpr;
   canvas.height = h * dpr;

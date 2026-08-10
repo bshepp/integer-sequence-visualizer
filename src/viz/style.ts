@@ -41,7 +41,11 @@ export const DEFAULT_STYLE: RenderStyle = {
   showOverlap: false,
   showLabels: true,
   blackLine: false,
-  canvas: 'theme',
+  // Black rather than 'theme'. The spectrum is tuned for a dark ground and
+  // reads far more vividly on one, and a link shared to a mailing list should
+  // show everyone the same picture rather than one that depends on the
+  // reader's OS colour preference. 'theme' is still one dropdown away.
+  canvas: 'black',
 };
 
 const JOINS: CanvasLineJoin[] = ['miter', 'round', 'bevel'];
