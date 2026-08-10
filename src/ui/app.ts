@@ -19,7 +19,7 @@ import { buildExplainPanel } from './explainPanel';
 import { SURROGATE_EXPLAIN } from '../nullmodel/surrogates';
 import { buildReadout, describeHit, drawMarker, correspondingIndex, drawCanvasLabel } from './readout';
 import { hitIndex, type Hit } from '../viz/hit';
-import { canvasTheme } from '../viz/theme';
+import { canvasTheme, withCanvas } from '../viz/theme';
 import { initialTheme, applyTheme, buildThemeToggle } from './themeToggle';
 import {
   IDENTITY_VIEWPORT, applyViewport, screenToWorld, worldToScreen, zoomAt, clampViewport,
@@ -750,29 +750,38 @@ export function mountApp(root: HTMLElement): void {
       seq: typeof state.seq, w: number, h: number, ox: number, label: string,
       panel: 'real' | 'null' = 'real',
     ) => {
+      const drawStyle = styleFor(panel);
       ctx.save();
       ctx.translate(ox, 0);
       ctx.beginPath();
       ctx.rect(0, 0, w, h);
       ctx.clip();
-      ctx.save();
-      applyViewport(ctx, viewport);
-      try {
-        // Stroke width is divided by the zoom so a line keeps its on-screen
-        // thickness: zooming in should reveal finer structure, not fatten
-        // every line until the drawing fills in.
-        const drawStyle = styleFor(panel);
-        viz.render(new SequenceView(seq!), {
-          ...state.params, ...styleToParams(drawStyle),
-          styleLineWidth: drawStyle.lineWidth / viewport.zoom,
-        }, ctx, { width: w, height: h });
-      } catch (e) {
-        showError(`Render failed: ${e instanceof Error ? e.message : String(e)}`);
-      }
-      ctx.restore();
-      // Drawn after restoring, so labels keep their size at any zoom, and
-      // backed so the rendering underneath cannot swallow them.
-      if (styleFor(panel).showLabels) drawCanvasLabel(ctx, label, 10, 16);
+      // Everything this panel draws runs under its own palette, including the
+      // background fill and the label. The clip above is what makes a
+      // per-panel background possible at all: the fill cannot escape its half.
+      withCanvas(drawStyle.canvas, () => {
+        if (drawStyle.canvas !== 'theme') {
+          ctx.fillStyle = canvasTheme().bg;
+          ctx.fillRect(0, 0, w, h);
+        }
+        ctx.save();
+        applyViewport(ctx, viewport);
+        try {
+          // Stroke width is divided by the zoom so a line keeps its on-screen
+          // thickness: zooming in should reveal finer structure, not fatten
+          // every line until the drawing fills in.
+          viz.render(new SequenceView(seq!), {
+            ...state.params, ...styleToParams(drawStyle),
+            styleLineWidth: drawStyle.lineWidth / viewport.zoom,
+          }, ctx, { width: w, height: h });
+        } catch (e) {
+          showError(`Render failed: ${e instanceof Error ? e.message : String(e)}`);
+        }
+        ctx.restore();
+        // Drawn after restoring, so labels keep their size at any zoom, and
+        // backed so the rendering underneath cannot swallow them.
+        if (drawStyle.showLabels) drawCanvasLabel(ctx, label, 10, 16);
+      });
       ctx.restore();
     };
 
@@ -805,21 +814,34 @@ export function mountApp(root: HTMLElement): void {
         );
       }
     } else if (comparison.mode === 'over') {
-      const surr = surrogateSequence(state.seq, comparison.surrogate, comparison.seed);
+      // Captured before the callback below: state.seq is a mutable property,
+      // so TypeScript drops the null-narrowing from the guard above as soon as
+      // it is read inside a closure.
+      const realSeq = state.seq;
+      const surr = surrogateSequence(realSeq, comparison.surrogate, comparison.seed);
       // Null underneath in flat grey, real on top in full colour: the eye
       // should read the real sequence as figure and the null as ground.
       // Grey underneath is the default because the eye should read the real
       // sequence as figure and the null as ground. An explicit unlinked style
       // is a deliberate choice and overrides that.
       const overNull = styleLinked ? { ...style, colorMode: 'none' as const } : nullStyle;
-      ctx.save();
-      ctx.globalAlpha = 0.5;
-      viz.render(new SequenceView(surr), { ...state.params, ...styleToParams(overNull) }, ctx, { width, height });
-      ctx.restore();
-      viz.render(view, { ...state.params, ...styleToParams(style) }, ctx, { width, height });
-      if (style.showLabels) {
-        drawCanvasLabel(ctx, `${seqLabel(state.seq)} - real over ${comparison.surrogate} null${styleLinked ? ' (grey)' : ''}`, 10, 16);
-      }
+      // One canvas holds both drawings here, so the real style picks the
+      // background for both. Taking it from the null instead would let the
+      // ground colour be chosen by the panel the eye is meant to ignore.
+      withCanvas(style.canvas, () => {
+        if (style.canvas !== 'theme') {
+          ctx.fillStyle = canvasTheme().bg;
+          ctx.fillRect(0, 0, width, height);
+        }
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        viz.render(new SequenceView(surr), { ...state.params, ...styleToParams(overNull) }, ctx, { width, height });
+        ctx.restore();
+        viz.render(view, { ...state.params, ...styleToParams(style) }, ctx, { width, height });
+        if (style.showLabels) {
+          drawCanvasLabel(ctx, `${seqLabel(realSeq)} - real over ${comparison.surrogate} null${styleLinked ? ' (grey)' : ''}`, 10, 16);
+        }
+      });
       if (pinnedIndex !== null && viz.position) {
         const p = viz.position(view, state.params, { width, height }, pinnedIndex);
         if (p) drawMarker(ctx, worldToScreen(viewport, p.x, p.y), canvasTheme().real);

@@ -1,5 +1,5 @@
 import type { Params, ParamValue } from './types';
-import { canvasTheme } from './theme';
+import { canvasTheme, type CanvasChoice } from './theme';
 
 export type ColorMode = 'spectrum' | 'flat' | 'none';
 
@@ -25,6 +25,8 @@ export interface RenderStyle {
    * figures going into a paper, where a hue ramp does not survive the journey.
    */
   blackLine: boolean;
+  /** What this panel draws on. 'theme' follows the page. */
+  canvas: CanvasChoice;
 }
 
 export const DEFAULT_STYLE: RenderStyle = {
@@ -39,11 +41,13 @@ export const DEFAULT_STYLE: RenderStyle = {
   showOverlap: false,
   showLabels: true,
   blackLine: false,
+  canvas: 'theme',
 };
 
 const JOINS: CanvasLineJoin[] = ['miter', 'round', 'bevel'];
 const CAPS: CanvasLineCap[] = ['butt', 'round', 'square'];
 const MODES: ColorMode[] = ['spectrum', 'flat', 'none'];
+const CANVASES: CanvasChoice[] = ['theme', 'white', 'black'];
 
 const MAX_WIDTH = 12;
 const NEUTRAL = '#9aa0aa';
@@ -64,6 +68,7 @@ export function styleToParams(s: RenderStyle): Params {
     styleShowOverlap: s.showOverlap,
     styleShowLabels: s.showLabels,
     styleBlackLine: s.blackLine,
+    styleCanvas: s.canvas,
   };
 }
 
@@ -84,6 +89,7 @@ export function styleFromParams(p: Params): RenderStyle {
     showOverlap: p.styleShowOverlap === true,
     showLabels: p.styleShowLabels !== false,
     blackLine: p.styleBlackLine === true,
+    canvas: pick(p.styleCanvas, CANVASES, DEFAULT_STYLE.canvas),
   };
 }
 

@@ -1,7 +1,7 @@
 import type { Params, ParamValue } from '../viz/types';
 import type { ComparisonMode } from './comparison';
 import type { SurrogateType } from '../nullmodel/surrogates';
-import { DEFAULT_STYLE, type RenderStyle } from '../viz/style';
+import { DEFAULT_STYLE, styleFromParams, type RenderStyle } from '../viz/style';
 import { IDENTITY_VIEWPORT, type Viewport } from './viewport';
 
 export type SeqRef =
@@ -50,11 +50,11 @@ const RESERVED = new Set([
   'seq', 'formula', 'terms', 'paste', 'viz',
   'null', 'surrogate', 'seed', 'ensemble',
   'line', 'join', 'cap', 'colour', 'hue',
-  'zoom', 'pan', 'unlink', 'retread', 'nolabels', 'black',
+  'zoom', 'pan', 'unlink', 'retread', 'nolabels', 'black', 'canvas',
 ]);
 
 /** Style keys for either panel; the null's are namespaced with a prefix. */
-const STYLE_KEYS = ['line', 'join', 'cap', 'colour', 'hue', 'retread', 'nolabels', 'black'] as const;
+const STYLE_KEYS = ['line', 'join', 'cap', 'colour', 'hue', 'retread', 'nolabels', 'black', 'canvas'] as const;
 const NULL_PREFIX = 'null.';
 
 function encodeStyle(p: URLSearchParams, st: RenderStyle, prefix = ''): void {
@@ -69,6 +69,7 @@ function encodeStyle(p: URLSearchParams, st: RenderStyle, prefix = ''): void {
   // Named for the non-default state, so the common case emits no key at all.
   if (st.showLabels !== DEFAULT_STYLE.showLabels) p.set(`${prefix}nolabels`, '1');
   if (st.blackLine !== DEFAULT_STYLE.blackLine) p.set(`${prefix}black`, '1');
+  if (st.canvas !== DEFAULT_STYLE.canvas) p.set(`${prefix}canvas`, st.canvas);
 }
 
 function decodeStyle(p: URLSearchParams, prefix = ''): RenderStyle | undefined {
@@ -76,18 +77,26 @@ function decodeStyle(p: URLSearchParams, prefix = ''): RenderStyle | undefined {
   if (!has) return undefined;
   const hue = p.get(`${prefix}hue`);
   const [hueStart, hueEnd] = hue ? hue.split('-').map(Number) : [undefined, undefined];
-  return {
-    ...DEFAULT_STYLE,
-    lineWidth: num(p.get(`${prefix}line`)) ?? DEFAULT_STYLE.lineWidth,
-    lineJoin: (p.get(`${prefix}join`) ?? DEFAULT_STYLE.lineJoin) as CanvasLineJoin,
-    lineCap: (p.get(`${prefix}cap`) ?? DEFAULT_STYLE.lineCap) as CanvasLineCap,
-    colorMode: (p.get(`${prefix}colour`) ?? DEFAULT_STYLE.colorMode) as RenderStyle['colorMode'],
-    hueStart: Number.isFinite(hueStart) ? hueStart! : DEFAULT_STYLE.hueStart,
-    hueEnd: Number.isFinite(hueEnd) ? hueEnd! : DEFAULT_STYLE.hueEnd,
-    showOverlap: p.has(`${prefix}retread`),
-    showLabels: !p.has(`${prefix}nolabels`),
-    blackLine: p.has(`${prefix}black`),
-  };
+  // Handed to styleFromParams rather than cast into shape here. These values
+  // come from an address a stranger can type, and the casts this replaced were
+  // assertions rather than checks: "#viz=turtle&join=banana" produced a style
+  // whose lineJoin was the string "banana", and an unknown canvas fell through
+  // to black. The params bridge already validates every field against its
+  // allowed set and clamps the numbers, so decoding through it means the
+  // address gets exactly the same treatment as a style from anywhere else,
+  // with one implementation to keep honest instead of two.
+  return styleFromParams({
+    styleLineWidth: num(p.get(`${prefix}line`)) ?? DEFAULT_STYLE.lineWidth,
+    styleLineJoin: p.get(`${prefix}join`) ?? DEFAULT_STYLE.lineJoin,
+    styleLineCap: p.get(`${prefix}cap`) ?? DEFAULT_STYLE.lineCap,
+    styleColorMode: p.get(`${prefix}colour`) ?? DEFAULT_STYLE.colorMode,
+    styleHueStart: Number.isFinite(hueStart) ? hueStart! : DEFAULT_STYLE.hueStart,
+    styleHueEnd: Number.isFinite(hueEnd) ? hueEnd! : DEFAULT_STYLE.hueEnd,
+    styleShowOverlap: p.has(`${prefix}retread`),
+    styleShowLabels: !p.has(`${prefix}nolabels`),
+    styleBlackLine: p.has(`${prefix}black`),
+    styleCanvas: p.get(`${prefix}canvas`) ?? DEFAULT_STYLE.canvas,
+  });
 }
 
 const num = (v: string | null): number | undefined => {

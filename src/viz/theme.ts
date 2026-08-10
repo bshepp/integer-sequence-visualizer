@@ -63,3 +63,35 @@ export function canvasTheme(): CanvasPalette {
 export function setCanvasTheme(name: ThemeName): void {
   current = name === 'light' ? LIGHT_PALETTE : DARK_PALETTE;
 }
+
+/** What a panel draws on: the page theme, or a pinned background. */
+export type CanvasChoice = 'theme' | 'white' | 'black';
+
+// True white and true black rather than the theme's #fbfbfd / #14161a. These
+// exist for figures leaving the site - a journal wants white, and the site's
+// off-white carries a visible grey cast into a printed page. Everything else
+// is inherited, because the light palette's ink is already tuned for a pale
+// background and the dark palette's for a dark one.
+export const WHITE_PALETTE: CanvasPalette = { ...LIGHT_PALETTE, bg: '#ffffff' };
+export const BLACK_PALETTE: CanvasPalette = { ...DARK_PALETTE, bg: '#000000' };
+
+/**
+ * Run `fn` with the palette a panel asked for, then put the old one back.
+ *
+ * Background and ink are one decision, not two: strokeColorAt reads
+ * spectrumLightness from the palette, so a white canvas drawn with dark-theme
+ * ink washes out to pastel. Swapping the whole palette keeps them together,
+ * and because the palette is module-level ambient every visualizer follows
+ * along without a signature change - the same trick the viewport transform
+ * uses. 'theme' does nothing at all, so the default costs nothing.
+ */
+export function withCanvas<T>(choice: CanvasChoice, fn: () => T): T {
+  if (choice === 'theme') return fn();
+  const prev = current;
+  current = choice === 'white' ? WHITE_PALETTE : BLACK_PALETTE;
+  try {
+    return fn();
+  } finally {
+    current = prev;
+  }
+}

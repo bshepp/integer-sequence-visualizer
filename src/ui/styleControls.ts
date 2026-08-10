@@ -27,6 +27,14 @@ export function buildStyleControls(
   const join = mkSelect('style-join', ['miter', 'round', 'bevel']);
   const cap = mkSelect('style-cap', ['butt', 'round', 'square']);
   const mode = mkSelect('style-colormode', ['spectrum', 'flat', 'none']);
+  // One control rather than two toggles: the backgrounds are mutually
+  // exclusive, so checkboxes would have an illegal fourth state to police.
+  // 'theme' is the default and means the page theme still drives everything,
+  // so nobody who is not deliberately making a figure has to learn this.
+  const canvas = mkSelect('style-canvas', ['theme', 'white', 'black']);
+  canvas.title =
+    'What this panel draws on. "theme" follows the page. "white" and "black" '
+    + 'pin it, and switch the ink to match, for figures leaving the site.';
 
   const hueStart = document.createElement('input');
   hueStart.type = 'range';
@@ -57,7 +65,7 @@ export function buildStyleControls(
   const blackHint = document.createElement('span');
   blackHint.className = 'style-hint';
   blackHint.hidden = true;
-  blackHint.textContent = 'needs the light theme to be visible';
+  blackHint.textContent = 'set Canvas to white to see these';
 
   const black = document.createElement('input');
   black.type = 'checkbox';
@@ -76,13 +84,18 @@ export function buildStyleControls(
     overlap.checked = style.showOverlap;
     labels.checked = style.showLabels;
     black.checked = style.blackLine;
+    canvas.value = style.canvas;
     // Black overrides every colour setting, so leaving those live would put
     // three controls on screen that cannot change anything - the same defect
     // already fixed on the hue sliders and the null-model select.
     mode.disabled = style.blackLine;
     mode.title = style.blackLine ? 'Turn off black lines to choose a colour' : '';
-    blackHint.hidden = !(style.blackLine
+    // Only a problem when the panel actually ends up dark: pinning the canvas
+    // to white makes black lines work whatever the page theme is, which is the
+    // real fix rather than the caveat this used to be.
+    const panelIsDark = style.canvas === 'black' || (style.canvas === 'theme'
       && document.documentElement.getAttribute('data-theme') === 'dark');
+    blackHint.hidden = !(style.blackLine && panelIsDark);
     // The hue sliders do nothing in 'none' mode, and the end hue does nothing
     // in 'flat' mode. A live-looking control that cannot affect anything reads
     // as broken - the same defect fixed on the null-model select in round 1.
@@ -102,6 +115,11 @@ export function buildStyleControls(
   hueEnd.addEventListener('input', () => { style.hueEnd = Number(hueEnd.value); onChange(); });
   overlap.addEventListener('change', () => { style.showOverlap = overlap.checked; onChange(); });
   labels.addEventListener('change', () => { style.showLabels = labels.checked; onChange(); });
+  canvas.addEventListener('change', () => {
+    style.canvas = canvas.value as RenderStyle['canvas'];
+    refresh();
+    onChange();
+  });
   black.addEventListener('change', () => {
     style.blackLine = black.checked;
     refresh();
@@ -117,6 +135,7 @@ export function buildStyleControls(
     labelledControl('Hue to', hueEnd, { visible: true }),
     labelledControl('Show retreads', overlap, { visible: true }),
     labelledControl('Labels', labels, { visible: true }),
+    labelledControl('Canvas', canvas, { visible: true }),
     labelledControl('Black lines', black, { visible: true }),
     blackHint,
   );

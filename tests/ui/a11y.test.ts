@@ -689,3 +689,32 @@ describe('label and black-line style toggles', () => {
     expect(back.blackLine).toBe(true);
   });
 });
+
+describe('per-panel canvas in the address', () => {
+  it('stays out of a default view but survives when set, per panel', () => {
+    const plain = encodeState({
+      seqRef: null, vizId: 'turtle', params: {}, mode: 'side',
+      surrogate: 'permutation', seed: 1, style: { ...DEFAULT_STYLE },
+    });
+    expect(plain).not.toContain('canvas');
+
+    const split = encodeState({
+      seqRef: null, vizId: 'turtle', params: {}, mode: 'side',
+      surrogate: 'permutation', seed: 1,
+      style: { ...DEFAULT_STYLE, canvas: 'white' },
+      nullStyle: { ...DEFAULT_STYLE, canvas: 'black' },
+    });
+    expect(split).toContain('canvas=white');
+    expect(split).toContain('null.canvas=black');
+    const back = decodeState(split)!;
+    expect(back.style!.canvas).toBe('white');
+    expect(back.nullStyle!.canvas).toBe('black');
+    // The namespaced key must not leak into the visualizer's parameters.
+    expect(back.params['null.canvas']).toBeUndefined();
+  });
+
+  it('falls back to theme for a malformed value rather than a blank canvas', () => {
+    const back = decodeState('viz=turtle&canvas=chartreuse')!;
+    expect(back.style?.canvas ?? 'theme').toBe('theme');
+  });
+});

@@ -373,7 +373,19 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .style-group-label {
   display: none; min-width: 3em; font-size: 11px; font-weight: 600;
   text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+  /* Aligned to the first row of controls rather than centred on the group:
+     once the controls wrap to two rows a centred caption floats between them
+     and stops reading as a heading for either. */
+  flex: none; align-self: flex-start; padding-top: 7px;
 }
+/* .style-controls carries flex-basis:100% from when it sat directly in the
+   topbar and had to claim a whole row. Nested inside .style-group that makes
+   it take the full width and push the caption onto a line of its own, which
+   is why REAL and NULL sat above their controls instead of in front of them.
+   Here it takes whatever is left beside the caption and wraps inside itself;
+   min-width:0 is what actually permits a flex item to shrink below its
+   content. */
+.style-group > .style-controls { flex: 1 1 0; min-width: 0; }
 /* The captions only earn their space once there are two panels to tell apart. */
 .style-panels--split .style-group-label { display: inline; }
 .style-group[hidden] { display: none; }
