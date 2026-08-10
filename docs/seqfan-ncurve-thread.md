@@ -2,10 +2,17 @@
 
 **Thread archive** — SeqFan mailing list (`seqfan@googlegroups.com`)
 **Span:** 1 Aug 2026 – 5 Aug 2026 · 7 messages
-**Participants:** George Whale (`propatriauk@gmail.com`), Bill McEachen (`bill.mceachen@gmail.com`), Jean-Paul Allouche (`jpallouche.math@gmail.com`)
+**Participants:** George Whale, Bill McEachen, Jean-Paul Allouche
 **Thread permalink:** https://groups.google.com/d/topic/seqfan/vGfMma6DkDk
 
 Quoted reply-chains have been stripped; each entry contains only its new content.
+
+Participant email addresses have been redacted. The messages themselves are
+public: the group is readable by anyone on the web, and this thread is served
+in full to a logged-out visitor. But Google Groups withholds member addresses
+from non-members, so republishing them here would have exposed the one field
+the source deliberately hides. That line was repo metadata and never part of
+the archived messages, so the verbatim record is untouched.
 
 ---
 
