@@ -373,6 +373,14 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 /* Reads as part of the null-model band it now sits under, rather than as a
    stray row floating above the drawing. */
 .style-panels--null {
+  /* flex:none is load-bearing, not tidiness. .style-panels sets
+     flex-basis:100% because in the topbar - a flex ROW - that means "claim a
+     full-width line". This copy lives in .main, which is a flex COLUMN, where
+     the same declaration means "claim the full height": it swallowed the
+     column and collapsed the canvas wrapper to 0px, so both drawings vanished
+     the moment the styles were unlinked. jsdom has no layout engine, so no
+     unit test can see this - style.css is asserted directly instead. */
+  flex: none;
   background: var(--panel); border-top: 1px solid #2a2d34;
   padding: 6px 14px; margin: 0;
 }

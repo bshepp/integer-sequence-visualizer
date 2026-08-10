@@ -784,3 +784,41 @@ describe('the null style panel sits with the null model controls', () => {
     for (const id of controls) expect(root.querySelector(`#${id}`), id).not.toBeNull();
   });
 });
+
+import { readFileSync as readCss } from 'node:fs';
+import { resolve as resolveCss } from 'node:path';
+
+describe('the relocated null style panel cannot collapse the canvas', () => {
+  // Asserted against the stylesheet rather than the DOM because jsdom has no
+  // layout engine: the failure is purely geometric and no rendered assertion
+  // here can see it. It is worth pinning anyway because the symptom is severe
+  // and the cause is invisible on reading - .style-panels sets flex-basis:100%
+  // for the topbar, which is a flex ROW, and the relocated copy lives in .main,
+  // which is a flex COLUMN. There the same declaration claims the full HEIGHT,
+  // which swallowed the column and collapsed the canvas wrapper to 0px: both
+  // drawings vanished the moment the styles were unlinked.
+  // Comments stripped first. The block below explains itself in prose that
+  // contains the literal "flex:none", so matching the raw file made the
+  // assertion pass against its own comment - it stayed green with the
+  // declaration deleted, which was checked by deleting it.
+  const css = readCss(resolveCss(__dirname, '../../src/style.css'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+
+  it('the shared class still sets flex-basis, so the override is still needed', () => {
+    const shared = /\.style-panels\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(shared, 'expected .style-panels to exist').not.toBe('');
+    expect(shared).toMatch(/flex-basis:\s*100%/);
+  });
+
+  it('the null copy overrides it', () => {
+    const scoped = /\.style-panels--null\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(scoped, 'expected .style-panels--null to exist').not.toBe('');
+    expect(scoped, 'null style panel must not inherit flex-basis:100% in a column')
+      .toMatch(/flex:\s*none/);
+  });
+
+  it('.main is a column, which is what makes the override necessary', () => {
+    const main = /\.main\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(main).toMatch(/flex-direction:\s*column/);
+  });
+});
