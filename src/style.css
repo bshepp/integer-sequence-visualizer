@@ -250,6 +250,13 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .export-bar { display: flex; gap: 8px; align-items: center; padding: 8px 14px; background: var(--panel); border-left: 1px solid #000; flex-wrap: wrap; }
 .export-bar button { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 12px; }
 .export-bar button:hover { border-color: var(--accent); }
+/* Groups the bar by job: write a file, change what is drawn, change the
+   framing. Eleven buttons in an undifferentiated row read as one long list. */
+.export-sep { width: 1px; align-self: stretch; margin: 2px 4px; background: #3a3d44; flex: none; }
+:root[data-theme="light"] .export-sep { background: #d6dae2; }
+/* The glyph, not the circle: these are 28px discs already and only the letter
+   was hard to read at 15px regular. */
+.explain-button, .comparison-bar .explain-button { font: 700 17px/1 Georgia, "Times New Roman", serif; font-style: italic; }
 .feedback-link { margin-left: auto; color: var(--muted); font-size: 12px; }
 .data-table { max-height: 320px; overflow-y: auto; background: var(--panel); border-left: 1px solid #000; }
 .data-table[hidden] { display: none; }

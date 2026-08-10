@@ -551,6 +551,13 @@ export function mountApp(root: HTMLElement): void {
     return b;
   };
 
+  const exportSep = (): void => {
+    const hr = document.createElement('span');
+    hr.className = 'export-sep';
+    hr.setAttribute('aria-hidden', 'true');
+    exportBar.appendChild(hr);
+  };
+
   const slug = () => (state.seq?.aNumber ?? state.seq?.name ?? 'sequence').replace(/[^\w.-]+/g, '-');
 
   mkExport('export-png', 'PNG', () => {
@@ -582,6 +589,20 @@ export function mountApp(root: HTMLElement): void {
       showNotice(text);
     }
   });
+
+  mkExport('copy-link', 'Copy link', () => {
+    // The URL encodes the whole view as base64, so selecting it out of the
+    // address bar is genuinely awkward -- which is the thing people do most.
+    const url = location.href;
+    const done = () => showNotice('Link copied - it reproduces this exact view.');
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(done).catch(() => showError('Could not copy the link.'));
+    } else {
+      showNotice(url);
+    }
+  });
+
+  exportSep();
 
   const dataTable = buildDataTable();
   dataTable.el.id = `${uid}-data-table`;
@@ -615,17 +636,7 @@ export function mountApp(root: HTMLElement): void {
   }
   syncEnds();
 
-  mkExport('copy-link', 'Copy link', () => {
-    // The URL encodes the whole view as base64, so selecting it out of the
-    // address bar is genuinely awkward -- which is the thing people do most.
-    const url = location.href;
-    const done = () => showNotice('Link copied - it reproduces this exact view.');
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(url).then(done).catch(() => showError('Could not copy the link.'));
-    } else {
-      showNotice(url);
-    }
-  });
+  exportSep();
 
   const zoomLabel = document.createElement('span');
   zoomLabel.className = 'zoom-level';
@@ -692,6 +703,7 @@ export function mountApp(root: HTMLElement): void {
   syncZoomLabel();
 
   const feedback = buildFeedbackLink();
+  exportSep();
   exportBar.appendChild(feedback);
 
   main.appendChild(exportBar);
