@@ -677,8 +677,8 @@ export function mountApp(root: HTMLElement): void {
   });
 
   mkExport('copy-link', 'Copy link', () => {
-    // The URL encodes the whole view as base64, so selecting it out of the
-    // address bar is genuinely awkward -- which is the thing people do most.
+    // Selecting a long hash out of the address bar is awkward even now that it
+    // is readable, and copying the address is the thing people do most.
     const url = location.href;
     const done = () => showNotice('Link copied - it reproduces this exact view.');
     if (navigator.clipboard?.writeText) {
@@ -947,8 +947,9 @@ export function mountApp(root: HTMLElement): void {
   // hashchange -> re-apply -> redraw loop would be far worse than a stale view.
   let lastHashWritten = '';
 
-  // Shown once, ever. The URL encodes the whole view, but it is a base64 blob,
-  // so nothing about looking at it suggests that. A label cannot teach this
+  // Shown once, ever. The URL encodes the whole view, and since it became
+  // readable it says so on its face - but only to someone who thinks to look
+  // at the address bar, which is nobody. A label cannot teach this
   // and a "Bookmark" button cannot do it (no browser has exposed an API for
   // that in years). What does teach it is saying so at the exact moment it
   // first becomes true -- when the address changes because the reader changed

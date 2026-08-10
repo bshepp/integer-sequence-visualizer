@@ -50,6 +50,7 @@ export interface Visualizer {
    * position(0) is the far end of the first segment, not the tip of the line.
    * Marking position(0) as "the start" therefore lands one step in from the
    * free end, which is visibly wrong on a walk and was reported as such.
+   * docs/start-mark-off-by-one.png is the screenshot that caught it.
    *
    * Views whose first term IS their first mark - a scatter, a spiral, a
    * histogram - leave this undefined and position(0) is correct for them.

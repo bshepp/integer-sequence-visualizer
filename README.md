@@ -31,35 +31,58 @@ experimental apparatus for answering it.
 - **Shareable URLs** encoding the sequence, visualizer, parameters,
   comparison mode, and random seed in the hash, so a specific view can be
   linked and reproduced exactly.
-- **A landing gallery**: curated real-vs-null comparisons that render on first
+- **Worked examples**: curated real-vs-null comparisons that render on first
   paint with no network round-trip, each one a saved engine state you can click
   straight into. Every verdict shown is recomputed in CI against its recorded
-  null band - the gallery cannot claim a structure is real unless the code
-  still measures it that way.
+  null band - an example cannot claim a structure is real unless the code
+  still measures it that way. Not a gallery: each entry shows the work and
+  then commits to a claim.
 - **Explanations everywhere**: every visualizer and every surrogate documents
   itself (enforced at compile time), surfaced by an (i) button and reused as
   the canvas's accessible description.
-- **Cursor readout**: hover to identify the term, digit, bin, or lag under the
-  pointer; click a term to mark its counterpart in the null model.
+- **Cursor readout and pinning**: each panel carries two captions - what the
+  cursor is over, bottom right, and what is pinned, bottom left. A term can be
+  pinned from either panel; the pair report the same fact from each side, each
+  leading with its own index, so reading one panel never means translating a
+  number belonging to the other.
 - **Render controls**: line width, join, cap, and a colour mode including
   `none`, which removes hue entirely so any structure still visible cannot be
   a palette artifact. Style is part of the shared URL.
+- **A second opinion, and a hundred**: Reshuffle redraws the null from the next
+  seed for a quick check; Sweep runs a few hundred and reports where the real
+  sequence falls against the whole spread. The randomness is seeded mulberry32,
+  so the same sequence, surrogate and seed always give the same null.
+- **Endpoint marks**: a ring where a drawing begins and a disc where it ends,
+  distinguished by shape rather than colour so they do not contradict the hue
+  ramp and still work in flat or colourless modes.
+- **Retread encoding**: on a path that walks the same ground twice, re-trodden
+  edges can be drawn as nested bands, so stacked strokes stop being
+  indistinguishable from a single one.
+- **Independent null styling**: the null model can be given its own line and
+  colour settings, or share the real sequence's.
 - **Superimpose**: draw the real sequence over its own null in one frame,
   offered only where position carries information (grids place term *n* by
   index, so an overlay would simply overwrite).
 - **Export**: PNG with the OEIS credit drawn into the bitmap, plus CSV and
   JSON carrying it in a header - attribution has to survive leaving the page.
   Terms export at full BigInt precision.
-- **The numbers behind the picture**: a data table of index and exact term,
-  which doubles as the textual equivalent of the canvas for screen-reader
-  users.
-- **Light and dark themes** reaching the drawing as well as the interface.
-  Both palettes are measured against WCAG AA in `tests/viz/theme.test.ts`
-  rather than assumed - a naive inversion of the dark accent lands at 2.2:1 on
-  white, and the spectrum ramp needs a different lightness on each background.
-- **Zoom and pan** in every visualizer, applied as one viewport transform
-  around the render call and inverted once for hit-testing, so no visualizer
-  knows the zoom level and cursor identification keeps working while zoomed.
+- **The numbers behind the picture**: the sequence as a comma-separated run,
+  the way a sequence is written everywhere else, with an index-and-term table
+  one click away. Either doubles as the textual equivalent of the canvas for
+  screen-reader users.
+- **Light and dark themes** for the interface, measured against WCAG AA in
+  `tests/viz/theme.test.ts` rather than assumed - a naive inversion of the dark
+  accent lands at 2.2:1 on white, and the spectrum ramp needs a different
+  lightness on each background. Drawings themselves sit on black by default so
+  a shared link shows everyone the same picture, with a per-panel canvas
+  control offering the page theme, true white or true black - white plus the
+  black-lines toggle gives a print-ready figure whatever theme you browse in.
+- **Zoom and pan** in every visualizer, applied as a viewport transform around
+  the render call and inverted for hit-testing, so no visualizer knows the zoom
+  level and cursor identification keeps working while zoomed. The two panels
+  share a frame by default and can be split, in which case each gets its own
+  controls and its own transform - including its own inverse, so a click still
+  reports the term actually under it.
 - **Copy citation** producing a reference that reproduces the exact view,
   since the URL encodes sequence, visualizer, parameters, mode, seed, style
   and zoom.
@@ -202,7 +225,7 @@ tabular view of the underlying terms. That is the obvious next step.
 ### Social preview card
 
 `public/og-card.png` is a **stored** 1200x630 image, while the landing hero is
-a live canvas render - so the two drift apart whenever the hero gallery entry
+a live canvas render - so the two drift apart whenever the hero example
 changes. Regenerate it by running `npm run dev` and opening `/?ogcard`, which
 renders the current hero through the real render path and downloads the PNG;
 save it over `public/og-card.png`. `scripts/deploy.sh` warns if the file is
