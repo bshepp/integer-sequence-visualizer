@@ -719,10 +719,13 @@ export function mountApp(root: HTMLElement): void {
   // sprawling three times wider, where one zoom that suits both does not
   // exist. Placed after Sweep, at the end of the null-model bar.
   const viewLinkBtn = document.createElement('button');
-  viewLinkBtn.className = 'link-toggle';
+  // Its own class as well as the shared one: it needs a wider fixed width than
+  // the style toggle, and tests should find it by what it is rather than by
+  // matching its caption, which has now changed twice.
+  viewLinkBtn.className = 'link-toggle view-link-toggle';
   viewLinkBtn.type = 'button';
   function syncViewLink(): void {
-    viewLinkBtn.textContent = viewportLinked ? 'View: linked' : 'View: split';
+    viewLinkBtn.textContent = viewportLinked ? 'Pan/zoom: linked' : 'Pan/zoom: split';
     viewLinkBtn.setAttribute('aria-pressed', String(!viewportLinked));
     viewLinkBtn.title = viewportLinked
       ? 'Let the null model be zoomed and panned on its own'

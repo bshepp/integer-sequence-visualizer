@@ -963,7 +963,7 @@ describe('splitting zoom and pan between the panels', () => {
     return root;
   };
   const viewBtn = (root: HTMLElement) =>
-    [...root.querySelectorAll<HTMLButtonElement>('.link-toggle')].find((b) => /View:/.test(b.textContent!))!;
+    root.querySelector<HTMLButtonElement>('.view-link-toggle')!;
 
   it('is off by default, and sits after Sweep at the end of the bar', () => {
     // Shared is the default because the point of side-by-side is that the two
@@ -1038,7 +1038,7 @@ describe('the zoom readout answers for both panels', () => {
     return root;
   };
   const viewBtn = (root: HTMLElement) =>
-    [...root.querySelectorAll<HTMLButtonElement>('.link-toggle')].find((b) => /View:/.test(b.textContent!))!;
+    root.querySelector<HTMLButtonElement>('.view-link-toggle')!;
 
   it('shows one figure while linked and two once split', () => {
     // Reporting only the real panel's zoom while the other sits at a different
