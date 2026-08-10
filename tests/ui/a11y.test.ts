@@ -952,3 +952,78 @@ describe('the info buttons toggle', () => {
     expect(nul.getAttribute('aria-controls')).toBe(panel.id);
   });
 });
+
+describe('splitting zoom and pan between the panels', () => {
+  const mountEngine = () => {
+    history.replaceState(null, '', location.pathname);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    root.querySelector<HTMLButtonElement>('.landing-open')?.click();
+    return root;
+  };
+  const viewBtn = (root: HTMLElement) =>
+    [...root.querySelectorAll<HTMLButtonElement>('.link-toggle')].find((b) => /View:/.test(b.textContent!))!;
+
+  it('is off by default, and sits after Sweep at the end of the bar', () => {
+    // Shared is the default because the point of side-by-side is that the two
+    // panels are directly comparable; different frames removes that silently.
+    const root = mountEngine();
+    const btn = viewBtn(root);
+    expect(btn, 'no view link toggle').toBeTruthy();
+    expect(btn.getAttribute('aria-pressed')).toBe('false');
+    expect(btn.textContent).toMatch(/linked/i);
+    const bar = root.querySelector('.comparison-bar')!;
+    expect(bar.lastElementChild).toBe(btn);
+    expect(btn.previousElementSibling!.textContent).toMatch(/Sweep/);
+  });
+
+  it('does not resize when pressed', () => {
+    // Same reasoning as the style toggle beside it: a control that changes
+    // width on press shoves everything after it sideways.
+    const root = mountEngine();
+    const btn = viewBtn(root);
+    expect(btn.className).toContain('link-toggle');
+    btn.click();
+    expect(btn.textContent).toMatch(/split/i);
+    expect(btn.getAttribute('aria-pressed')).toBe('true');
+    btn.click();
+    expect(btn.textContent).toMatch(/linked/i);
+  });
+
+  it('carries a split view through a share link, and omits it when linked', () => {
+    const linked = encodeState({
+      seqRef: null, vizId: 'turtle', params: {}, mode: 'side',
+      surrogate: 'permutation', seed: 1, viewport: { zoom: 2, panX: 10, panY: 20 },
+    });
+    expect(linked).toContain('zoom=2');
+    expect(linked).not.toContain('splitview');
+    expect(decodeState(linked)!.nullViewport).toBeUndefined();
+
+    const split = encodeState({
+      seqRef: null, vizId: 'turtle', params: {}, mode: 'side',
+      surrogate: 'permutation', seed: 1,
+      viewport: { zoom: 2, panX: 10, panY: 20 },
+      nullViewport: { zoom: 4, panX: -30, panY: 5 },
+    });
+    expect(split).toContain('splitview=1');
+    expect(split).toContain('null.zoom=4');
+    expect(split).toContain('null.pan=-30,5');
+    const back = decodeState(split)!;
+    expect(back.viewport).toEqual({ zoom: 2, panX: 10, panY: 20 });
+    expect(back.nullViewport).toEqual({ zoom: 4, panX: -30, panY: 5 });
+    // The namespaced keys must not leak into the visualizer's parameters.
+    expect(back.params['null.zoom']).toBeUndefined();
+    expect(back.params['null.pan']).toBeUndefined();
+  });
+
+  it('survives a split left at the default frame', () => {
+    // No null.* keys are emitted then, so the flag is what carries it.
+    const url = encodeState({
+      seqRef: null, vizId: 'turtle', params: {}, mode: 'side',
+      surrogate: 'permutation', seed: 1, nullViewport: { zoom: 1, panX: 0, panY: 0 },
+    });
+    expect(url).toContain('splitview=1');
+    expect(decodeState(url)!.nullViewport).toEqual({ zoom: 1, panX: 0, panY: 0 });
+  });
+});

@@ -21,6 +21,8 @@ export interface UrlState {
   viewport?: Viewport;
   /** Present only when the null model is drawn with its own style. */
   nullStyle?: RenderStyle;
+  /** Present only when the null model has its own zoom and pan. */
+  nullViewport?: Viewport;
 }
 
 /**
@@ -50,7 +52,7 @@ const RESERVED = new Set([
   'seq', 'formula', 'terms', 'paste', 'viz',
   'null', 'surrogate', 'seed', 'ensemble',
   'line', 'join', 'cap', 'colour', 'hue',
-  'zoom', 'pan', 'unlink', 'retread', 'nolabels', 'black', 'canvas',
+  'zoom', 'pan', 'unlink', 'retread', 'nolabels', 'black', 'canvas', 'splitview',
 ]);
 
 /** Style keys for either panel; the null's are namespaced with a prefix. */
@@ -159,10 +161,18 @@ export function encodeState(s: UrlState): string {
     encodeStyle(p, s.nullStyle, NULL_PREFIX);
   }
 
-  const v = s.viewport;
-  if (v && (v.zoom !== IDENTITY_VIEWPORT.zoom || v.panX !== 0 || v.panY !== 0)) {
-    if (v.zoom !== IDENTITY_VIEWPORT.zoom) p.set('zoom', String(Math.round(v.zoom * 1000) / 1000));
-    if (v.panX !== 0 || v.panY !== 0) p.set('pan', `${Math.round(v.panX)},${Math.round(v.panY)}`);
+  const putViewport = (v: Viewport | undefined, prefix: string): void => {
+    if (!v) return;
+    if (v.zoom !== IDENTITY_VIEWPORT.zoom) p.set(`${prefix}zoom`, String(Math.round(v.zoom * 1000) / 1000));
+    if (v.panX !== 0 || v.panY !== 0) p.set(`${prefix}pan`, `${Math.round(v.panX)},${Math.round(v.panY)}`);
+  };
+  putViewport(s.viewport, '');
+  if (s.nullViewport) {
+    // Carried separately for the same reason unlink= is: splitting the view
+    // while both are still at 100% emits no null.* keys, and without the flag
+    // that state would decode as linked.
+    p.set('splitview', '1');
+    putViewport(s.nullViewport, NULL_PREFIX);
   }
 
   // URLSearchParams percent-encodes far more than a hash fragment requires.
@@ -208,15 +218,19 @@ export function decodeState(hash: string): UrlState | null {
   if (style) state.style = style;
   if (p.has('unlink')) state.nullStyle = decodeStyle(p, NULL_PREFIX) ?? { ...DEFAULT_STYLE };
 
-  const pan = p.get('pan');
-  const [panX, panY] = pan ? pan.split(',').map(Number) : [undefined, undefined];
-  if (p.has('zoom') || pan) {
-    state.viewport = {
-      zoom: num(p.get('zoom')) ?? 1,
+  const readViewport = (prefix: string): Viewport | undefined => {
+    const pan = p.get(`${prefix}pan`);
+    if (!p.has(`${prefix}zoom`) && !pan) return undefined;
+    const [panX, panY] = pan ? pan.split(',').map(Number) : [undefined, undefined];
+    return {
+      zoom: num(p.get(`${prefix}zoom`)) ?? 1,
       panX: Number.isFinite(panX) ? panX! : 0,
       panY: Number.isFinite(panY) ? panY! : 0,
     };
-  }
+  };
+  const vp = readViewport('');
+  if (vp) state.viewport = vp;
+  if (p.has('splitview')) state.nullViewport = readViewport(NULL_PREFIX) ?? { ...IDENTITY_VIEWPORT };
 
   return state;
 }

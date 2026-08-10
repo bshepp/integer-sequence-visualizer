@@ -393,6 +393,25 @@ export function mountApp(root: HTMLElement): void {
   // included) so the marker anchors the eye while the substrate changes.
   let pinnedIndex: number | null = null;
   let viewport: Viewport = { ...IDENTITY_VIEWPORT };
+  // The null panel's own zoom and pan, used only once the two are unlinked.
+  // Kept alongside rather than derived, for the same reason the null's style
+  // is: unlinking and relinking should not lose where you had navigated to.
+  let nullViewport: Viewport = { ...IDENTITY_VIEWPORT };
+  let viewportLinked = true;
+
+  /** Which viewport a panel draws and hit-tests with. */
+  const viewportFor = (panel: 'real' | 'null'): Viewport =>
+    (panel === 'null' && !viewportLinked ? nullViewport : viewport);
+
+  /**
+   * Which panel a canvas point belongs to.
+   *
+   * Only 'side' splits the canvas. In 'over' both drawings share every pixel,
+   * so the real panel owns the interaction: separate viewports there would
+   * slide the two apart, which destroys the one thing superimposing is for.
+   */
+  const panelAt = (x: number): 'real' | 'null' =>
+    (comparison.mode === 'side' && x > canvas.getBoundingClientRect().width / 2 ? 'null' : 'real');
 
   // Panel geometry for hit-testing: in side-by-side the left half is the real
   // sequence, and the pointer must not report real-sequence indices for
@@ -433,7 +452,10 @@ export function mountApp(root: HTMLElement): void {
     }
 
     // Into the visualizer's own coordinate space, which knows nothing of zoom.
-    const w = screenToWorld(viewport, x, pt.y);
+    // Inverted through the panel's OWN viewport: once the two are unlinked,
+    // using the real one here would report the cursor at whatever term happens
+    // to sit under the same pixel in the other panel's frame.
+    const w = screenToWorld(viewportFor(panel), x, pt.y);
     const hit = viz.locate(new SequenceView(seq), state.params, { width: panelW, height: size.height }, w.x, w.y);
     return hit ? { hit, seq, panel } : null;
   }
@@ -442,10 +464,10 @@ export function mountApp(root: HTMLElement): void {
   canvas.addEventListener('pointermove', (e) => {
     if (dragFrom) {
       setViewport({
-        zoom: viewport.zoom,
+        zoom: viewportFor(dragFrom.panel).zoom,
         panX: dragFrom.panX + (e.clientX - dragFrom.x),
         panY: dragFrom.panY + (e.clientY - dragFrom.y),
-      });
+      }, dragFrom.panel);
       readout.set(null);
       return;
     }
@@ -468,18 +490,27 @@ export function mountApp(root: HTMLElement): void {
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     const r = canvas.getBoundingClientRect();
-    setViewport(zoomAt(viewport, e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX - r.left, e.clientY - r.top));
+    const panel = panelAt(e.clientX - r.left);
+    setViewport(
+      zoomAt(viewportFor(panel), e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX - r.left, e.clientY - r.top),
+      panel,
+    );
   }, { passive: false });
 
   // Drag to pan. `downAt` also lets the click handler tell a pan from a click,
   // so ending a drag over a line does not also pin that term.
-  let dragFrom: { x: number; y: number; panX: number; panY: number } | null = null;
+  let dragFrom: { x: number; y: number; panX: number; panY: number; panel: 'real' | 'null' } | null = null;
   let downAt: { x: number; y: number } | null = null;
 
   canvas.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
     downAt = { x: e.clientX, y: e.clientY };
-    dragFrom = { x: e.clientX, y: e.clientY, panX: viewport.panX, panY: viewport.panY };
+    // The panel is fixed at pointerdown, not re-read while dragging: a drag
+    // that crosses the divider must keep moving the panel it started in rather
+    // than hand the pan over to the other one mid-gesture.
+    const panel = panelAt(canvasPoint(e).x);
+    const v = viewportFor(panel);
+    dragFrom = { x: e.clientX, y: e.clientY, panX: v.panX, panY: v.panY, panel };
     canvas.setPointerCapture(e.pointerId);
   });
 
@@ -579,10 +610,21 @@ export function mountApp(root: HTMLElement): void {
   zoomLabel.className = 'zoom-level';
   zoomLabel.setAttribute('role', 'status');
 
-  function setViewport(v: Viewport): void {
-    viewport = clampViewport(v);
+  function setViewport(v: Viewport, panel: 'real' | 'null' = 'real'): void {
+    if (panel === 'null' && !viewportLinked) nullViewport = clampViewport(v);
+    else viewport = clampViewport(v);
+    // Always the real panel's zoom: with two viewports the readout has to pick
+    // one, and the label sits in the export bar next to controls that act on
+    // the real panel.
     zoomLabel.textContent = `${Math.round(viewport.zoom * 100)}%`;
     redraw();
+  }
+
+  /** Applies the same relative change to both panels, for the +/- buttons. */
+  function zoomBoth(factor: number): void {
+    const c = canvasCentre();
+    if (!viewportLinked) nullViewport = clampViewport(zoomAt(nullViewport, factor, c.x, c.y));
+    setViewport(zoomAt(viewport, factor, c.x, c.y));
   }
 
   const canvasCentre = () => {
@@ -601,16 +643,14 @@ export function mountApp(root: HTMLElement): void {
     return b;
   };
 
-  mkZoom('zoom-out', '−', 'Zoom out', () => {
-    const c = canvasCentre();
-    setViewport(zoomAt(viewport, 1 / 1.4, c.x, c.y));
-  });
+  mkZoom('zoom-out', '−', 'Zoom out', () => zoomBoth(1 / 1.4));
   exportBar.appendChild(zoomLabel);
-  mkZoom('zoom-in', '+', 'Zoom in', () => {
-    const c = canvasCentre();
-    setViewport(zoomAt(viewport, 1.4, c.x, c.y));
+  mkZoom('zoom-in', '+', 'Zoom in', () => zoomBoth(1.4));
+  mkZoom('zoom-reset', 'Reset', 'Reset zoom and pan', () => {
+    // Both, always. "Reset" that left the other panel askew would be a lie.
+    nullViewport = { ...IDENTITY_VIEWPORT };
+    setViewport({ ...IDENTITY_VIEWPORT });
   });
-  mkZoom('zoom-reset', 'Reset', 'Reset zoom and pan', () => setViewport({ ...IDENTITY_VIEWPORT }));
   zoomLabel.textContent = '100%';
 
   const feedback = buildFeedbackLink();
@@ -654,6 +694,34 @@ export function mountApp(root: HTMLElement): void {
     overlay.querySelector<HTMLButtonElement>('.sweep-close')?.focus();
   });
   bar.el.appendChild(sweepBtn);
+
+  // Zoom and pan are shared by default: the whole point of the side-by-side is
+  // that the two panels are directly comparable, and letting them drift to
+  // different frames silently removes that. Unlinking is for the case the
+  // shared frame cannot serve - the real walk compact and the surrogate
+  // sprawling three times wider, where one zoom that suits both does not
+  // exist. Placed after Sweep, at the end of the null-model bar.
+  const viewLinkBtn = document.createElement('button');
+  viewLinkBtn.className = 'link-toggle';
+  viewLinkBtn.type = 'button';
+  function syncViewLink(): void {
+    viewLinkBtn.textContent = viewportLinked ? 'View: linked' : 'View: split';
+    viewLinkBtn.setAttribute('aria-pressed', String(!viewportLinked));
+    viewLinkBtn.title = viewportLinked
+      ? 'Let the null model be zoomed and panned on its own'
+      : 'Zoom and pan both panels together';
+  }
+  viewLinkBtn.addEventListener('click', () => {
+    viewportLinked = !viewportLinked;
+    // Unlinking copies the current frame across, so the null starts from where
+    // it already was rather than jumping back to 100% the moment you split it.
+    if (!viewportLinked) nullViewport = { ...viewport };
+    syncViewLink();
+    userChanged();
+    redraw();
+  });
+  bar.el.appendChild(viewLinkBtn);
+  syncViewLink();
 
   linkBtn.className = 'link-toggle';
   linkBtn.type = 'button';
@@ -741,6 +809,7 @@ export function mountApp(root: HTMLElement): void {
         seqRef: currentRef, vizId: state.vizId, params: state.params,
         mode: comparison.mode, surrogate: comparison.surrogate, seed: comparison.seed,
         ensembleN: comparison.ensembleN, style, viewport,
+        nullViewport: viewportLinked ? undefined : nullViewport,
         nullStyle: styleLinked ? undefined : nullStyle,
       });
       const changed = lastHashWritten !== '' && lastHashWritten !== hash;
@@ -816,6 +885,7 @@ export function mountApp(root: HTMLElement): void {
       panel: 'real' | 'null' = 'real',
     ) => {
       const drawStyle = styleFor(panel);
+      const panelViewport = viewportFor(panel);
       ctx.save();
       ctx.translate(ox, 0);
       ctx.beginPath();
@@ -830,14 +900,14 @@ export function mountApp(root: HTMLElement): void {
           ctx.fillRect(0, 0, w, h);
         }
         ctx.save();
-        applyViewport(ctx, viewport);
+        applyViewport(ctx, panelViewport);
         try {
           // Stroke width is divided by the zoom so a line keeps its on-screen
           // thickness: zooming in should reveal finer structure, not fatten
           // every line until the drawing fills in.
           viz.render(new SequenceView(seq!), {
             ...state.params, ...styleToParams(drawStyle),
-            styleLineWidth: drawStyle.lineWidth / viewport.zoom,
+            styleLineWidth: drawStyle.lineWidth / panelViewport.zoom,
           }, ctx, { width: w, height: h });
         } catch (e) {
           showError(`Render failed: ${e instanceof Error ? e.message : String(e)}`);
@@ -860,13 +930,13 @@ export function mountApp(root: HTMLElement): void {
       if (pinnedIndex !== null && viz.position) {
         const panel = { width: width / 2 - 1, height };
         const real = viz.position(view, state.params, panel, pinnedIndex);
-        if (real) drawMarker(ctx, worldToScreen(viewport, real.x, real.y), canvasTheme().real);
+        if (real) drawMarker(ctx, worldToScreen(viewportFor('real'), real.x, real.y), canvasTheme().real);
         const corr = correspondingIndex(pinnedIndex, comparison.surrogate, state.seq.terms, comparison.seed);
         const sp = viz.position(new SequenceView(surr), state.params, panel, corr.index);
         // Pink when the same term was genuinely followed; grey when this null
         // has no such term and we are only lining up indices.
         if (sp) {
-          const m = worldToScreen(viewport, sp.x, sp.y);
+          const m = worldToScreen(viewportFor('null'), sp.x, sp.y);
           drawMarker(ctx, { x: m.x + width / 2 + 1, y: m.y }, corr.traced ? canvasTheme().real : canvasTheme().muted);
         }
         ctx.fillStyle = canvasTheme().muted;
@@ -1095,6 +1165,10 @@ export function mountApp(root: HTMLElement): void {
       }
       syncStyleLink();
       if (decoded.viewport) viewport = clampViewport(decoded.viewport);
+      // Present only when the two were split, so its presence is the flag.
+      viewportLinked = !decoded.nullViewport;
+      if (decoded.nullViewport) nullViewport = clampViewport(decoded.nullViewport);
+      syncViewLink();
       bar.refresh();
       bar.update(Boolean(getVisualizer(state.vizId).statistics), supportsSuperimpose(getVisualizer(state.vizId)));
     }
