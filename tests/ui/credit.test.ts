@@ -67,7 +67,7 @@ describe('the theme switch reaches every page', () => {
     expect(toggle!.textContent).toMatch(/light|dark/i);
   });
 
-  it('is on the About page, ahead of the navigation but not stealing its focus', () => {
+  it('is on the About page, after the navigation and not stealing its focus', () => {
     const el = buildAbout({ onGallery() {}, onEngine() {}, themeToggle: (() => {
       const b = document.createElement('button');
       b.className = 'theme-toggle';
@@ -75,7 +75,7 @@ describe('the theme switch reaches every page', () => {
     })() });
     const nav = el.querySelector('.page-nav')!;
     expect(nav.querySelector('.theme-toggle')).not.toBeNull();
-    expect(nav.firstElementChild!.classList.contains('theme-toggle')).toBe(true);
+    expect(nav.lastElementChild!.classList.contains('theme-toggle')).toBe(true);
     // showAbout focuses the first .page-nav-button; the switch must not be it.
     expect(el.querySelector('.page-nav-button')!.classList.contains('theme-toggle')).toBe(false);
   });
@@ -91,5 +91,36 @@ describe('the theme switch reaches every page', () => {
     expect(engine.textContent).toBe(landing.textContent);
     landing.click();
     expect(engine.textContent).toBe(landing.textContent);
+  });
+});
+
+describe('a cold load lands on the page the address names', () => {
+  const mountAt = (hash: string) => {
+    history.replaceState(null, '', location.pathname + hash);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    mountApp(root);
+    return root;
+  };
+
+  it('#about opens About, not the gallery', () => {
+    // The initial router only asked "engine or not", so a cold load of #about
+    // fell through to the landing. hashchange routed it correctly, so this
+    // only ever broke on first load - which is precisely what a shared link
+    // does, and #about is the address that points at the citations.
+    const root = mountAt('#about');
+    expect(root.querySelector('.about'), '#about did not open About').not.toBeNull();
+    expect(root.querySelector('.landing')).toBeNull();
+  });
+
+  it('#gallery still opens the gallery', () => {
+    const root = mountAt('#gallery');
+    expect(root.querySelector('.landing')).not.toBeNull();
+    expect(root.querySelector('.about')).toBeNull();
+  });
+
+  it('a bare address still opens the gallery', () => {
+    const root = mountAt('');
+    expect(root.querySelector('.landing')).not.toBeNull();
   });
 });

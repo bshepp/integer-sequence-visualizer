@@ -91,18 +91,19 @@ export function buildAbout(opts: AboutOptions): HTMLElement {
   const toGallery = document.createElement('button');
   toGallery.className = 'page-nav-button';
   toGallery.type = 'button';
-  toGallery.textContent = '← Gallery';
+  toGallery.textContent = 'Gallery';
   toGallery.addEventListener('click', () => opts.onGallery());
   const toEngine = document.createElement('button');
   toEngine.className = 'page-nav-button page-nav-button--primary';
   toEngine.type = 'button';
-  toEngine.textContent = 'Open the engine →';
+  toEngine.textContent = 'Open the engine';
   toEngine.addEventListener('click', () => opts.onEngine());
   nav.append(toGallery, toEngine);
-  // Leading, matching where it sits in the engine's own header. Not a
-  // .page-nav-button, so the initial focus target below is still the first
-  // real navigation control rather than a theme switch.
-  if (opts.themeToggle) nav.prepend(opts.themeToggle);
+  // Trailing, and set apart in CSS: it is a display preference sitting beside
+  // two navigation actions, and grouping it with them implied it was a third
+  // way to leave the page. Also keeps it clear of the initial focus target,
+  // which is the first .page-nav-button.
+  if (opts.themeToggle) nav.append(opts.themeToggle);
 
   const body = document.createElement('div');
   body.className = 'about-body';

@@ -182,7 +182,7 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   const open = document.createElement('button');
   open.className = 'landing-open';
   open.type = 'button';
-  open.textContent = 'Open the full engine →';
+  open.textContent = 'Open the full engine';
   open.addEventListener('click', () => opts.onOpen());
   const about = document.createElement('button');
   about.className = 'landing-about';

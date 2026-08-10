@@ -481,3 +481,6 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 /* Top-right of the landing, matching where the switch sits in the engine
    header. Absolute so it does not join the centred column flow. */
 .landing-nav { position: absolute; top: 18px; right: 22px; }
+/* Set apart from the two navigation actions beside it: a display preference
+   grouped with them read as a third way to leave the page. */
+.page-nav .theme-toggle { margin-left: 12px; }

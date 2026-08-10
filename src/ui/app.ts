@@ -1229,12 +1229,20 @@ export function mountApp(root: HTMLElement): void {
     if (location.hash === lastHashWritten) return;
     applyHash(location.hash);
   });
-  if (routeFor(location.hash) !== 'engine') {
-    // Mount the landing BEFORE the first redraw: syncUrl is suppressed only
-    // while landingEl is set, and a redraw ahead of it would replaceState a
+  const initialRoute = routeFor(location.hash);
+  if (initialRoute !== 'engine') {
+    // Mount the overlay BEFORE the first redraw: syncUrl is suppressed only
+    // while overlayEl is set, and a redraw ahead of it would replaceState a
     // default engine hash over the bare "/" - after which a reload decodes
-    // that hash and the landing never appears again.
-    showLanding();
+    // that hash and the page never appears again.
+    //
+    // Routed by which page, not merely "not the engine". This used to call
+    // showLanding() for both, so a cold load of #about - the address you would
+    // send someone to show them the citations - opened the gallery instead.
+    // hashchange handled it correctly, so it only ever went wrong on the first
+    // load, which is exactly the case a shared link exercises.
+    if (initialRoute === 'about') showAbout();
+    else showLanding();
     redraw();
   } else {
     applyHash(location.hash);
