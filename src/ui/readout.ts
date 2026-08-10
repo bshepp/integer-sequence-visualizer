@@ -111,3 +111,30 @@ export function drawCanvasLabel(
   ctx.fillText(text, x, y);
   ctx.restore();
 }
+
+/**
+ * A small solid dot for marking a run of terms, rather than the ring-plus-
+ * crosshair used for a single pinned point.
+ *
+ * Deliberately quieter than drawMarker: this gets drawn ten or twenty times at
+ * once, and the pinned marker's 12px crosshairs repeated that often would
+ * bury the drawing they are meant to annotate. The dark halo keeps it legible
+ * on a pale canvas and against a line of its own colour.
+ */
+export function drawEndDot(
+  ctx: CanvasRenderingContext2D, pt: { x: number; y: number }, color: string, emphasis = false,
+): void {
+  const r = emphasis ? 6.5 : 4;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  // Haloed in the canvas colour rather than a fixed black: the ring exists to
+  // punch the dot free of a line running underneath it, and a black halo on a
+  // black canvas does nothing but shave two pixels off the visible dot.
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = canvasTheme().bg;
+  ctx.stroke();
+  ctx.restore();
+}

@@ -17,7 +17,7 @@ import { lookupById } from '../sequence/oeisClient';
 import { sequenceFromFormula } from '../sequence/formula';
 import { buildExplainPanel } from './explainPanel';
 import { SURROGATE_EXPLAIN } from '../nullmodel/surrogates';
-import { buildReadout, describeHit, drawMarker, correspondingIndex, drawCanvasLabel } from './readout';
+import { buildReadout, describeHit, drawMarker, correspondingIndex, drawCanvasLabel, drawEndDot } from './readout';
 import { hitIndex, type Hit } from '../viz/hit';
 import { canvasTheme, withCanvas } from '../viz/theme';
 import { initialTheme, applyTheme, buildThemeToggle } from './themeToggle';
@@ -29,6 +29,7 @@ import type { Size } from '../viz/types';
 import { buildLanding, shouldShowLanding, routeFor, EXAMPLES_HASH, ABOUT_HASH } from './landing';
 import { buildAbout } from './about';
 import { buildStyleControls } from './styleControls';
+import { labelledControl } from './a11y';
 import { sequenceRows, toCSV, toJSON, downloadBlob } from './exportData';
 import { exportCanvasPng } from './exportImage';
 import { buildDataTable } from './dataTable';
@@ -398,6 +399,12 @@ export function mountApp(root: HTMLElement): void {
   // is: unlinking and relinking should not lose where you had navigated to.
   let nullViewport: Viewport = { ...IDENTITY_VIEWPORT };
   let viewportLinked = true;
+  // Marks where a walk begins and ends. The spectrum already encodes index,
+  // but it cannot say which end is which, and in 'flat' or 'none' colour there
+  // is no index cue at all - so on a folded path there is no way to tell the
+  // start from the finish.
+  let markEnds = false;
+  let endCount = 10;
 
   /** Which viewport a panel draws and hit-tests with. */
   const viewportFor = (panel: 'real' | 'null'): Viewport =>
@@ -593,6 +600,39 @@ export function mountApp(root: HTMLElement): void {
   });
   tableToggle.setAttribute('aria-expanded', 'false');
   tableToggle.setAttribute('aria-controls', dataTable.el.id);
+
+  // Which end is which. Blue for the first terms, the real-line colour for the
+  // last, both already contrast-checked against either canvas.
+  const endsToggle = mkExport('ends-toggle', 'Mark ends', () => {
+    markEnds = !markEnds;
+    syncEnds();
+    userChanged();
+    redraw();
+  });
+  const endsCount = document.createElement('input');
+  endsCount.type = 'number';
+  endsCount.className = 'ends-count';
+  endsCount.min = '1';
+  endsCount.max = '500';
+  endsCount.value = String(endCount);
+  endsCount.addEventListener('change', () => {
+    endCount = Math.max(1, Math.min(500, Number(endsCount.value) || 1));
+    endsCount.value = String(endCount);
+    userChanged();
+    redraw();
+  });
+  function syncEnds(): void {
+    endsToggle.setAttribute('aria-pressed', String(markEnds));
+    endsToggle.classList.toggle('ends-toggle--on', markEnds);
+    // Disabled rather than left live while it can do nothing, the same call
+    // made on the hue sliders and the null-model select.
+    endsCount.disabled = !markEnds;
+    endsToggle.title = markEnds
+      ? 'Hide the first and last term markers'
+      : 'Mark the first and last terms, so you can tell where the drawing starts and finishes';
+  }
+  exportBar.appendChild(labelledControl('How many terms at each end', endsCount, { visible: false }));
+  syncEnds();
 
   mkExport('copy-link', 'Copy link', () => {
     // The URL encodes the whole view as base64, so selecting it out of the
@@ -835,6 +875,7 @@ export function mountApp(root: HTMLElement): void {
         mode: comparison.mode, surrogate: comparison.surrogate, seed: comparison.seed,
         ensembleN: comparison.ensembleN, style, viewport,
         nullViewport: viewportLinked ? undefined : nullViewport,
+        markEnds: markEnds ? endCount : undefined,
         nullStyle: styleLinked ? undefined : nullStyle,
       });
       const changed = lastHashWritten !== '' && lastHashWritten !== hash;
@@ -905,6 +946,30 @@ export function mountApp(root: HTMLElement): void {
     if (view.length < viz.minTerms) {
       showNotice(`${viz.name} works best with at least ${viz.minTerms} terms (loaded: ${view.length}).`);
     }
+    /**
+     * Dots on the first and last `endCount` terms of whatever is drawn.
+     *
+     * Positioned through viz.position, which every visualizer implements, so
+     * this works on a spiral and a histogram as well as on a walk. Called
+     * inside draw() while its translate and clip are still in force, so a
+     * side-by-side null panel needs no x offset of its own.
+     */
+    const drawEnds = (seq: Sequence, panelSize: Size, vp: Viewport): void => {
+      if (!markEnds || !viz.position) return;
+      const view = new SequenceView(seq);
+      const n = view.length;
+      // Clamped so the two runs cannot overlap and double-draw on a sequence
+      // shorter than twice the count.
+      const firstEnd = Math.min(endCount, n);
+      const lastStart = Math.max(firstEnd, n - endCount);
+      const dot = (i: number, colour: string, emphasis: boolean) => {
+        const p = viz.position!(view, state.params, panelSize, i);
+        if (p) drawEndDot(ctx, worldToScreen(vp, p.x, p.y), colour, emphasis);
+      };
+      for (let i = 0; i < firstEnd; i++) dot(i, canvasTheme().accent, i === 0);
+      for (let i = lastStart; i < n; i++) dot(i, canvasTheme().real, i === n - 1);
+    };
+
     const draw = (
       seq: typeof state.seq, w: number, h: number, ox: number, label: string,
       panel: 'real' | 'null' = 'real',
@@ -940,6 +1005,7 @@ export function mountApp(root: HTMLElement): void {
         ctx.restore();
         // Drawn after restoring, so labels keep their size at any zoom, and
         // backed so the rendering underneath cannot swallow them.
+        drawEnds(seq!, { width: w, height: h }, panelViewport);
         if (drawStyle.showLabels) drawCanvasLabel(ctx, label, 10, 16);
       });
       ctx.restore();
@@ -998,6 +1064,7 @@ export function mountApp(root: HTMLElement): void {
         viz.render(new SequenceView(surr), { ...state.params, ...styleToParams(overNull) }, ctx, { width, height });
         ctx.restore();
         viz.render(view, { ...state.params, ...styleToParams(style) }, ctx, { width, height });
+        drawEnds(realSeq, { width, height }, viewportFor('real'));
         if (style.showLabels) {
           drawCanvasLabel(ctx, `${seqLabel(realSeq)} - real over ${comparison.surrogate} null${styleLinked ? ' (grey)' : ''}`, 10, 16);
         }
@@ -1191,6 +1258,12 @@ export function mountApp(root: HTMLElement): void {
       syncStyleLink();
       if (decoded.viewport) viewport = clampViewport(decoded.viewport);
       // Present only when the two were split, so its presence is the flag.
+      markEnds = decoded.markEnds !== undefined;
+      if (decoded.markEnds !== undefined) {
+        endCount = decoded.markEnds;
+        endsCount.value = String(endCount);
+      }
+      syncEnds();
       viewportLinked = !decoded.nullViewport;
       if (decoded.nullViewport) nullViewport = clampViewport(decoded.nullViewport);
       syncViewLink();

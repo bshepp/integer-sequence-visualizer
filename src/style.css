@@ -498,3 +498,8 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
    hierarchy. Centred because it is a standalone action rather than prose. */
 .about-feedback { margin: 14px 0 0; font-size: 13px; text-align: center; }
 .landing-feedback:hover, .about-feedback-link:hover { color: var(--accent); }
+.ends-count { width: 56px; background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 4px 6px; font: inherit; font-size: 12px; }
+.ends-count:disabled { opacity: 0.45; cursor: not-allowed; }
+.export-bar .ends-toggle--on { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+:root[data-theme="light"] .ends-count { background: #ffffff; border-color: #c8ccd4; }
+:root[data-theme="light"] .export-bar .ends-toggle--on { background: var(--accent); color: #ffffff; border-color: var(--accent); }
