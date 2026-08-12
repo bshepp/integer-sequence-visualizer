@@ -7,6 +7,17 @@
   --accent: #7aa2f7;
 }
 * { box-sizing: border-box; }
+/* Spacing scale for the control bars. Two values, deliberately: one between
+   separate controls, one between the parts of a single compound control (a
+   label and its input, or minus / slider / plus / value). Everything in the
+   bars used 6, 8, 12 or 14 with no rule behind which.
+
+   Fixed WIDTHS are a different thing and are not part of this: the 84px and
+   112px link toggles, the 70px seed and N boxes, and the 22px and 28px square
+   buttons all exist so a control does not change size when its label or value
+   does, which would shove the rest of the bar sideways. */
+:root { --gap-control: 10px; --gap-within: 6px; }
+
 html, body { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, sans-serif; }
 #app { display: flex; flex-direction: column; height: 100%; }
@@ -33,7 +44,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .layout { display: grid; grid-template-columns: 300px 1fr; flex: 1; min-height: 0; }
 .sidebar { background: var(--panel); padding: 12px; overflow-y: auto; }
 .main { display: flex; flex-direction: column; min-width: 0; }
-.topbar { display: flex; gap: 12px; align-items: center; padding: 10px 14px; background: var(--panel); border-left: 1px solid #000; flex-wrap: wrap; }
+.topbar { display: flex; gap: var(--gap-control); align-items: center; padding: 10px 14px; background: var(--panel); border-left: 1px solid #000; flex-wrap: wrap; }
 /* overflow:hidden is a backstop, not the fix: the canvas carries an explicit
    pixel size, so anything that resizes this wrapper must redraw. If something
    ever forgets, the canvas clips rather than covering its siblings. */
@@ -79,15 +90,15 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
   border: 1px solid #3a3d44; border-radius: 4px; padding: 6px; font: inherit;
 }
 .bfile-cap:disabled { opacity: 0.4; cursor: not-allowed; }
-.param-controls { display: flex; gap: 14px; flex-wrap: wrap; }
-.param-field { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+.param-controls { display: flex; gap: var(--gap-control); flex-wrap: wrap; }
+.param-field { display: flex; gap: var(--gap-within); align-items: center; font-size: 13px; color: var(--muted); }
 .param-value { min-width: 2.5em; color: var(--text); }
 .viz-picker { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 6px; }
 .messages { position: fixed; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 8px; z-index: 10; }
 .banner { padding: 8px 14px; border-radius: 6px; font-size: 13px; max-width: 360px; }
 .banner-error { background: #3d1f26; color: #f7768e; border: 1px solid #f7768e55; }
 .banner-notice { background: #1f2a3d; color: #7aa2f7; border: 1px solid #7aa2f755; }
-.comparison-bar { display: flex; gap: 8px; align-items: center; padding: 8px 14px; background: var(--panel); border-top: 1px solid #000; flex-wrap: wrap; }
+.comparison-bar { display: flex; gap: var(--gap-control); align-items: center; padding: 8px 14px; background: var(--panel); border-top: 1px solid #000; flex-wrap: wrap; }
 .comparison-bar select, .comparison-bar input, .comparison-bar button { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 4px 8px; font: inherit; }
 .comparison-bar input { width: 70px; }
 .bar-label { color: var(--muted); font-size: 13px; }
@@ -220,7 +231,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
   padding: 0; cursor: pointer; line-height: 0; max-width: 100%;
 }
 .landing-hero-button:hover { border-color: var(--accent); }
-.bar-field { display: inline-flex; align-items: center; gap: 6px; }
+.bar-field { display: inline-flex; align-items: center; gap: var(--gap-within); }
 .message-region { display: flex; flex-direction: column; gap: 8px; }
 .message-region:empty { display: none; }
 /* Removed from view but kept in the accessibility tree - not display:none,
@@ -244,22 +255,22 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .skip-link:focus { top: 0; }
 .sweep-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; color: var(--muted); font-size: 13px; }
 .sweep-param { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 5px; font: inherit; }
-.style-controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--muted); flex-basis: 100%; }
+.style-controls { display: flex; gap: var(--gap-control); flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--muted); flex-basis: 100%; }
 .style-controls[hidden] { display: none; }
 .style-controls select { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 3px; font: inherit; }
 .style-controls input[type="range"] { width: 80px; }
 .style-controls input:disabled { opacity: 0.45; cursor: not-allowed; }
-.export-bar { display: flex; gap: 8px; align-items: center; padding: 8px 14px; background: var(--panel); border-left: 1px solid #000; flex-wrap: wrap; }
+.export-bar { display: flex; gap: var(--gap-control); align-items: center; padding: 8px 14px; background: var(--panel); border-left: 1px solid #000; flex-wrap: wrap; }
 .export-bar button { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 12px; }
 .export-bar button:hover { border-color: var(--accent); }
 /* Groups the bar by job: write a file, change what is drawn, change the
    framing. Eleven buttons in an undifferentiated row read as one long list. */
-.bar-sep { width: 1px; align-self: stretch; margin: 2px 4px; background: #3a3d44; flex: none; }
+.bar-sep { width: 1px; align-self: stretch; margin: 2px 0; background: #3a3d44; flex: none; }
 :root[data-theme="light"] .bar-sep { background: #d6dae2; }
 /* Between parameter groups too. Three sliders each flanked by a minus and a
    plus is nine controls in a row; without a divider it reads as one long
    undifferentiated strip rather than three separate knobs. */
-.param-field + .param-field { border-left: 1px solid #3a3d44; padding-left: 14px; }
+.param-field + .param-field { border-left: 1px solid #3a3d44; padding-left: var(--gap-control); }
 :root[data-theme="light"] .param-field + .param-field { border-left-color: #d6dae2; }
 /* The glyph, not the circle: these are 28px discs already and only the letter
    was hard to read at 15px regular. */
@@ -295,7 +306,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .bfile-pending[hidden] { display: none; }
 :root[data-theme="light"] .bfile-pending { color: #8a5a00; }
 
-.header-nav { margin-left: auto; display: flex; gap: 8px; align-self: center; }
+.header-nav { margin-left: auto; display: flex; gap: var(--gap-control); align-self: center; }
 .header-nav-button {
   background: #24262c; color: var(--text); border: 1px solid #3a3d44;
   border-radius: 4px; padding: 4px 12px; cursor: pointer; font: inherit; font-size: 12px;
@@ -328,7 +339,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .citation-text { margin: 0 0 3px !important; color: var(--text) !important; }
 .citation-note { margin: 0 !important; font-size: 12.5px; color: var(--muted) !important; }
 .about-attribution { margin-top: 28px !important; font-size: 13px; border-top: 1px solid #3a3d44; padding-top: 14px; }
-.page-nav { display: flex; gap: 8px; justify-content: flex-end; }
+.page-nav { display: flex; gap: var(--gap-control); justify-content: flex-end; }
 .page-nav-button {
   background: #24262c; color: var(--text); border: 1px solid #3a3d44;
   border-radius: 4px; padding: 5px 12px; cursor: pointer; font: inherit; font-size: 12px;
@@ -405,7 +416,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 :root[data-theme="light"] .null-toggle--on { background: var(--accent); color: #ffffff; border-color: var(--accent); }
 .style-panels { flex-basis: 100%; display: flex; flex-direction: column; gap: 6px; }
 .style-panels[hidden] { display: none; }
-.style-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.style-group { display: flex; align-items: center; gap: var(--gap-control); flex-wrap: wrap; }
 /* Reads as part of the null-model band it now sits under, rather than as a
    stray row floating above the drawing. */
 .style-panels--null {
@@ -529,7 +540,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .data-list { margin: 0; font-variant-numeric: tabular-nums; font-size: 13px; line-height: 1.7; word-break: break-word; color: var(--text); user-select: text; }
 .data-list-note { margin: 8px 0 0; font-size: 11px; color: var(--muted); }
 :root[data-theme="light"] .data-view-toggle { background: #ffffff; border-color: #c8ccd4; }
-.zoom-group { display: inline-flex; align-items: center; gap: 6px; }
+.zoom-group { display: inline-flex; align-items: center; gap: var(--gap-within); }
 .zoom-group[hidden] { display: none; }
 .zoom-caption { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
 /* Two captions per panel, answering two different questions:
