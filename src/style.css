@@ -541,7 +541,14 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .canvas-wrap--side .readout--hover.readout--null.readout--empty,
 .canvas-wrap--side .readout--pin.readout--null.readout--empty { display: none; }
 .readout { max-width: calc(50% - 20px); }
-.randomise-params { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 3px 10px; cursor: pointer; font: inherit; font-size: 12px; align-self: center; }
-.randomise-params:hover { border-color: var(--accent); }
-.randomise-params[hidden] { display: none; }
-:root[data-theme="light"] .randomise-params { background: #ffffff; border-color: #c8ccd4; }
+/* Single-step buttons either side of each slider. A range input is already
+   keyboard-steppable, but one spanning 2 to 360 cannot be dragged onto an
+   exact value, and these views are usually read at a specific setting. */
+.param-step {
+  background: #24262c; color: var(--text); border: 1px solid #3a3d44;
+  border-radius: 4px; width: 22px; height: 22px; padding: 0; cursor: pointer;
+  font: 600 13px/1 system-ui; flex: none;
+}
+.param-step:hover:not(:disabled) { border-color: var(--accent); }
+.param-step:disabled { opacity: 0.35; cursor: default; }
+:root[data-theme="light"] .param-step { background: #ffffff; border-color: #c8ccd4; }

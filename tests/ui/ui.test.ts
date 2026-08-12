@@ -575,3 +575,82 @@ describe('the b-file term slider', () => {
     expect(pending.textContent).toMatch(/\d/);
   });
 });
+
+
+describe('parameter step buttons', () => {
+  const specs: ParamSpec[] = [
+    { kind: 'number', id: 'b', label: 'Mod b', default: 7, min: 2, max: 360, step: 1 },
+    { kind: 'number', id: 'q', label: 'Quarter', default: 1, min: 0, max: 2, step: 0.25 },
+  ];
+  const build = (values: Record<string, number> = {}) => {
+    const changes: Array<[string, unknown]> = [];
+    const el = buildParamControls(specs, values, (id, v) => changes.push([id, v]));
+    return { el, changes };
+  };
+  const field = (el: HTMLElement, i: number) => el.querySelectorAll('.param-field')[i]!;
+
+  it('gives every slider a decrement and an increment', () => {
+    const { el } = build();
+    for (let i = 0; i < specs.length; i++) {
+      expect(field(el, i).querySelector('.param-step--down'), `field ${i}`).not.toBeNull();
+      expect(field(el, i).querySelector('.param-step--up'), `field ${i}`).not.toBeNull();
+    }
+  });
+
+  it('names what it steps and by how much, since the glyph alone says nothing', () => {
+    const { el } = build();
+    const down = field(el, 0).querySelector('.param-step--down')!;
+    expect(down.getAttribute('aria-label')).toBe('Decrease Mod b by 1');
+    expect(field(el, 0).querySelector('.param-step--up')!.getAttribute('aria-label'))
+      .toBe('Increase Mod b by 1');
+  });
+
+  it('moves by exactly one step and reports it', () => {
+    const { el, changes } = build({ b: 7 });
+    (field(el, 0).querySelector('.param-step--up') as HTMLButtonElement).click();
+    expect(changes).toEqual([['b', 8]]);
+    expect(field(el, 0).querySelector('.param-value')!.textContent).toBe('8');
+  });
+
+  it('stays on the grid for a fractional step', () => {
+    // 1 + 0.25 must be 1.25, not 1.2500000000000002 - the value is shown to
+    // the user and round-trips through the address.
+    const { el, changes } = build({ q: 1 });
+    (field(el, 1).querySelector('.param-step--up') as HTMLButtonElement).click();
+    expect(changes).toEqual([['q', 1.25]]);
+  });
+
+  it('disables at the ends rather than pretending it can go further', () => {
+    const { el } = build({ b: 2 });
+    expect((field(el, 0).querySelector('.param-step--down') as HTMLButtonElement).disabled).toBe(true);
+    expect((field(el, 0).querySelector('.param-step--up') as HTMLButtonElement).disabled).toBe(false);
+    const top = build({ b: 360 });
+    expect((field(top.el, 0).querySelector('.param-step--up') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('re-enables once the slider moves off an end', () => {
+    const { el } = build({ b: 2 });
+    const input = field(el, 0).querySelector('input')!;
+    input.value = '5';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    expect((field(el, 0).querySelector('.param-step--down') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('labels each slider without wrapping it, so the buttons stay clickable', () => {
+    // A button inside a <label> also activates the label's control on click.
+    const { el } = build();
+    const f = field(el, 0);
+    expect(f.tagName).toBe('DIV');
+    const label = f.querySelector('label')!;
+    const input = f.querySelector('input')!;
+    expect(input.id).toBeTruthy();
+    expect(label.getAttribute('for')).toBe(input.id);
+    expect(label.contains(f.querySelector('.param-step--up'))).toBe(false);
+  });
+
+  it('gives distinct ids across rebuilds, so labels never cross-wire', () => {
+    const a = build().el.querySelector('input')!.id;
+    const b = build().el.querySelector('input')!.id;
+    expect(a).not.toBe(b);
+  });
+});
