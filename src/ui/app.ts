@@ -2,10 +2,11 @@ import type { Sequence } from '../sequence/sequence';
 import { SequenceView } from '../sequence/sequence';
 import { registerAll } from '../viz/all';
 import { allVisualizers, getVisualizer } from '../viz/registry';
-import { defaultParams, type Params } from '../viz/types';
+import { defaultParams, type Params, type ParamValue } from '../viz/types';
 import { shouldUseLogScale, targetValues } from '../viz/histogram';
 import { minMax } from '../viz/mathUtils';
 import { buildParamControls, randomiseNumbers } from './paramControls';
+import { inertModulusAbove, inertModulusMessage } from './inertModulus';
 import { buildSequencePanel } from './sequencePanel';
 import { initMessages, showError, showNotice } from './messages';
 import { defaultComparison, surrogateSequence, drawEnsembleChart, buildComparisonBar, supportsSuperimpose } from './comparison';
@@ -190,8 +191,21 @@ export function mountApp(root: HTMLElement): void {
     return null;
   }
 
+  /**
+   * Largest term of the loaded sequence, or null if any of them is negative.
+   * Declared here rather than beside its reader below: applySeq can run during
+   * panel construction, which is before a `let` further down would be past its
+   * temporal dead zone.
+   */
+  let inertAbove: number | null = null;
+  let saidInert = false;
+
   function applySeq(seq: Sequence): void {
     state.seq = seq;
+    // Once per sequence rather than per slider event: this is a pass over
+    // every term, and a drag fires input continuously.
+    inertAbove = inertModulusAbove(seq.terms);
+    saidInert = false;
     currentRef = refFor(seq);
     panel.setInfo(seq);
     dataTable.setSequence(seq);
@@ -230,6 +244,9 @@ export function mountApp(root: HTMLElement): void {
   picker.addEventListener('change', () => {
     hintPending = true;
     state.vizId = picker.value;
+    // A new view means a new modulus control, and the sentence about it is
+    // worth one repeat there.
+    saidInert = false;
     state.params = defaultParams(getVisualizer(state.vizId).params);
     rebuildParams();
     bar.update(Boolean(getVisualizer(state.vizId).statistics), supportsSuperimpose(getVisualizer(state.vizId)));
@@ -375,6 +392,19 @@ export function mountApp(root: HTMLElement): void {
   // reproducible run of shapes and a test can assert two presses differ.
   let shuffleSeed = 1;
 
+  /**
+   * Once per sequence, and only while the modulus is actually past the point
+   * of effect. Fired on change rather than on entering the dead zone, because
+   * a view can load with b already inert - dragging it further is then the
+   * first move a reader makes, and the one that looks broken.
+   */
+  function noteInertModulus(id: string, value: ParamValue): void {
+    if (id !== 'modulus' || saidInert || inertAbove === null) return;
+    if (Number(value) <= inertAbove) return;
+    saidInert = true;
+    showNotice(inertModulusMessage(inertAbove));
+  }
+
   function rebuildParams(): void {
     const current = getVisualizer(state.vizId);
     vizShort.textContent = current.explain.short;
@@ -382,6 +412,7 @@ export function mountApp(root: HTMLElement): void {
     paramsHost.replaceChildren(
       buildParamControls(getVisualizer(state.vizId).params, state.params, (id, value) => {
         state.params[id] = value;
+        noteInertModulus(id, value);
         userChanged();
       }, () => {
         // Assigned in one go and rebuilt once: calling onChange per parameter
