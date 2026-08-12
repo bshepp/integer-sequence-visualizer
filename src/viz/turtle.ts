@@ -1,6 +1,6 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
-import { pathTransform, toScreen, nearestIndex } from './pathTransform';
+import { pathTransform, toScreen, nearestIndex, chordArc } from './pathTransform';
 import { edgeUses } from './overlap';
 import { applyStyle, strokeColorAt, styleFromParams, DEFAULT_STYLE, type RenderStyle } from './style';
 
@@ -22,6 +22,13 @@ export function strokePath(
   ctx: CanvasRenderingContext2D,
   size: Size,
   style: RenderStyle = DEFAULT_STYLE,
+  /**
+   * How far the path turns across segment i, in radians, for views whose
+   * samples are corners of a curve rather than the corners of the drawing.
+   * Omitted - the turtle walk, the digit walk - and every segment is the
+   * straight line it has always been.
+   */
+  turnAt?: (segment: number) => number,
 ): void {
   // The bounding-box maths (and its loop-based min/max, which exists because
   // a 2001-term b-file's digit walk produces 418,487 points - past V8's ~250k
@@ -53,9 +60,17 @@ export function strokePath(
       ctx.lineWidth = style.lineWidth * (1 + depth);
     }
     const a = toScreen(t, pts[i - 1]!), b = toScreen(t, pts[i]!);
+    const curve = turnAt ? chordArc(a, b, turnAt(i)) : null;
     ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
+    if (curve) {
+      // moveTo first: arc() would otherwise join from wherever the previous
+      // subpath ended, and each segment is its own path here.
+      ctx.moveTo(a.x, a.y);
+      ctx.arc(curve.cx, curve.cy, curve.r, curve.start, curve.end, curve.ccw);
+    } else {
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+    }
     ctx.stroke();
   }
 }

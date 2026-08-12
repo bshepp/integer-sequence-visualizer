@@ -25,6 +25,28 @@ export function arcDegrees(residue: number, angle: number, offset: number): numb
   return angle * residue + offset;
 }
 
+/**
+ * How far each segment of the sampled path turns, in radians.
+ *
+ * Precomputed per term rather than asked per segment: the residue costs a
+ * bigint modulo, and the renderer would otherwise pay for it eight times over
+ * for a number that cannot change within a term.
+ */
+export function segmentTurns(
+  seq: SequenceView,
+  opts: { angle: number; modulus: number; offset: number; segments?: number },
+): (segment: number) => number {
+  const segments = opts.segments ?? SEGMENTS;
+  const perTerm = new Float64Array(seq.length);
+  for (let i = 0; i < seq.length; i++) {
+    const deg = arcDegrees(seq.mod(i, opts.modulus), opts.angle, opts.offset);
+    perTerm[i] = (deg * Math.PI) / 180 / segments;
+  }
+  // Segment i runs from pts[i-1] to pts[i], and term t owns the `segments`
+  // points after the origin, so the first segment belongs to term 0.
+  return (i) => perTerm[Math.floor((i - 1) / segments)] ?? 0;
+}
+
 export function polyarcPath(
   seq: SequenceView,
   opts: { angle: number; modulus: number; offset: number; segments?: number },
@@ -65,16 +87,19 @@ export const polyarcViz: Visualizer = {
     { kind: 'number', id: 'offset', label: '+/- c', default: -90, min: -360, max: 360, step: 1 },
   ],
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
-    strokePath(
-      polyarcPath(seq, {
-        angle: Number(params.angle),
-        modulus: Number(params.modulus),
-        offset: Number(params.offset),
-      }),
-      ctx,
-      size,
-      styleFromParams(params),
-    );
+    const opts = {
+      angle: Number(params.angle),
+      modulus: Number(params.modulus),
+      offset: Number(params.offset),
+    };
+    // Drawn as the arcs the samples were always corners of, rather than as
+    // the chords between them. The sample points are untouched, so this moves
+    // no part of the path - it fills the gaps between samples with the curve
+    // instead of a straight line. Sub-pixel at the settings this view shipped
+    // with (0.4px at the defaults, 0.7px at NCurve's own rule), and worth
+    // several pixels per chord once the angle and a large modulus put a whole
+    // loop inside one term, which is where a hard octagon used to show.
+    strokePath(polyarcPath(seq, opts), ctx, size, styleFromParams(params), segmentTurns(seq, opts));
   },
   position(seq: SequenceView, params: Params, size: Size, index: number) {
     if (index < 0 || index >= seq.length) return null;

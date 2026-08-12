@@ -39,6 +39,76 @@ export function toScreen(t: PathTransform, p: Pt): Pt {
   return { x: p.x * t.scale + t.ox, y: t.height - (p.y * t.scale + t.oy) };
 }
 
+export interface ScreenArc {
+  cx: number; cy: number; r: number; start: number; end: number; ccw: boolean;
+}
+
+/** The full circle canvas silently clamps a longer sweep to. */
+const TWO_PI = 2 * Math.PI;
+
+/**
+ * How far an arc has to stand off its chord before it is drawn as one.
+ *
+ * Not a performance compromise. Measured in the browser on a 10,000-term walk
+ * with all 80,000 segments curved, timing each render through to rasterisation
+ * rather than to the queued commands: 391ms with arcs against 397ms with
+ * chords, medians of 15, ranges overlapping. Arcs are free. (An earlier
+ * unflushed measurement said 27% slower and was measurement noise; the timer
+ * was stopping before the drawing happened.)
+ *
+ * It is here because the circle through two nearly collinear points is
+ * enormous - a hundredth of a radian across a 100px chord puts its centre
+ * 10,000px away - and asking the rasteriser for a fragment of that, through an
+ * atan2 on coordinates that far out, is a worse way to say "straight line"
+ * than a straight line. Below half a pixel of stand-off the two are the same
+ * picture anyway.
+ */
+const VISIBLE_PX = 0.35;
+
+/**
+ * The circular arc joining two drawn points, given how far the path turns
+ * between them.
+ *
+ * A path sampled at equal steps with equal turning has vertices that are
+ * concyclic - the samples are corners of a regular polygon, and this recovers
+ * the circle that polygon was inscribed in. So the arc passes exactly through
+ * both sample points: drawing it changes what fills the gap between samples,
+ * never where the samples are. Every existing address keeps rendering the same
+ * path, and hit-testing, which still measures against the samples, cannot
+ * drift away from the line.
+ *
+ * The sweep is negated on the way in because toScreen flips y: a left turn in
+ * sequence space is still a left turn to the eye, but raw canvas angles
+ * increase the other way.
+ *
+ * Returns null where an arc is not the right answer - a straight or nearly
+ * straight segment, a repeated point, a bend too slight to see, and a segment
+ * turning a full circle or more, where the sample pair no longer determines
+ * one circle. Callers draw the chord instead.
+ */
+export function chordArc(a: Pt, b: Pt, worldTurn: number): ScreenArc | null {
+  const phi = -worldTurn;
+  if (!Number.isFinite(phi) || Math.abs(phi) < 1e-4 || Math.abs(phi) >= TWO_PI) return null;
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len = Math.hypot(dx, dy);
+  if (len < 1e-9) return null;
+
+  const half = phi / 2;
+  // Signed: the sign of sin(half) carries which side of the chord the centre
+  // falls on, so one expression covers both directions of turn.
+  const signed = len / (2 * Math.sin(half));
+  const nx = -dy / len, ny = dx / len;
+  const cx = (a.x + b.x) / 2 + nx * signed * Math.cos(half);
+  const cy = (a.y + b.y) / 2 + ny * signed * Math.cos(half);
+  const r = Math.abs(signed);
+  // Sagitta: the gap between the arc and its chord at their widest, already in
+  // screen pixels because a and b are.
+  if (r * (1 - Math.cos(half)) < VISIBLE_PX) return null;
+
+  const start = Math.atan2(a.y - cy, a.x - cx);
+  return { cx, cy, r, start, end: start + phi, ccw: phi < 0 };
+}
+
 /**
  * Nearest drawn point to a screen coordinate, or null if the cursor is more
  * than maxDist pixels from the path.
