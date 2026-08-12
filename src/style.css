@@ -541,3 +541,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .canvas-wrap--side .readout--hover.readout--null.readout--empty,
 .canvas-wrap--side .readout--pin.readout--null.readout--empty { display: none; }
 .readout { max-width: calc(50% - 20px); }
+.randomise-params { background: #24262c; color: var(--text); border: 1px solid #3a3d44; border-radius: 4px; padding: 3px 10px; cursor: pointer; font: inherit; font-size: 12px; align-self: center; }
+.randomise-params:hover { border-color: var(--accent); }
+.randomise-params[hidden] { display: none; }
+:root[data-theme="light"] .randomise-params { background: #ffffff; border-color: #c8ccd4; }

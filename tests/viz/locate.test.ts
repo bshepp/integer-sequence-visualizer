@@ -126,7 +126,7 @@ describe('trajectory family locate/position round-trip', () => {
   const seq = mk(kolakoski(200));
   const CASES: Array<[Visualizer, Params]> = [
     [turtleViz, { angle: 73, k: 7 }],
-    [polyarcViz, { angle: 37, modulus: 7, centered: true }],
+    [polyarcViz, { angle: 37, modulus: 7, offset: -111 }],
   ];
 
   for (const [viz, params] of CASES) {

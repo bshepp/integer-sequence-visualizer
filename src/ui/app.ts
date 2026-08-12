@@ -5,7 +5,7 @@ import { allVisualizers, getVisualizer } from '../viz/registry';
 import { defaultParams, type Params } from '../viz/types';
 import { shouldUseLogScale, targetValues } from '../viz/histogram';
 import { minMax } from '../viz/mathUtils';
-import { buildParamControls } from './paramControls';
+import { buildParamControls, randomiseNumbers } from './paramControls';
 import { buildSequencePanel } from './sequencePanel';
 import { initMessages, showError, showNotice } from './messages';
 import { defaultComparison, surrogateSequence, drawEnsembleChart, buildComparisonBar, supportsSuperimpose } from './comparison';
@@ -363,6 +363,23 @@ export function mountApp(root: HTMLElement): void {
   // it sits it claims a full row. Appended earlier it was splitting the
   // picker from the (i) button and the parameter sliders.
   topbar.appendChild(stylePanels);
+
+  // Advances per press rather than being drawn from the clock, so the run of
+  // shapes a session walks through is reproducible - and so a test can assert
+  // that pressing it twice gives two different draws rather than hoping.
+  let shuffleSeed = 1;
+  const randomiseBtn = document.createElement('button');
+  randomiseBtn.className = 'randomise-params';
+  randomiseBtn.type = 'button';
+  randomiseBtn.textContent = 'Random';
+  randomiseBtn.title = 'Draw new values for this view’s numeric parameters';
+  randomiseBtn.addEventListener('click', () => {
+    const viz = getVisualizer(state.vizId);
+    Object.assign(state.params, randomiseNumbers(viz.params, shuffleSeed++));
+    rebuildParams();
+    userChanged();
+  });
+
   function rebuildParams(): void {
     const current = getVisualizer(state.vizId);
     vizShort.textContent = current.explain.short;
@@ -373,6 +390,10 @@ export function mountApp(root: HTMLElement): void {
         userChanged();
       }),
     );
+    // Re-appended because replaceChildren above clears the host. Hidden when
+    // the view has no numeric parameter for it to move.
+    randomiseBtn.hidden = !current.params.some((p) => p.kind === 'number');
+    paramsHost.appendChild(randomiseBtn);
   }
   rebuildParams();
 
