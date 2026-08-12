@@ -355,6 +355,13 @@ export function mountApp(root: HTMLElement): void {
   const paramsHost = document.createElement('div');
   topbar.appendChild(paramsHost);
 
+  // Divider before the description: it is prose at the end of a row of
+  // controls, and without one the last slider's value runs straight into it.
+  const shortSep = document.createElement('span');
+  shortSep.className = 'bar-sep viz-short-sep';
+  shortSep.setAttribute('aria-hidden', 'true');
+  topbar.appendChild(shortSep);
+
   const vizShort = document.createElement('p');
   vizShort.className = 'viz-short';
   topbar.appendChild(vizShort);
@@ -638,9 +645,9 @@ export function mountApp(root: HTMLElement): void {
     return b;
   };
 
-  const exportSep = (): void => {
+  const barSep = (): void => {
     const hr = document.createElement('span');
-    hr.className = 'export-sep';
+    hr.className = 'bar-sep';
     hr.setAttribute('aria-hidden', 'true');
     exportBar.appendChild(hr);
   };
@@ -689,7 +696,7 @@ export function mountApp(root: HTMLElement): void {
     }
   });
 
-  exportSep();
+  barSep();
 
   const dataTable = buildDataTable();
   dataTable.el.id = `${uid}-data-table`;
@@ -723,7 +730,7 @@ export function mountApp(root: HTMLElement): void {
   }
   syncEnds();
 
-  exportSep();
+  barSep();
 
   const canvasCentre = () => {
     const r = canvasWrap.getBoundingClientRect();
@@ -819,7 +826,7 @@ export function mountApp(root: HTMLElement): void {
   syncZoomBars();
 
   const feedback = buildFeedbackLink();
-  exportSep();
+  barSep();
   exportBar.appendChild(feedback);
 
   main.appendChild(exportBar);

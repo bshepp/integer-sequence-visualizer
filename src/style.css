@@ -254,8 +254,13 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .export-bar button:hover { border-color: var(--accent); }
 /* Groups the bar by job: write a file, change what is drawn, change the
    framing. Eleven buttons in an undifferentiated row read as one long list. */
-.export-sep { width: 1px; align-self: stretch; margin: 2px 4px; background: #3a3d44; flex: none; }
-:root[data-theme="light"] .export-sep { background: #d6dae2; }
+.bar-sep { width: 1px; align-self: stretch; margin: 2px 4px; background: #3a3d44; flex: none; }
+:root[data-theme="light"] .bar-sep { background: #d6dae2; }
+/* Between parameter groups too. Three sliders each flanked by a minus and a
+   plus is nine controls in a row; without a divider it reads as one long
+   undifferentiated strip rather than three separate knobs. */
+.param-field + .param-field { border-left: 1px solid #3a3d44; padding-left: 14px; }
+:root[data-theme="light"] .param-field + .param-field { border-left-color: #d6dae2; }
 /* The glyph, not the circle: these are 28px discs already and only the letter
    was hard to read at 15px regular. */
 /* The one place either info button's glyph is styled. It used to be set in
@@ -552,3 +557,16 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .param-step:hover:not(:disabled) { border-color: var(--accent); }
 .param-step:disabled { opacity: 0.35; cursor: default; }
 :root[data-theme="light"] .param-step { background: #ffffff; border-color: #c8ccd4; }
+
+/* The stylesheet's first width media query. Deliberately narrow in scope: it
+   is not a responsive layout (see issue #2), it drops one element that is
+   already reachable another way.
+
+   The visualizer description is prose at the end of a row of controls and
+   stretches to about 1000px. Measured, it costs the topbar an entire extra
+   row below roughly 1050px - and it says a shorter version of what the (i)
+   button beside the picker says at length, so nothing is lost by dropping it
+   at a width where a row is expensive. */
+@media (max-width: 1100px) {
+  .viz-short, .viz-short-sep { display: none; }
+}
