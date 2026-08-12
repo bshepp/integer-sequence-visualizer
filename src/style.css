@@ -581,3 +581,14 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 @media (max-width: 1100px) {
   .viz-short, .viz-short-sep { display: none; }
 }
+/* Sits in the parameter row as its last item, divided from the parameters the
+   same way they are divided from each other - it is an action among knobs. */
+.randomise-params {
+  background: #24262c; color: var(--text); border: 1px solid #3a3d44;
+  border-radius: 4px; padding: 3px 10px; cursor: pointer; font: inherit;
+  font-size: 12px; flex: none;
+  border-left: 1px solid #3a3d44; padding-left: var(--gap-control);
+  margin-left: 0;
+}
+.randomise-params:hover { border-color: var(--accent); }
+:root[data-theme="light"] .randomise-params { background: #ffffff; border-color: #c8ccd4; }

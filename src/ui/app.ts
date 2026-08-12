@@ -5,7 +5,7 @@ import { allVisualizers, getVisualizer } from '../viz/registry';
 import { defaultParams, type Params } from '../viz/types';
 import { shouldUseLogScale, targetValues } from '../viz/histogram';
 import { minMax } from '../viz/mathUtils';
-import { buildParamControls } from './paramControls';
+import { buildParamControls, randomiseNumbers } from './paramControls';
 import { buildSequencePanel } from './sequencePanel';
 import { initMessages, showError, showNotice } from './messages';
 import { defaultComparison, surrogateSequence, drawEnsembleChart, buildComparisonBar, supportsSuperimpose } from './comparison';
@@ -371,6 +371,10 @@ export function mountApp(root: HTMLElement): void {
   // picker from the (i) button and the parameter sliders.
   topbar.appendChild(stylePanels);
 
+  // Advances per press rather than coming from the clock, so a session walks a
+  // reproducible run of shapes and a test can assert two presses differ.
+  let shuffleSeed = 1;
+
   function rebuildParams(): void {
     const current = getVisualizer(state.vizId);
     vizShort.textContent = current.explain.short;
@@ -378,6 +382,12 @@ export function mountApp(root: HTMLElement): void {
     paramsHost.replaceChildren(
       buildParamControls(getVisualizer(state.vizId).params, state.params, (id, value) => {
         state.params[id] = value;
+        userChanged();
+      }, () => {
+        // Assigned in one go and rebuilt once: calling onChange per parameter
+        // would redraw three times for a single press.
+        Object.assign(state.params, randomiseNumbers(getVisualizer(state.vizId).params, shuffleSeed++));
+        rebuildParams();
         userChanged();
       }),
     );

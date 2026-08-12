@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { buildParamControls } from '../../src/ui/paramControls';
+import { buildParamControls, randomiseNumbers } from '../../src/ui/paramControls';
 import { buildSequencePanel } from '../../src/ui/sequencePanel';
 import { mountApp } from '../../src/ui/app';
 import { PRESETS } from '../../src/sequence/presets';
@@ -652,5 +652,60 @@ describe('parameter step buttons', () => {
     const a = build().el.querySelector('input')!.id;
     const b = build().el.querySelector('input')!.id;
     expect(a).not.toBe(b);
+  });
+});
+
+describe('the Random button', () => {
+  const specs: ParamSpec[] = [
+    { kind: 'number', id: 'angle', label: 'Angle x', default: 30, min: 1, max: 120, step: 1 },
+    { kind: 'number', id: 'b', label: 'Mod b', default: 7, min: 2, max: 360, step: 1 },
+    { kind: 'number', id: 'c', label: '+/- c', default: -90, min: -360, max: 360, step: 1 },
+  ];
+
+  it('is the last item inside the parameter row, not a sibling after it', () => {
+    // Appended outside .param-controls it becomes a flex item of the topbar
+    // and drops onto a line of its own beneath the first slider.
+    const el = buildParamControls(specs, {}, () => {}, () => {});
+    const btn = el.querySelector('.randomise-params')!;
+    expect(el.classList.contains('param-controls')).toBe(true);
+    expect(el.lastElementChild).toBe(btn);
+    expect([...el.children].indexOf(btn)).toBe(specs.length);
+  });
+
+  it('is absent when nothing numeric would move, and when not wired up', () => {
+    const noNumbers: ParamSpec[] = [{ kind: 'select', id: 's', label: 's', default: 'a', options: ['a', 'b'] }];
+    expect(buildParamControls(noNumbers, {}, () => {}, () => {}).querySelector('.randomise-params')).toBeNull();
+    expect(buildParamControls(specs, {}, () => {}).querySelector('.randomise-params')).toBeNull();
+  });
+
+  it('reports once per press, not once per parameter', () => {
+    // Three onChange calls would redraw the canvas three times for one click.
+    let presses = 0;
+    const el = buildParamControls(specs, {}, () => { throw new Error('onChange should not fire'); }, () => { presses++; });
+    (el.querySelector('.randomise-params') as HTMLButtonElement).click();
+    expect(presses).toBe(1);
+  });
+
+  it('draws in range, on step, and explores rather than clustering', () => {
+    const seen = new Set<number>();
+    for (let seed = 1; seed <= 300; seed++) {
+      const got = randomiseNumbers(specs, seed);
+      for (const spec of specs) {
+        if (spec.kind !== 'number') continue;
+        const v = got[spec.id] as number;
+        expect(v).toBeGreaterThanOrEqual(spec.min);
+        expect(v).toBeLessThanOrEqual(spec.max);
+        expect((v - spec.min) % spec.step).toBeCloseTo(0, 9);
+      }
+      seen.add(got.b as number);
+    }
+    expect(seen.size).toBeGreaterThan(100);
+    expect(Math.max(...seen)).toBeGreaterThan(300);
+    expect(Math.min(...seen)).toBeLessThan(60);
+  });
+
+  it('is reproducible per seed, and moves between seeds', () => {
+    expect(randomiseNumbers(specs, 1)).toEqual(randomiseNumbers(specs, 1));
+    expect(randomiseNumbers(specs, 1)).not.toEqual(randomiseNumbers(specs, 2));
   });
 });
