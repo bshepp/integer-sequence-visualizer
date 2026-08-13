@@ -195,7 +195,7 @@ export function buildAbout(opts: AboutOptions): HTMLElement {
 
   body.append(
     section('Credit', 'about-credit'),
-    PARA('The SeqFan thread that started this is archived in the repository. From it: George Whale built NCurve and asked the question. Bill McEachen went looking through the sequences, gave eleven of them names (French curve, pie crust, propeller, tire, saw blade, record disc, zipper, Slinky) and highlighted A019488, a find of Neil Sloane\'s; all eleven are preset in the sidebar under his names. Jean-Paul Allouche supplied the 1980s references above.'),
+    PARA('The SeqFan thread that started this is archived in the repository. From it: George Whale built NCurve and asked the question. Bill McEachen went looking through the sequences, named eight of them (French curve, pie crust, propeller, tire, saw blade, record disc, zipper, Slinky) and highlighted A019488, a sequence of Neil Sloane\'s; all eleven are preset in the sidebar, under his names where he gave them. Jean-Paul Allouche supplied the 1980s references above.'),
     PARA('Nothing here is claimed on their behalf, and none of them has endorsed this site. They are credited because the work descends from theirs.'),
   );
 
