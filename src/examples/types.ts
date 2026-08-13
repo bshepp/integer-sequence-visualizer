@@ -44,4 +44,14 @@ export interface ExampleEntry {
   body: string;
   /** Required when verdict === 'real' or 'split'. */
   evidence?: Evidence;
+  /**
+   * Which shelf the entry sits on.
+   *
+   * 'thread' entries came from the SeqFan discussion and are shown drawn but
+   * untested, so they must not be mixed in with the worked ones under a
+   * heading promising work. Keeping them apart is the honest arrangement and
+   * also the useful one: a shelf of good pictures nobody has measured is an
+   * invitation, and that is the whole pitch of the site.
+   */
+  group?: 'worked' | 'thread';
 }

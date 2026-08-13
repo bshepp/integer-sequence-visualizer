@@ -204,6 +204,10 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
   padding: 10px 22px; font: 600 15px system-ui; cursor: pointer; margin-top: 4px;
 }
 .landing-strip-label { margin: 20px 0 0; font-size: 13px; font-weight: 400; color: var(--muted); }
+/* Sets the untested shelf apart from the worked one above it, so the two
+   headings cannot be read as one run of examples. */
+.landing-strip-label + .landing-strip-note { margin: 6px 0 0; font-size: 13px; color: var(--muted); max-width: 70ch; }
+.landing-strip-note a { color: inherit; }
 .examples-strip { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; max-width: 1100px; }
 .example-thumb {
   background: var(--panel); border: 1px solid #3a3d44; border-radius: 6px;

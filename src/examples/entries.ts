@@ -1,5 +1,9 @@
 import type { ExampleEntry } from './types';
-import { kolakoski, fibonacci, naturals, primes, recaman, thueMorse, ruler, norgard, oeisSeq, A000464_TERMS } from './sequences';
+import {
+  kolakoski, fibonacci, naturals, primes, recaman, thueMorse, ruler, norgard, oeisSeq,
+  A000464_TERMS,
+  A000376_TERMS, A000828_TERMS, A001553_TERMS, A019488_TERMS, A039685_TERMS, A039970_TERMS,
+} from './sequences';
 
 const N = 600;
 
@@ -166,8 +170,116 @@ export const EXAMPLES: ExampleEntry[] = [
     caption: 'Composed before it was catalogued: the infinity series Per Norgard built symphonies from.',
     body: "Defined by a(2n) = -a(n) and a(2n+1) = a(n) + 1, this is the Danish composer Per Norgard's infinity series, which he used as a compositional structure from the 1960s onward. His Symphony No. 2 is built on it. It is self-similar at every scale of two. Shown superimposed over a difference surrogate, which keeps the same step sizes but reorders them, so the question is whether the arrangement of its intervals matters or only their sizes.",
   },
+
+  // ---------------------------------------------------------------------
+  // From the SeqFan thread. Drawn, not worked.
+  //
+  // NCurve's own rule in every one: arc = 1 x (a(n) mod 360) - 180, which is
+  // what the polyarc view does at angle 1. Bill McEachen said he iterated no
+  // parameters, so these are close to the settings the pictures in the thread
+  // were made at, and deliberately so - the point of the shelf is that these
+  // are the thread's images, now with a null model one click away.
+  //
+  // Every one carries verdict 'open' and says in its own words that nothing
+  // has been measured. Naming a sequence is not the same as knowing anything
+  // about it, and the gap between those two is what the site is for.
+  // ---------------------------------------------------------------------
+  {
+    id: 'thread-french-curve',
+    title: 'French curve',
+    sequence: oeisSeq('A000376', 'Topswops', A000376_TERMS),
+    state: {
+      seqRef: { kind: 'oeis', aNumber: 'A000376' },
+      vizId: 'polyarc', params: { angle: 1, modulus: 360, offset: -180 },
+      mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
+    },
+    verdict: 'open',
+    group: 'thread',
+    caption: "Bill McEachen's name for A000376, at NCurve's own settings.",
+    body: 'Topswops: shuffle n cards labelled 1 to n, and while the top card reads m, reverse the top m of them. a(n) is the longest a deck can hold out before 1 reaches the top and the deck comes out sorted. Twenty terms is the whole sequence as far as anyone knows it - even its b-file stops there, because each further term is a search over another factorial. Named in the SeqFan thread by Bill McEachen, who said he iterated no parameters - so this is roughly the picture he named, and nobody has yet asked it the only question this site asks.',
+  },
+  {
+    id: 'thread-propeller',
+    title: 'Propeller',
+    sequence: oeisSeq('A000828', 'E.g.f. cos(x)/(cos(x) - sin(x))', A000828_TERMS),
+    state: {
+      seqRef: { kind: 'oeis', aNumber: 'A000828' },
+      vizId: 'polyarc', params: { angle: 1, modulus: 360, offset: -180 },
+      mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
+    },
+    verdict: 'open',
+    group: 'thread',
+    caption: "Named for its shape by Bill McEachen. Twenty terms, growing fast.",
+    body: 'The exponential generating function cos(x)/(cos(x) - sin(x)) expanded as a series. Its terms climb past seven quintillion by the twentieth, so under a modulus of 360 the residues jump about freely and successive arcs have little to do with one another. Worth watching what the permutation surrogate does here in particular: when the residues are already scattered, shuffling them may change remarkably little, and a null that cannot tell the difference is telling you something.',
+  },
+  {
+    id: 'thread-saw-blade',
+    title: 'Saw blade',
+    sequence: oeisSeq('A001553', 'a(n) = 1^n + 2^n + ... + 6^n', A001553_TERMS),
+    state: {
+      seqRef: { kind: 'oeis', aNumber: 'A001553' },
+      vizId: 'polyarc', params: { angle: 1, modulus: 360, offset: -180 },
+      mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
+    },
+    verdict: 'open',
+    group: 'thread',
+    caption: "Bill McEachen's saw blade: the sum of the first six nth powers.",
+    body: 'a(n) = 1^n + 2^n + ... + 6^n, so it is dominated by 6^n almost immediately and grows without any subtlety at all. That makes it a good test of a suspicion worth having about this whole class of picture: a sequence that grows smoothly and fast has residues mod 360 that are nearly a fixed multiplication each step, and fixed multiplications draw regular figures. Whether the regularity here belongs to the sequence or to that arithmetic is exactly the open question.',
+  },
+  {
+    id: 'thread-sloane',
+    title: "Sloane's",
+    sequence: oeisSeq('A019488', 'Expansion of 1/((1-4*x)*(1-6*x)*(1-11*x))', A019488_TERMS),
+    state: {
+      seqRef: { kind: 'oeis', aNumber: 'A019488' },
+      vizId: 'polyarc', params: { angle: 1, modulus: 360, offset: -180 },
+      mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
+    },
+    verdict: 'open',
+    group: 'thread',
+    caption: 'The one that started the collecting: Bill picked it out first.',
+    body: 'A019488 is the expansion of 1/((1-4x)(1-6x)(1-11x)), and its OEIS author line reads N. J. A. Sloane. It was the first NCurve drawing anyone in the thread singled out - Bill McEachen called it his favourite, George Whale built a gallery partly to hold it, and the collecting of named curves followed from there. Drawn here from the first hundred-odd terms of its b-file. Nothing about the picture has been measured.',
+  },
+  {
+    id: 'thread-zipper',
+    title: 'Zipper',
+    sequence: oeisSeq('A039685', 'Numbers m such that m^2 ends in 444', A039685_TERMS),
+    state: {
+      seqRef: { kind: 'oeis', aNumber: 'A039685' },
+      vizId: 'polyarc', params: { angle: 1, modulus: 360, offset: -180 },
+      mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
+    },
+    verdict: 'open',
+    group: 'thread',
+    caption: "Bill McEachen's zipper. The squares of these all end in 444.",
+    body: 'Every one of these numbers, squared, ends in the digits 444 - and they arrive in a strict pattern, four to every block of a thousand, at offsets 38, 462, 538 and 962. A sequence whose terms are that predictable modulo 1000 is not going to be very surprising modulo 360 either, which makes this a useful case for the difference surrogate rather than the permutation one: the steps repeat, so the interesting question is whether their order matters at all.',
+  },
+  {
+    id: 'thread-slinky',
+    title: 'Slinky',
+    sequence: oeisSeq('A039970', 'A d-perfect sequence', A039970_TERMS),
+    state: {
+      seqRef: { kind: 'oeis', aNumber: 'A039970' },
+      vizId: 'polyarc', params: { angle: 1, modulus: 360, offset: -180 },
+      mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
+    },
+    verdict: 'open',
+    group: 'thread',
+    caption: 'Every other term is zero, and the rest are Catalan numbers mod 3.',
+    body: 'a(2n) is always 0 and a(2n+1) is the nth Catalan number mod 3, so the sequence only ever takes the values 0, 1 and 2, and more than half of it is zeros. Under NCurve\'s rule that means most terms bend by very nearly half a turn, which is what coils the drawing up - Bill McEachen called it the Slinky. This is the one on the shelf where the drawing method is most visibly doing the work, and the null model has an easy job to do.',
+  },
 ];
 
 export function heroEntry(): ExampleEntry {
   return EXAMPLES[0]!;
+}
+
+/** The measured shelf, hero first. */
+export function workedEntries(): ExampleEntry[] {
+  return EXAMPLES.filter((e) => e.group !== 'thread');
+}
+
+/** Drawn but untested, straight from the SeqFan discussion. */
+export function threadEntries(): ExampleEntry[] {
+  return EXAMPLES.filter((e) => e.group === 'thread');
 }

@@ -1,4 +1,4 @@
-import { EXAMPLES, heroEntry } from '../examples/entries';
+import { EXAMPLES, heroEntry, workedEntries, threadEntries } from '../examples/entries';
 import type { ExampleEntry } from '../examples/types';
 import { decodeState } from './urlState';
 import { SequenceView, type Sequence } from '../sequence/sequence';
@@ -193,30 +193,58 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   about.addEventListener('click', () => opts.onAbout());
   actions.append(open, about);
 
+  function buildStrip(entries: ExampleEntry[]): HTMLElement {
+    const strip = document.createElement('div');
+    strip.className = 'examples-strip';
+    for (const entry of entries) {
+      const btn = document.createElement('button');
+      btn.className = 'example-thumb';
+      btn.type = 'button';
+      const canvas = document.createElement('canvas');
+      canvas.setAttribute('aria-hidden', 'true');
+      const label = document.createElement('span');
+      label.className = 'example-thumb-label';
+      const tag = document.createElement('span');
+      tag.className = `verdict verdict--${entry.verdict}`;
+      tag.textContent = VERDICT_LABEL[entry.verdict];
+      label.append(tag, document.createTextNode(` ${entry.title}`));
+      btn.append(canvas, label);
+      btn.addEventListener('click', () => opts.onPick(entry));
+      strip.appendChild(btn);
+      // Painted after layout so the canvas has real dimensions.
+      requestAnimationFrame(() => paintEntry(entry, canvas, 220, 130));
+    }
+    return strip;
+  }
+
   const stripLabel = document.createElement('h2');
   stripLabel.className = 'landing-strip-label';
   stripLabel.textContent = 'More worked examples: click any to open it in the engine';
 
-  const strip = document.createElement('div');
-  strip.className = 'examples-strip';
-  for (const entry of EXAMPLES.slice(1)) {
-    const btn = document.createElement('button');
-    btn.className = 'example-thumb';
-    btn.type = 'button';
-    const canvas = document.createElement('canvas');
-    canvas.setAttribute('aria-hidden', 'true');
-    const label = document.createElement('span');
-    label.className = 'example-thumb-label';
-    const tag = document.createElement('span');
-    tag.className = `verdict verdict--${entry.verdict}`;
-    tag.textContent = VERDICT_LABEL[entry.verdict];
-    label.append(tag, document.createTextNode(` ${entry.title}`));
-    btn.append(canvas, label);
-    btn.addEventListener('click', () => opts.onPick(entry));
-    strip.appendChild(btn);
-    // Painted after layout so the canvas has real dimensions.
-    requestAnimationFrame(() => paintEntry(entry, canvas, 220, 130));
-  }
+  const strip = buildStrip(workedEntries().slice(1));
+
+  // The second shelf. Kept below the worked one and labelled for what it is:
+  // pictures somebody liked, with nothing measured about any of them.
+  const threadLabel = document.createElement('h2');
+  threadLabel.className = 'landing-strip-label';
+  threadLabel.textContent = 'From the SeqFan thread: named, drawn, and never tested';
+
+  const threadNote = document.createElement('p');
+  threadNote.className = 'landing-strip-note';
+  threadNote.append('These are sequences Bill McEachen picked out of ');
+  const ncurve2 = document.createElement('a');
+  ncurve2.href = NCURVE_URL;
+  ncurve2.target = '_blank';
+  ncurve2.rel = 'noopener noreferrer';
+  ncurve2.textContent = 'NCurve';
+  threadNote.append(ncurve2);
+  threadNote.append(
+    ' and gave names to, drawn here by the same rule his were: arc = (a(n) mod 360) - 180. '
+    + 'He mentioned he had iterated no parameters, and nobody has put a null model beside any '
+    + 'of them. Each one opens with the comparison already switched on, so you can be the first.',
+  );
+
+  const threadStrip = buildStrip(threadEntries());
 
   const attribution = document.createElement('p');
   attribution.className = 'landing-attribution';
@@ -242,7 +270,12 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   }
   const feedback = buildFeedbackLink('landing-feedback');
 
-  el.append(h1, lede, credit, heroFigure, heroBody, actions, stripLabel, strip, attribution, feedback);
+  el.append(
+    h1, lede, credit, heroFigure, heroBody, actions,
+    stripLabel, strip,
+    threadLabel, threadNote, threadStrip,
+    attribution, feedback,
+  );
   requestAnimationFrame(() => paintEntry(hero, heroCanvas, 760, 340));
   return el;
 }

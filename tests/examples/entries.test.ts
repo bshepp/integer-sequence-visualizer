@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { EXAMPLES, heroEntry } from '../../src/examples/entries';
+import { EXAMPLES, heroEntry, workedEntries, threadEntries } from '../../src/examples/entries';
 import { encodeState, decodeState } from '../../src/ui/urlState';
 import { registerAll } from '../../src/viz/all';
 import { allVisualizers, clearRegistry } from '../../src/viz/registry';
@@ -80,6 +80,41 @@ describe('worked examples', () => {
     }
     // Compare over the safely-generated prefix (the final run may be clipped).
     for (let i = 0; i < runs.length - 1; i++) expect(runs[i]).toBe(k[i]);
+  });
+
+  it('the two shelves partition the examples, hero on the worked one', () => {
+    expect(workedEntries().length + threadEntries().length).toBe(EXAMPLES.length);
+    expect(workedEntries()[0]).toBe(heroEntry());
+    expect(threadEntries().length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('nothing from the thread shelf claims anything', () => {
+    // The shelf is headed "named, drawn, and never tested". An entry there
+    // with a verdict or a measurement would make that heading a lie, and it
+    // is exactly the edit a later contributor would make in good faith after
+    // measuring one of them - at which point it belongs on the other shelf.
+    for (const e of threadEntries()) {
+      expect(e.verdict, `${e.id} is on the untested shelf`).toBe('open');
+      expect(e.evidence, `${e.id} carries evidence`).toBeUndefined();
+    }
+  });
+
+  it('the thread shelf really is drawn by the rule the page says it is', () => {
+    // The note under the heading tells the reader these use NCurve's own rule,
+    // arc = (a(n) mod 360) - 180, which is the polyarc view at angle 1.
+    for (const e of threadEntries()) {
+      expect(e.state.vizId, e.id).toBe('polyarc');
+      expect(e.state.params, e.id).toEqual({ angle: 1, modulus: 360, offset: -180 });
+    }
+  });
+
+  it('every thread entry opens with the comparison already on', () => {
+    // Also promised in the note: "each one opens with the comparison already
+    // switched on, so you can be the first". An entry defaulting to mode 'off'
+    // would land the reader on a single picture and no way to see the point.
+    for (const e of threadEntries()) {
+      expect(e.state.mode, e.id).not.toBe('off');
+    }
   });
 
   it('only ever contains the values 1 and 2', () => {
