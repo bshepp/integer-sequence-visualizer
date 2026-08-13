@@ -14,6 +14,33 @@ const N = 600;
 // admit than a guess would be.
 export const EXAMPLES: ExampleEntry[] = [
   {
+    id: 'primes-polyarc',
+    title: 'The prettiest picture here, and what it is made of',
+    // 58 terms, which is what the OEIS publishes inline for A000040 and what
+    // the engine loads when you open this entry. More primes do not improve
+    // it: the drawing is two spirals and a sweep, and a few hundred terms
+    // fills that in until it is a disc.
+    sequence: oeisSeq('A000040', 'The prime numbers', primes(58)),
+    state: {
+      seqRef: { kind: 'oeis', aNumber: 'A000040' },
+      vizId: 'polyarc', params: { angle: 64, modulus: 187, offset: -90 },
+      mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
+    },
+    verdict: 'untestable',
+    caption: 'Two spirals and a sweep from the primes. Shuffle them and it scatters - which proves nothing at all.',
+    body: 'This is 58 primes, each bending the path by 64 x (p mod 187) - 90 degrees, and it is the best-looking thing on this site. The panel beside it is the same primes shuffled, and it falls apart completely, which is exactly the sort of comparison that should make you suspicious rather than convinced. The primes increase, so a shuffle of them was never going to look the same, and the rejection carries no more information than "the primes increase" does. Here is what is actually going on. Consecutive primes below 300 differ by about 6, and 6 out of 187 is a small turn, so each arc is nearly the arc before it and the path curves smoothly. Measured, the residue moves 5.0% of the way round the dial per term; shuffled, it moves 49%. That is the whole difference between the two panels. Now the part that decides it: keep the exact multiset of gaps between the primes and merely reorder them, and the figure comes back at 5.0% every single time, to seventeen decimal places, across all 200 surrogates. The smoothness belongs to the size of prime gaps, not to the order they arrive in - and no null that preserves those gaps can test it. That is not a disappointing answer. Small prime gaps are the interesting thing about primes, and this drawing is a picture of them.',
+    evidence: {
+      statistic: 'residueStep',
+      measured: 0.05047377802795759,
+      n: 200, seed: 1,
+      rungs: [
+        { surrogate: 'permutation', bandLo: 0.4172999343277981, bandHi: 0.5563373674828783, median: 0.4906651655877662 },
+        { surrogate: 'matched', bandLo: 0.07130124777183601, bandHi: 0.09907120743034056, median: 0.08443568815085843 },
+        { surrogate: 'difference', bandLo: 0.05047377802795759, bandHi: 0.05047377802795759, median: 0.05047377802795759 },
+      ],
+    },
+  },
+  {
     id: 'kolakoski-spiral',
     title: 'Structure that survives the null',
     sequence: oeisSeq('A000002', 'Kolakoski sequence', kolakoski(N)),

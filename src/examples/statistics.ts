@@ -120,3 +120,33 @@ export function alternation(values: number[]): number {
   }
   return den === 0 ? 0 : num / den;
 }
+
+/**
+ * How far the residue moves from one term to the next, on average, as a
+ * fraction of the furthest it could move.
+ *
+ * 0 is a sequence whose residues never change; 1 is one that jumps to the
+ * opposite side of the modulus every time. Distance is circular, because
+ * residue 1 and residue m-1 are neighbours on a dial - a term that steps
+ * across zero has moved a little, not the whole way round.
+ *
+ * This is the statistic behind the smoothness of an arc drawing. Each term
+ * bends the path by an angle set by its residue, so consecutive residues that
+ * are close together make consecutive arcs that are nearly the same, and the
+ * path curves instead of jinking. It is what the eye is reading when one of
+ * these pictures looks organic rather than scribbled.
+ *
+ * Worth knowing before citing it: this is a function of the multiset of steps.
+ * Reorder the steps and every value is preserved exactly, so the difference
+ * null has no power over it at all, which is a fact about the statistic rather
+ * than about any sequence you measure with it.
+ */
+export function residueStep(seq: SequenceView, modulus: number): number {
+  if (seq.length < 2 || modulus < 2) return 0;
+  let sum = 0;
+  for (let i = 1; i < seq.length; i++) {
+    const d = Math.abs(seq.mod(i, modulus) - seq.mod(i - 1, modulus));
+    sum += Math.min(d, modulus - d);
+  }
+  return sum / (seq.length - 1) / (modulus / 2);
+}

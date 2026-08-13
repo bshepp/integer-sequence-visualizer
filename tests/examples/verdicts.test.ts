@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { EXAMPLES } from '../../src/examples/entries';
-import { switchRate, longestRun, angularVariance, residueAlternation } from '../../src/examples/statistics';
+import { switchRate, longestRun, angularVariance, residueAlternation, residueStep } from '../../src/examples/statistics';
 import { makeSurrogate, type SurrogateType } from '../../src/nullmodel/surrogates';
 import { SequenceView, type Sequence } from '../../src/sequence/sequence';
 import type { Evidence } from '../../src/examples/types';
@@ -12,6 +12,7 @@ const STATISTICS: Record<string, (seq: SequenceView, params: Record<string, unkn
   longestRun: (seq) => longestRun(seq),
   angularVariance: (seq, params) => angularVariance(seq, Number(params.modulus ?? 2)),
   residueAlternation: (seq, params) => residueAlternation(seq, Number(params.k ?? 2)),
+  residueStep: (seq, params) => residueStep(seq, Number(params.modulus ?? 2)),
 };
 
 const asSeq = (terms: bigint[]): Sequence => ({ terms, name: 's', offset: 0, source: 'paste' });
@@ -105,7 +106,10 @@ describe('negative result: angular variance does not separate Kolakoski', () => 
   // Pinning it stops a later contributor from adopting it as evidence, and
   // makes the failure visible if the statistic or the sequence ever changes.
   it('measures inside its own permutation null band', () => {
-    const entry = EXAMPLES[0]!;
+    // Named, not EXAMPLES[0]. This records a fact about Kolakoski, and reading
+    // it off whichever entry happens to be the hero silently re-pointed the
+    // negative result at a different sequence when the hero changed.
+    const entry = EXAMPLES.find((e) => e.id === 'kolakoski-spiral')!;
     const params = entry.state.params;
     const measured = angularVariance(new SequenceView(entry.sequence), Number(params.modulus ?? 2));
     const band = rungBand(STATISTICS.angularVariance!, 'permutation', 200, 1, entry.sequence.terms, params);

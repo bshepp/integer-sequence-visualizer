@@ -6,6 +6,8 @@ import { buildSequencePanel } from '../../src/ui/sequencePanel';
 import { mountApp } from '../../src/ui/app';
 import { encodeState, decodeState } from '../../src/ui/urlState';
 import { DEFAULT_STYLE } from '../../src/viz/style';
+import { heroEntry } from '../../src/examples/entries';
+import { getVisualizer } from '../../src/viz/registry';
 
 describe('message live regions', () => {
   let container: HTMLElement;
@@ -385,9 +387,14 @@ describe('panel labels identify the sequence', () => {
     // before the context guard -- it is state, not rendering.
     const root = mountEngine();
     const label = root.querySelector('canvas')!.getAttribute('aria-label') ?? '';
-    expect(label).toContain('A000002');
+    // Derived from the hero rather than naming a sequence and a technique.
+    // Landing on "Open the full engine" means landing on whichever entry is
+    // first, and pinning that entry's identity here made this test fail when
+    // the hero changed - which told us nothing about accessibility.
+    const hero = heroEntry();
+    expect(label).toContain(hero.sequence.aNumber!);
     expect(label).toMatch(/\d[\d,.\s]* terms/);
-    expect(label).toContain('Turtle walk');
+    expect(label).toContain(getVisualizer(hero.state.vizId).name);
   });
 });
 
