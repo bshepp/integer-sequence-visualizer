@@ -29,18 +29,30 @@ const MIN_SEGMENTS = 8;
  *
  * 15 degrees puts the worst case inside half a percent of the true extent.
  */
-const DEG_PER_SEGMENT = 15;
+const DEG_PER_SEGMENT = 120;
+
+/**
+ * The most a segment may turn before its two samples stop naming one circle.
+ *
+ * A hard floor, never traded away for a budget. Past a full turn the samples
+ * land more than a circle apart, chordArc cannot recover the arc, and the
+ * renderer falls back to a chord - which is the star-polygon burst. 330 leaves
+ * a margin under 360 rather than sitting on the cliff.
+ */
+const MAX_TURN_PER_SEGMENT = 330;
 
 /**
  * Ceiling on total path points, so a long walk stays interactive.
  *
- * Costs nothing in fidelity where it binds. A term's feature is at most 2/|turn|
- * across, so on a 10,000-term walk the tight coils are a thousandth of the
- * drawing's extent - under a pixel on any screen, aliased or not. Fine sampling
- * only shows when there are few enough terms for one to be worth looking at,
- * which is exactly when this budget is nowhere near binding.
+ * Only ever trims the margin above MAX_TURN_PER_SEGMENT, never the floor, and
+ * that distinction is the bug this constant used to cause. It was justified on
+ * the grounds that a term's feature is at most 2/|turn| across, so on a
+ * 10,000-term walk the coils are a thousandth of the drawing and under a pixel
+ * wide - which is true at 100% and false the moment anyone zooms in. That is
+ * the same zoom-blind reasoning that put the arc-versus-chord test in path
+ * units, made twice in one file on the same afternoon.
  */
-const MAX_POINTS = 120_000;
+const MAX_POINTS = 300_000;
 
 /**
  * Samples per term for this sequence at these settings.
@@ -60,8 +72,14 @@ export function segmentsFor(
     if (d > maxDeg) maxDeg = d;
   }
   const wanted = Math.ceil(maxDeg / DEG_PER_SEGMENT);
+  // Never below this, whatever the budget says. Cutting into it is what turned
+  // a 10,000-term prime walk into star polygons: the budget allowed 12 samples
+  // a term where the sharpest term turned 32 circles, putting consecutive
+  // samples 985 degrees apart.
+  const floor = Math.ceil(maxDeg / MAX_TURN_PER_SEGMENT);
   const affordable = Math.floor(MAX_POINTS / Math.max(1, seq.length));
-  return Math.max(MIN_SEGMENTS, Math.min(wanted, Math.max(MIN_SEGMENTS, affordable)));
+  const budgeted = Math.min(wanted, Math.max(MIN_SEGMENTS, affordable));
+  return Math.max(MIN_SEGMENTS, floor, budgeted);
 }
 
 /**
@@ -104,6 +122,30 @@ export function segmentTurns(
   return (i) => perTerm[Math.floor((i - 1) / segments)] ?? 0;
 }
 
+/**
+ * The path, sampled - and the samples always land on the same curve, however
+ * many of them there are.
+ *
+ * Each term is integrated as the arc it is meant to be: unit speed, turning
+ * `delta` radians over an arc of length 1, so the position at fraction t along
+ * the term is a closed form rather than an accumulation of little straight
+ * steps. Doubling the sample count now adds points between the old ones and
+ * moves none of them.
+ *
+ * That independence is the whole point, and it was missing. The previous
+ * version advanced by a *chord* of length 1/segments in the current heading,
+ * which meant the drawing's shape depended on how finely it was sampled - so
+ * sampling could not be adapted to the sequence, the zoom, or a point budget
+ * without the picture shifting underfoot. With the geometry pinned, sampling
+ * becomes purely a rendering decision, and the only thing it has to be dense
+ * enough for is that consecutive samples stay inside one turn, which is what
+ * lets chordArc recover the exact circle between them.
+ *
+ * It also makes the code match what this view has always claimed: every term
+ * contributes the same length of ink and differs only in how much it bends.
+ * Under chord steps a sharply bending term was drawn slightly longer than a
+ * gentle one.
+ */
 export function polyarcPath(
   seq: SequenceView,
   opts: { angle: number; modulus: number; offset: number; segments?: number },
@@ -114,12 +156,29 @@ export function polyarcPath(
   let x = 0, y = 0;
   for (let i = 0; i < seq.length; i++) {
     const residue = seq.mod(i, opts.modulus);
-    const deltaRad = (arcDegrees(residue, opts.angle, opts.offset) * Math.PI) / 180;
-    for (let s = 0; s < segments; s++) {
-      heading += deltaRad / segments;
-      x += Math.cos(heading) / segments;
-      y += Math.sin(heading) / segments;
-      pts.push({ x, y });
+    const delta = (arcDegrees(residue, opts.angle, opts.offset) * Math.PI) / 180;
+    const h = heading;
+    if (Math.abs(delta) < 1e-12) {
+      // The delta -> 0 limit of the arc below, taken explicitly because the
+      // closed form divides by delta.
+      const dx = Math.cos(h), dy = Math.sin(h);
+      for (let s = 1; s <= segments; s++) {
+        pts.push({ x: x + (dx * s) / segments, y: y + (dy * s) / segments });
+      }
+      x += dx; y += dy;
+    } else {
+      for (let s = 1; s <= segments; s++) {
+        const t = s / segments;
+        pts.push({
+          x: x + (Math.sin(h + delta * t) - Math.sin(h)) / delta,
+          y: y + (Math.cos(h) - Math.cos(h + delta * t)) / delta,
+        });
+      }
+      // Advanced from the closed form rather than from the last sample, so a
+      // long walk cannot accumulate the sampling's rounding error.
+      x += (Math.sin(h + delta) - Math.sin(h)) / delta;
+      y += (Math.cos(h) - Math.cos(h + delta)) / delta;
+      heading = h + delta;
     }
   }
   return pts;

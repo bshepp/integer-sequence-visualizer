@@ -36,10 +36,27 @@ describe('polyarcPath', () => {
     for (const [r, b, c] of [[7n, 360, -180], [359n, 360, -180], [5n, 12, 0]] as const) {
       expect(arcDegrees(Number(r % BigInt(b)), 1, c)).toBe(Number(r % BigInt(b)) + c);
     }
-    const path = polyarcPath(mk([90n]), { angle: 1, modulus: 360, offset: -180, segments: 1 });
-    // One term, arc 90 - 180 = -90 degrees: the step ends pointing straight down.
-    const last = path[path.length - 1]!;
-    expect(Math.atan2(last.y, last.x) * 180 / Math.PI).toBeCloseTo(-90, 6);
+    // One term, arc 90 - 180 = -90 degrees. A quarter circle of arc length 1,
+    // so radius 2/pi: it starts heading along +x, finishes heading along -y,
+    // and the straight line from start to finish therefore points at -45, not
+    // -90. The chord bisects the turn.
+    //
+    // This used to assert -90, which was true of the old chord-stepping path
+    // because that turned the whole angle first and then took one straight
+    // step. A term is an arc now, so the finishing *heading* is what carries
+    // the -90 - checked here from the last two samples, since that is the
+    // thing the next term builds on.
+    const path = polyarcPath(mk([90n]), { angle: 1, modulus: 360, offset: -180, segments: 64 });
+    const end = path[path.length - 1]!, before = path[path.length - 2]!;
+    const heading = Math.atan2(end.y - before.y, end.x - before.x) * 180 / Math.PI;
+    // The last pair of samples spans the final 1/64 of the turn, and their
+    // chord bisects it, so this reads half a sub-segment early: 90/64/2 =
+    // 0.7 degrees. Tolerance stated as that quantity rather than rounded to a
+    // decimal place, so it is a fact about sampling and not a fudge.
+    expect(Math.abs(heading - -90)).toBeLessThan(90 / 64 / 2 + 1e-9);
+    expect(Math.atan2(end.y, end.x) * 180 / Math.PI).toBeCloseTo(-45, 6);
+    // Arc length 1, so a quarter turn has radius 2/pi and the chord is r*sqrt(2).
+    expect(Math.hypot(end.x, end.y)).toBeCloseTo((2 / Math.PI) * Math.SQRT2, 6);
   });
 
   it('defaults draw what the centred defaults used to draw', () => {
