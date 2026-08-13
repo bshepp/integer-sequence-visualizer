@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { chordArc, pathTransform, toScreen, type Pt } from '../../src/viz/pathTransform';
+import { chordArc, deviceScaleOf, pathTransform, toScreen, type Pt } from '../../src/viz/pathTransform';
 import { polyarcPath, polyarcViz, segmentTurns, arcDegrees } from '../../src/viz/polyarc';
 import { turtleViz, strokePath } from '../../src/viz/turtle';
 import { SequenceView, type Sequence } from '../../src/sequence/sequence';
@@ -82,6 +82,33 @@ describe('chordArc', () => {
     expect(chordArc(a, b, 2 * Math.PI)).toBeNull();    // a full turn or more
     expect(chordArc(a, b, 20)).toBeNull();
     expect(chordArc(a, b, NaN)).toBeNull();
+  });
+
+  it('judges visibility in device pixels, so zooming in reveals the curve', () => {
+    // The magnification bug. A bend written off at 1x is not written off at
+    // 10x: the drawing is magnified but the decision to flatten it was not
+    // re-taken, so it showed as a flat facet in the middle of a curve. Stroke
+    // width is divided by the zoom to hold its on-screen thickness, so there
+    // was nothing to hide it either.
+    const a = { x: 0, y: 0 }, b = { x: 100, y: 0 };
+    const faint = 0.012;
+    expect(chordArc(a, b, faint), 'should be flat at 1x').toBeNull();
+    expect(chordArc(a, b, faint, 10), 'should curve at 10x').not.toBeNull();
+    // And a retina display is a 2x transform before any zoom at all, which is
+    // why some of this was visible on those screens at 100%.
+    const arc = chordArc(a, b, 0.05, 2);
+    expect(arc).not.toBeNull();
+    expect(Math.hypot(b.x - arc!.cx, b.y - arc!.cy)).toBeCloseTo(arc!.r, 6);
+  });
+
+  it('falls back to a scale of 1 for a context that cannot report one', () => {
+    // jsdom has no getTransform; the test fake answers every call with
+    // undefined. Checking the result rather than the method's existence is the
+    // difference between a fallback and a crash.
+    const { ctx } = fakeCtx();
+    expect(deviceScaleOf(ctx)).toBe(1);
+    expect(deviceScaleOf({ getTransform: () => ({ a: 3, b: 0 }) } as never)).toBe(3);
+    expect(deviceScaleOf({ getTransform: () => ({ a: 0, b: 0 }) } as never)).toBe(1);
   });
 
   it('declines a bend nobody could see, and takes one they could', () => {

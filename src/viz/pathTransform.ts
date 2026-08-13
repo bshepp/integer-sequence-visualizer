@@ -39,6 +39,21 @@ export function toScreen(t: PathTransform, p: Pt): Pt {
   return { x: p.x * t.scale + t.ox, y: t.height - (p.y * t.scale + t.oy) };
 }
 
+/**
+ * Path units to device pixels, read off the live canvas transform.
+ *
+ * Picks up the device pixel ratio and the viewport zoom in one number, because
+ * both are already in the matrix by the time anything draws. Falls back to 1
+ * for a context that cannot answer - jsdom has no getTransform, and the test
+ * fake answers every call with undefined, so the result is checked rather than
+ * the method's existence.
+ */
+export function deviceScaleOf(ctx: CanvasRenderingContext2D): number {
+  const m = ctx.getTransform?.();
+  const s = m ? Math.hypot(m.a, m.b) : NaN;
+  return Number.isFinite(s) && s > 0 ? s : 1;
+}
+
 export interface ScreenArc {
   cx: number; cy: number; r: number; start: number; end: number; ccw: boolean;
 }
@@ -47,7 +62,8 @@ export interface ScreenArc {
 const TWO_PI = 2 * Math.PI;
 
 /**
- * How far an arc has to stand off its chord before it is drawn as one.
+ * How far an arc has to stand off its chord, in *device* pixels, before it is
+ * drawn as one.
  *
  * Not a performance compromise. Measured in the browser on a 10,000-term walk
  * with all 80,000 segments curved, timing each render through to rasterisation
@@ -62,6 +78,14 @@ const TWO_PI = 2 * Math.PI;
  * atan2 on coordinates that far out, is a worse way to say "straight line"
  * than a straight line. Below half a pixel of stand-off the two are the same
  * picture anyway.
+ *
+ * Device pixels, not path units, and that word is the whole of the zoom fix.
+ * Judged in path units this decision is made once and then magnified with
+ * everything else: a segment written off at 0.2px of stand-off becomes a
+ * 3.5px-deep flat facet at 10x zoom, and since stroke width is divided by the
+ * zoom to hold its on-screen thickness, nothing hides it. The caller passes
+ * the scale from the canvas transform, which carries the zoom and the device
+ * pixel ratio together, so the test asks what the reader will actually see.
  */
 const VISIBLE_PX = 0.35;
 
@@ -86,8 +110,11 @@ const VISIBLE_PX = 0.35;
  * turning a full circle or more, where the sample pair no longer determines
  * one circle. Callers draw the chord instead.
  */
-export function chordArc(a: Pt, b: Pt, worldTurn: number): ScreenArc | null {
+export function chordArc(a: Pt, b: Pt, worldTurn: number, deviceScale = 1): ScreenArc | null {
   const phi = -worldTurn;
+  // Absolute, and deliberately not scaled: this one guards atan2 against a
+  // centre thousands of units away, which is a numerical concern rather than
+  // a visual one and does not get more urgent when the reader zooms in.
   if (!Number.isFinite(phi) || Math.abs(phi) < 1e-4 || Math.abs(phi) >= TWO_PI) return null;
   const dx = b.x - a.x, dy = b.y - a.y;
   const len = Math.hypot(dx, dy);
@@ -101,9 +128,10 @@ export function chordArc(a: Pt, b: Pt, worldTurn: number): ScreenArc | null {
   const cx = (a.x + b.x) / 2 + nx * signed * Math.cos(half);
   const cy = (a.y + b.y) / 2 + ny * signed * Math.cos(half);
   const r = Math.abs(signed);
-  // Sagitta: the gap between the arc and its chord at their widest, already in
-  // screen pixels because a and b are.
-  if (r * (1 - Math.cos(half)) < VISIBLE_PX) return null;
+  // Sagitta: the gap between the arc and its chord at their widest, in path
+  // units, scaled up to what the display will actually show.
+  const scale = Number.isFinite(deviceScale) && deviceScale > 0 ? deviceScale : 1;
+  if (r * (1 - Math.cos(half)) * scale < VISIBLE_PX) return null;
 
   const start = Math.atan2(a.y - cy, a.x - cx);
   return { cx, cy, r, start, end: start + phi, ccw: phi < 0 };

@@ -1,6 +1,6 @@
 import type { SequenceView } from '../sequence/sequence';
 import type { Params, Size, Visualizer } from './types';
-import { pathTransform, toScreen, nearestIndex, chordArc } from './pathTransform';
+import { pathTransform, toScreen, nearestIndex, chordArc, deviceScaleOf } from './pathTransform';
 import { edgeUses } from './overlap';
 import { applyStyle, strokeColorAt, styleFromParams, DEFAULT_STYLE, type RenderStyle } from './style';
 
@@ -47,6 +47,9 @@ export function strokePath(
   // Nothing is displaced, so this adds no geometry that is not really there -
   // the line is still exactly where the line is.
   const uses = style.showOverlap ? edgeUses(pts) : null;
+  // Read once per render, not per segment: the transform cannot change inside
+  // the loop, and getTransform allocates a DOMMatrix on every call.
+  const deviceScale = turnAt ? deviceScaleOf(ctx) : 1;
   // Past a few bands the widths are too close to tell apart, so deeper visits
   // share the widest stroke. The count stops being readable there; the 3D lift
   // in issue #1 is the version that does not saturate.
@@ -60,7 +63,7 @@ export function strokePath(
       ctx.lineWidth = style.lineWidth * (1 + depth);
     }
     const a = toScreen(t, pts[i - 1]!), b = toScreen(t, pts[i]!);
-    const curve = turnAt ? chordArc(a, b, turnAt(i)) : null;
+    const curve = turnAt ? chordArc(a, b, turnAt(i), deviceScale) : null;
     ctx.beginPath();
     if (curve) {
       // moveTo first: arc() would otherwise join from wherever the previous
