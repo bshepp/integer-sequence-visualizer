@@ -223,7 +223,14 @@ describe('mountApp', () => {
     const header = root.querySelector('.app-header');
     expect(header).not.toBeNull();
     expect(header!.textContent).toContain('Ulam');
-    expect(header!.textContent).toMatch(/null model/i);
+    // States what is measured. The old tagline promised to "test whether the
+    // structure you see survives a null model", which claims a verdict on
+    // reality that no null model delivers - a null reports whether one named
+    // scrambling reproduces one named number. Asserted as a ban rather than a
+    // phrase match so the wording can keep improving without this test
+    // becoming a copy fixture.
+    expect(header!.textContent).toMatch(/measure/i);
+    expect(header!.textContent).not.toMatch(/survives a null/i);
   });
 
   it('renders a persistent attribution footer crediting OEIS under CC BY-SA 4.0', () => {

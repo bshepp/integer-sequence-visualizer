@@ -31,10 +31,20 @@ export function shouldShowLanding(hash: string): boolean {
   return routeFor(hash) === 'landing';
 }
 
+/**
+ * Named for the rung reached, not for a verdict on reality.
+ *
+ * "Survives the null" was the old label on most of these, and it claimed more
+ * than any null model can deliver: a null answers whether one named scrambling
+ * reproduces one named number, which is not the same as whether a pattern is
+ * real, meaningful, or characteristic of the sequence.
+ */
 const VERDICT_LABEL: Record<ExampleEntry['verdict'], string> = {
-  real: 'Survives the null',
-  artifact: 'Drawn by the layout',
-  split: 'Half real, half technique',
+  'survives-steps': 'Survives every null',
+  'explained-by-steps': 'Explained by its steps',
+  'explained-by-trend': 'Explained by its trend',
+  untestable: 'No null can test it',
+  foregone: 'Rejection was guaranteed',
   open: 'Not yet measured',
 };
 

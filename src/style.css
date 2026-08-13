@@ -221,9 +221,9 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
   font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
   padding: 1px 5px; border-radius: 3px; white-space: nowrap;
 }
-.verdict--real { background: #1f3b2b; color: #7ee0a8; }
-.verdict--artifact { background: #3b2430; color: #f7a1b4; }
-.verdict--open { background: #2a2d35; color: var(--muted); }
+.verdict--survives-steps { background: #1f3b2b; color: #7ee0a8; }
+.verdict--foregone { background: #3b2430; color: #f7a1b4; }
+.verdict--open, .verdict--untestable { background: #2a2d35; color: var(--muted); }
 .landing-attribution { margin: 18px 0 0; font-size: 12px; color: var(--muted); text-align: center; }
 .landing-attribution a { color: var(--muted); }
 
@@ -389,9 +389,10 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 :root[data-theme="light"] .banner-error { background: #fbe4e9; color: #8c0f31; border-color: #a3123a55; }
 :root[data-theme="light"] .banner-notice { background: #e5edfb; color: #1f4fa8; border-color: #1f4fa855; }
 :root[data-theme="light"] .readout { background: rgba(255,255,255,0.92); }
-:root[data-theme="light"] .verdict--real { background: #dff3e6; color: #1c6b3a; }
-:root[data-theme="light"] .verdict--artifact { background: #fbe4e9; color: #8c0f31; }
-:root[data-theme="light"] .verdict--open { background: #e7e9ee; color: #565c66; }
+:root[data-theme="light"] .verdict--survives-steps { background: #dff3e6; color: #1c6b3a; }
+:root[data-theme="light"] .verdict--foregone { background: #fbe4e9; color: #8c0f31; }
+:root[data-theme="light"] .verdict--open,
+:root[data-theme="light"] .verdict--untestable { background: #e7e9ee; color: #565c66; }
 :root[data-theme="light"] .sweep-overlay { background: rgba(255,255,255,0.85); }
 :root[data-theme="light"] .sweep-cell,
 :root[data-theme="light"] .example-thumb,
@@ -509,8 +510,11 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .reshuffle-button:disabled { opacity: 0.45; cursor: default; }
 :root[data-theme="light"] .reshuffle-button { background: #ffffff; border-color: #c8ccd4; }
 /* Half-real: read as neither endorsement nor dismissal. */
-.verdict--split { background: #37301d; color: #e8c46a; }
-:root[data-theme="light"] .verdict--split { background: #f7edd4; color: #7a5a10; }
+.verdict--explained-by-steps, .verdict--explained-by-trend { background: #37301d; color: #e8c46a; }
+/* Both selectors carry the theme prefix. A comma does not distribute it, so
+   the second half would have painted light-mode gold onto the dark theme. */
+:root[data-theme="light"] .verdict--explained-by-steps,
+:root[data-theme="light"] .verdict--explained-by-trend { background: #f7edd4; color: #7a5a10; }
 .landing-credit {
   max-width: 62ch; margin: -6px auto 18px; text-align: center;
   font-size: 13px; color: var(--muted);

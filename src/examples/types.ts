@@ -2,33 +2,62 @@ import type { Sequence } from '../sequence/sequence';
 import type { UrlState } from '../ui/urlState';
 import type { SurrogateType } from '../nullmodel/surrogates';
 
+/** One rung of the ladder: what this null did with the statistic. */
+export interface RungEvidence {
+  surrogate: SurrogateType;
+  bandLo: number;
+  bandHi: number;
+  /** Needed for the skill score, and for telling a narrow band from a shifted one. */
+  median: number;
+}
+
 /**
  * A recorded measurement backing a verdict - everything needed to reproduce
  * the claim deterministically, so tests/examples/verdicts.test.ts can recompute
  * it rather than trusting the caption.
+ *
+ * One measured value against every rung, not against a single null. A number
+ * outside a permutation band used to be the whole claim, and it is the weakest
+ * thing on the ladder: for a monotone sequence it is a foregone conclusion,
+ * and for a statistic the stricter nulls preserve it is not a test at all.
  */
 export interface Evidence {
   statistic: string;
   measured: number;
-  bandLo: number;
-  bandHi: number;
-  surrogate: SurrogateType;
   n: number;
   seed: number;
+  /** Weakest null first, in RUNGS order. */
+  rungs: RungEvidence[];
 }
 
 export type Verdict =
-  /** Survives the null: the structure is a property of the sequence. */
-  | 'real'
-  /** Reproduced by the null, or produced by the layout itself. */
-  | 'artifact'
   /**
-   * Both, in separable parts: the structure survives its null model, but the
-   * striking thing about the picture is the drawing's contribution rather
-   * than the sequence's. Carries evidence like 'real' does, for the half that
-   * is real; the body has to say which half is which.
+   * Outside the band of every null we have, including the one that keeps the
+   * exact multiset of steps. The strongest thing this site can say.
    */
-  | 'split'
+  | 'survives-steps'
+  /**
+   * The step-preserving null draws it too, and had room not to. The feature
+   * belongs to how the sequence moves rather than to the order it moves in -
+   * which is a finding, not a failure, and usually a sharper one.
+   */
+  | 'explained-by-steps'
+  /** Reproduced once the trend is held fixed: the trend was doing the work. */
+  | 'explained-by-trend'
+  /**
+   * The strictest null has no room to disagree, because the statistic is a
+   * function of what that null preserves. Every surrogate returns the same
+   * number. Not evidence either way - the absence of a test, which reads
+   * identically to agreement unless it is said out loud.
+   */
+  | 'untestable'
+  /**
+   * The sequence is monotone, so a shuffle was always going to look different
+   * and the rejection says only that the sequence increases. Kept as its own
+   * verdict because it is the objection a reader raises unprompted, and the
+   * site should raise it first.
+   */
+  | 'foregone'
   /** Not measured. Say so; do not guess. */
   | 'open';
 
@@ -42,7 +71,7 @@ export interface ExampleEntry {
   verdict: Verdict;
   caption: string;
   body: string;
-  /** Required when verdict === 'real' or 'split'. */
+  /** Required by every verdict that reports an outcome at a rung. */
   evidence?: Evidence;
   /**
    * Which shelf the entry sits on.

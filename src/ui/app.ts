@@ -107,7 +107,10 @@ export function mountApp(root: HTMLElement): void {
   wordmark.append(title, subtitle);
   const tagline = document.createElement('p');
   tagline.className = 'app-tagline';
-  tagline.textContent = 'Render an integer sequence, then test whether the structure you see survives a null model.';
+  // Says what is measured rather than promising a verdict on reality. A null
+  // model reports whether one named scrambling reproduces one named number,
+  // which is a smaller and more defensible claim than "is that pattern real".
+  tagline.textContent = 'Render an integer sequence, then measure how much of the picture comes from the numbers and how much from the way it is drawn.';
   const headerNav = document.createElement('nav');
   headerNav.className = 'header-nav';
   headerNav.setAttribute('aria-label', 'Pages');

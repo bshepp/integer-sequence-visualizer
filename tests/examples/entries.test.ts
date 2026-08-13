@@ -54,10 +54,14 @@ describe('worked examples', () => {
     }
   });
 
-  it('every "real" or "split" verdict carries reproducible evidence', () => {
+  it('every verdict that reports a measurement carries one', () => {
+    // 'foregone' is settled by the sequence being monotone and 'open' claims
+    // nothing; every other verdict names an outcome at a specific rung, which
+    // is a number or it is nothing.
+    const MEASURED = ['survives-steps', 'explained-by-steps', 'explained-by-trend', 'untestable'];
     for (const e of EXAMPLES) {
-      if (e.verdict === 'real' || e.verdict === 'split') {
-        expect(e.evidence, `${e.id} claims 'real' without evidence`).toBeDefined();
+      if (MEASURED.includes(e.verdict)) {
+        expect(e.evidence, `${e.id} reports '${e.verdict}' without evidence`).toBeDefined();
       }
     }
   });
