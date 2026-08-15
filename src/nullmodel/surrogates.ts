@@ -209,14 +209,14 @@ import type { Explain } from '../viz/types';
 export const SURROGATE_EXPLAIN: Record<SurrogateType, Explain> = {
   permutation: {
     short: 'The same terms in a random order.',
-    long: 'Keeps the exact multiset of terms and shuffles their positions. Anything the real sequence shows that this null does not must come from the ordering, because nothing else differs. Conversely, any feature this null reproduces is a property of the values alone. This is the only surrogate in which an individual term can be traced from the real sequence to its new position, because it is the only one where the same terms are still present.',
+    long: 'Keeps the exact multiset of terms and shuffles their positions. Anything the real sequence shows that this null does not must come from the ordering, because nothing else differs. Conversely, any feature this null reproduces is a property of the values alone. This is the only surrogate in which an individual term can be traced from the real sequence to its new position, because it is the only one where the same terms are still present. It is the bottom rung of the ladder and the weakest of the three questions: on a sequence that only ever increases it is a foregone conclusion, because shuffling destroys sortedness whether or not anything else was there to find.',
   },
   difference: {
     short: 'The same steps between terms, taken in a random order.',
-    long: 'Takes the successive differences, shuffles them, and re-integrates from the same starting term. Growth rate and step-size distribution survive; the arrangement of steps does not. Use this when the raw values are less interesting than how the sequence moves -- it is a much tighter null than a permutation for anything monotone, because it will not destroy the overall trend.',
+    long: 'Takes the successive differences, shuffles them, and re-integrates from the same starting term. Growth rate and step-size distribution survive; the arrangement of steps does not. Use this when the raw values are less interesting than how the sequence moves -- it is a much tighter null than a permutation for anything monotone, because it will not destroy the overall trend. That makes it the top rung of the ladder and the strongest of the three results to survive: shuffling the steps of a non-decreasing sequence re-integrates to another non-decreasing one, so nothing here is settled in advance by the sequence merely going up.',
   },
   matched: {
     short: 'Fresh random numbers fitted to the same trend and spread.',
-    long: 'Fits a linear or exponential trend to the sequence and generates new terms from that fit plus Gaussian noise scaled to the residual spread. The terms are entirely new, so nothing arithmetic about the original survives -- only its scale and growth. This is the loosest null of the three and the strongest test to pass: structure that survives it is not explained by trend alone.',
+    long: 'Fits a linear or exponential trend to the sequence and generates new terms from that fit plus Gaussian noise scaled to the residual spread. The terms are entirely new, so nothing arithmetic about the original survives -- only its scale and growth. It is the middle rung of the ladder: stricter than a permutation, because it keeps the trend a shuffle would destroy, and looser than a difference shuffle, because it keeps nothing about the individual steps. Structure that survives it is not explained by trend alone.',
   },
 };

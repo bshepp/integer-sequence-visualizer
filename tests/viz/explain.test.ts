@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { registerAll } from '../../src/viz/all';
 import { allVisualizers, clearRegistry } from '../../src/viz/registry';
 import { SURROGATE_EXPLAIN } from '../../src/nullmodel/surrogates';
+import { RUNGS } from '../../src/nullmodel/ladder';
 
 beforeAll(() => { clearRegistry(); registerAll(); });
 
@@ -45,5 +46,21 @@ describe('surrogate explanations', () => {
 
   it('says which surrogates preserve the value multiset', () => {
     expect(/multiset|same values|same terms/i.test(SURROGATE_EXPLAIN.permutation.long)).toBe(true);
+  });
+
+  it('places each null on the rung the ladder actually puts it on', () => {
+    // These strings and RUNGS drifted apart once already, and the popover won.
+    // It told the reader the matched null was "the strongest test to pass"
+    // while the ladder, the worked examples and the verdict labels all had the
+    // difference null on top - so the engine contradicted the gallery in the
+    // one place a reader goes when they want the ordering explained.
+    const RUNG_WORD = ['bottom', 'middle', 'top'] as const;
+    RUNGS.forEach((type, i) => {
+      const long = SURROGATE_EXPLAIN[type].long.toLowerCase();
+      expect(long, `${type} never names its rung`).toContain(`${RUNG_WORD[i]} rung`);
+      for (const other of RUNG_WORD.filter((w) => w !== RUNG_WORD[i])) {
+        expect(long, `${type} also claims the ${other} rung`).not.toContain(`${other} rung`);
+      }
+    });
   });
 });
