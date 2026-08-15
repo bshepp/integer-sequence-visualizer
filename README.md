@@ -2,8 +2,16 @@
 
 A live webpage that renders [OEIS](https://oeis.org) sequences with multiple
 visualization techniques and a first-class **null-model comparison layer** -
-so you can test whether the structure you see is a property of the sequence
-or an artifact of the rendering technique.
+so a named measurement taken off the picture can be checked against the same
+measurement taken off scrambled versions of the same numbers, which is how
+you find out whether it belongs to the sequence or to the rendering
+technique.
+
+That is deliberately narrower than "is the pattern real". A null model
+answers one question about one statistic under one scrambling; it returns no
+verdict on whether a pattern is meaningful, and the eye is usually looking at
+something other than the thing being measured. The worked examples are
+written to keep that distinction visible rather than paper over it.
 
 Prompted by [NCurve](https://openprocessing.org/@GeorgeWhaleResearch/2986029),
 George Whale's OEIS curve visualizer, and by the [SeqFan
@@ -34,9 +42,11 @@ experimental apparatus for answering it.
 - **Worked examples**: curated real-vs-null comparisons that render on first
   paint with no network round-trip, each one a saved engine state you can click
   straight into. Every verdict shown is recomputed in CI against its recorded
-  null band - an example cannot claim a structure is real unless the code
-  still measures it that way. Not a gallery: each entry shows the work and
-  then commits to a claim.
+  null band - an example cannot claim a statistic landed outside a null unless
+  the code still measures it that way. Verdicts name the rung reached
+  (`survives-steps`, `explained-by-trend`, `untestable`, `foregone`), never a
+  ruling on reality. Not a gallery: each entry shows the work and then commits
+  to a claim.
 - **Explanations everywhere**: every visualizer and every surrogate documents
   itself (enforced at compile time), surfaced by an (i) button and reused as
   the canvas's accessible description.

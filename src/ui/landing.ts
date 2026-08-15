@@ -32,6 +32,22 @@ export function shouldShowLanding(hash: string): boolean {
 }
 
 /**
+ * The site's headline, in the one place all five copies of it come from.
+ *
+ * It used to read "Is that pattern real?", which promised something no null
+ * model on this site can deliver. A null reports whether one named number is
+ * reproduced by one named scrambling; it returns no verdict on whether a
+ * pattern is real, meaningful, or characteristic of the sequence - and the
+ * worked examples say so outright, so the headline was contradicting the
+ * gallery beneath it. Asking which part of the picture is the sequence is a
+ * question the apparatus can actually answer something about.
+ *
+ * The <title>, og:title and twitter:title in index.html carry it too and
+ * cannot import it; tests/ui/copy.test.ts reads the file and pins all three.
+ */
+export const HEADLINE = 'Which part of the picture is the sequence?';
+
+/**
  * Named for the rung reached, not for a verdict on reality.
  *
  * "Survives the null" was the old label on most of these, and it claimed more
@@ -40,7 +56,9 @@ export function shouldShowLanding(hash: string): boolean {
  * real, meaningful, or characteristic of the sequence.
  */
 const VERDICT_LABEL: Record<ExampleEntry['verdict'], string> = {
-  'survives-steps': 'Survives every null',
+  // "every null" invited the reading "every null model there could be", which
+  // is infinitely many and not what was run. Three were.
+  'survives-steps': 'Survives all three nulls',
   'explained-by-steps': 'Explained by its steps',
   'explained-by-trend': 'Explained by its trend',
   untestable: 'No null can test it',
@@ -140,12 +158,17 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
 
   const h1 = document.createElement('h1');
   h1.className = 'landing-title';
-  h1.textContent = 'Is that pattern real?';
+  h1.textContent = HEADLINE;
 
   const lede = document.createElement('p');
   lede.className = 'landing-lede';
+  // "so you can tell which" was the promise that had to go: it offered to
+  // settle the question the picture raises, and what the apparatus settles is
+  // narrower than that. Naming the gap here rather than burying it in About,
+  // because this sentence is what a visitor reads before deciding whether the
+  // site is honest.
   lede.textContent =
-    'Integer sequences make beautiful pictures. Every pattern you see is really there; the question is whether it belongs to the sequence or to the way it is drawn. This tool renders both at once - your sequence, and a null model built from the same numbers - so you can tell which.';
+    'Integer sequences make beautiful pictures. Every pattern you see is really there; the question is which of them belong to the sequence and which to the way it is drawn. This tool draws both at once - your sequence, and a null model built from the same numbers. What it can measure is narrower than what you can see: one named number, against one named way of scrambling. The worked examples below are specific about which is which, including where the answer is that nothing was tested.';
 
   // The origin credit belongs on the first page a visitor sees, not three
   // clicks away on About. "Prompted by" rather than "based on" because that is

@@ -42,7 +42,7 @@ export const EXAMPLES: ExampleEntry[] = [
   },
   {
     id: 'kolakoski-spiral',
-    title: 'Structure that survives the null',
+    title: 'Structure that survives all three nulls',
     sequence: oeisSeq('A000002', 'Kolakoski sequence', kolakoski(N)),
     state: {
       seqRef: { kind: 'oeis', aNumber: 'A000002' },
@@ -51,7 +51,7 @@ export const EXAMPLES: ExampleEntry[] = [
     },
     verdict: 'survives-steps',
     caption: 'No run of identical terms is longer than 2. Nothing we can scramble it with reproduces that.',
-    body: 'Both pictures come from exactly the same 600 numbers; the right-hand one has had them shuffled. The Kolakoski sequence is its own run-length encoding and contains only 1s and 2s, so no run can exceed 2 - and that is the claim, because it is checkable by eye and it survives every null on the ladder. Shuffle the terms and the longest run reaches 7 to 15. Shuffle only the steps between terms, which keeps the trend and the step sizes and merely reorders them, and it still reaches 5 to 9. The real sequence never gets past 2. Worth knowing what this entry used to claim: that 66.4% of adjacent pairs differ against a null band of 45.7% to 54.1%. True, and untestable by the strictest null - the switch rate counts non-zero steps, the step-preserving null keeps every step, so all 200 of its surrogates return 66.4% exactly. A null that cannot come out any other way is not evidence. The run length can, and does.',
+    body: 'Both pictures come from exactly the same 600 numbers; the right-hand one has had them shuffled. The Kolakoski sequence is its own run-length encoding and contains only 1s and 2s, so no run can exceed 2 - and that is the claim, because it is checkable by eye and it survives all three nulls on the ladder. Shuffle the terms and the longest run reaches 7 to 15. Shuffle only the steps between terms, which keeps the trend and the step sizes and merely reorders them, and it still reaches 5 to 9. The real sequence never gets past 2. Worth knowing what this entry used to claim: that 66.4% of adjacent pairs differ against a null band of 45.7% to 54.1%. True, and untestable by the strictest null - the switch rate counts non-zero steps, the step-preserving null keeps every step, so all 200 of its surrogates return 66.4% exactly. A null that cannot come out any other way is not evidence. The run length can, and does.',
     evidence: {
       statistic: 'longestRun',
       measured: 2,
@@ -130,7 +130,11 @@ export const EXAMPLES: ExampleEntry[] = [
   },
   {
     id: 'fibonacci-ratios',
-    title: 'A real result you can read off the screen',
+    // "A real result" on an entry whose verdict is `open` - nothing was
+    // measured here at all. The result is real because it is a theorem, which
+    // is a different sense of the word than the one the rest of the site
+    // spends its time being careful about, so it says theorem.
+    title: 'A theorem you can read off the screen',
     // Only 40 terms: the ratio converges within about 20, so the full 600
     // would render as a flat line with the interesting part squashed into
     // the first 3% of the width.
@@ -167,8 +171,8 @@ export const EXAMPLES: ExampleEntry[] = [
       mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
     },
     verdict: 'survives-steps',
-    caption: 'Built by a completely different rule than Kolakoski, and outside every null in the same way.',
-    body: 'Thue-Morse takes the parity of the number of 1 bits in n. It is overlap-free and strongly self-similar, and like Kolakoski it uses only two values, but it is built by an entirely unrelated construction. Its residue alternation measures -0.335. Shuffling the terms puts the null at -0.088 to 0.068; holding the trend and spread fixed puts it at -0.080 to 0.071; and keeping the exact multiset of steps and merely reordering them puts it at 0.119 to 0.257 - on the far side of zero from the real sequence, which is the strongest of the three separations rather than the weakest. Two sequences with nothing in common mechanically land outside every null the same way, which is a hint that what the test detects is regular alternation itself rather than anything specific to either rule. Do not read the shared verdict as a shared cause.',
+    caption: 'Built by a completely different rule than Kolakoski, and outside all three nulls in the same way.',
+    body: 'Thue-Morse takes the parity of the number of 1 bits in n. It is overlap-free and strongly self-similar, and like Kolakoski it uses only two values, but it is built by an entirely unrelated construction. Its residue alternation measures -0.335. Shuffling the terms puts the null at -0.088 to 0.068; holding the trend and spread fixed puts it at -0.080 to 0.071; and keeping the exact multiset of steps and merely reordering them puts it at 0.119 to 0.257 - on the far side of zero from the real sequence, which is the strongest of the three separations rather than the weakest. Two sequences with nothing in common mechanically land outside all three nulls the same way, which is a hint that what the test detects is regular alternation itself rather than anything specific to either rule. Do not read the shared verdict as a shared cause.',
     evidence: {
       statistic: 'residueAlternation',
       measured: -0.335,

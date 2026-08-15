@@ -1,5 +1,5 @@
 import { heroEntry } from '../examples/entries';
-import { paintEntry } from './landing';
+import { paintEntry, HEADLINE } from './landing';
 
 const W = 1200, H = 630;
 
@@ -32,7 +32,7 @@ export function exportOgCard(): void {
     ctx.fillRect(0, H - 104, W, 104);
     ctx.fillStyle = '#e6e6e6';
     ctx.font = 'bold 34px system-ui, sans-serif';
-    ctx.fillText('Is that pattern real?', 40, H - 58);
+    ctx.fillText(HEADLINE, 40, H - 58);
     ctx.fillStyle = '#9aa0aa';
     ctx.font = '20px system-ui, sans-serif';
     ctx.fillText('Left: an OEIS sequence. Right: the same terms, shuffled.', 40, H - 26);
