@@ -167,8 +167,15 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   // narrower than that. Naming the gap here rather than burying it in About,
   // because this sentence is what a visitor reads before deciding whether the
   // site is honest.
+  //
+  // Kept to six lines at the 62ch measure below. The first pass at this ran to
+  // eight, and centred text stops being readable at about three - the ragged
+  // left edge makes the eye hunt for each line start - so the honest version
+  // was quietly costing more than the overclaim it replaced. The specifics it
+  // dropped (which number, which scrambling) are on every worked example and
+  // in About's method section, where a reader who wants them is already going.
   lede.textContent =
-    'Integer sequences make beautiful pictures. Every pattern you see is really there; the question is which of them belong to the sequence and which to the way it is drawn. This tool draws both at once - your sequence, and a null model built from the same numbers. What it can measure is narrower than what you can see: one named number, against one named way of scrambling. The worked examples below are specific about which is which, including where the answer is that nothing was tested.';
+    'Integer sequences make beautiful pictures. Every pattern you see is really there; the question is which of them belong to the sequence and which to the way it is drawn. This tool draws both at once - your sequence, and a null model built from the same numbers. What it measures is always narrower than what you can see.';
 
   // The origin credit belongs on the first page a visitor sees, not three
   // clicks away on About. "Prompted by" rather than "based on" because that is
