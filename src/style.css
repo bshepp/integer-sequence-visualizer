@@ -222,15 +222,36 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
    for every line start. The lede above was cut from eight lines to six for that
    exact reason while this sat underneath it at four times the length.
 
-   70ch rather than matching the 760px image: the image is the showpiece and the
-   prose is prose, and past about 75 characters a line the eye starts losing its
-   place on the return sweep. The column stays narrower than the picture on
-   purpose. 14px in full contrast because this is body text, not a caption - it
-   was 13px muted, which styled the most substantial writing on the page as a
-   footnote to the picture above it. */
+   The width is governed by the font size, not by the measure. At 14px a 70ch box
+   came to 528px - 69% of the 760px image - and read as a pinched column under a
+   wide picture. Widening the measure buys pixels by making the line harder to
+   read; raising the size buys the same pixels and makes it easier. Hence 16px,
+   which is ordinary body-text size where 14px was small for extended reading.
+
+   Measured, not assumed: this renders at 647px, 85% of the image, 22 lines, and
+   **88 characters a line**. That is above the classic 45-75 range, and 75ch does
+   not mean 75 characters - 1ch is the width of the "0" glyph, and in a
+   proportional font most letters are narrower, so a 75ch box fits about 88. An
+   earlier version of this comment claimed the 75-character bound while shipping
+   88, which is exactly the kind of confident wrong note this file should not
+   carry.
+
+   88 is accepted rather than overlooked. Pulling back to a true 75 characters
+   means about 64ch, or 552px, which returns the column to looking pinched; the
+   1.55 line-height below is what makes the longer line comfortable, since
+   generous leading is the standard mitigation for a wide measure. If the leading
+   is ever tightened, the width should come down with it.
+
+   1ch here is 0.539 x the font size, a property of whatever system-ui resolves
+   to, so the pixel width varies by platform while the character count does not
+   vary much. That is the point of specifying it in ch rather than px.
+
+   Full contrast because this is body text, not a caption. It was 13px muted and
+   centred, which styled the most substantial writing on the page as a footnote
+   to the picture above it. */
 .landing-hero-body {
-  margin: 0; max-width: 70ch; text-align: left;
-  color: var(--text); font-size: 14px; line-height: 1.55;
+  margin: 0; max-width: 75ch; text-align: left;
+  color: var(--text); font-size: 16px; line-height: 1.55;
 }
 /* Redraw-the-hero controls. Sized down from the primary actions below them:
    this is a thing to try, not the way into the site. */
