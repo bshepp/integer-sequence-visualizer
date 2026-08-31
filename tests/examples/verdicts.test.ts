@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { EXAMPLES } from '../../src/examples/entries';
-import { switchRate, longestRun, angularVariance, residueAlternation, residueStep } from '../../src/examples/statistics';
+import { switchRate, longestRun, angularVariance, residueAlternation, residueStep, residuePeriodicity } from '../../src/examples/statistics';
 import { makeSurrogate, type SurrogateType } from '../../src/nullmodel/surrogates';
 import { SequenceView, type Sequence } from '../../src/sequence/sequence';
 import type { Evidence } from '../../src/examples/types';
@@ -13,6 +13,7 @@ const STATISTICS: Record<string, (seq: SequenceView, params: Record<string, unkn
   angularVariance: (seq, params) => angularVariance(seq, Number(params.modulus ?? 2)),
   residueAlternation: (seq, params) => residueAlternation(seq, Number(params.k ?? 2)),
   residueStep: (seq, params) => residueStep(seq, Number(params.modulus ?? 2)),
+  residuePeriodicity: (seq, params) => residuePeriodicity(seq, Number(params.modulus ?? 2)),
 };
 
 const asSeq = (terms: bigint[]): Sequence => ({ terms, name: 's', offset: 0, source: 'paste' });

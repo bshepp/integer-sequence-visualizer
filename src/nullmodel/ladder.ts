@@ -51,6 +51,20 @@ export function rungOf(type: SurrogateType): number {
  * own permutation: sortedness is one arrangement out of n!, so any statistic
  * that notices sortedness rejects with certainty, and the rejection says
  * nothing that "this sequence increases" did not already say.
+ *
+ * KNOWN GAP, to be closed before this is wired into the engine. It reads the
+ * raw terms, but several views never see them: the polyarc and the mod-N grid
+ * consume `a(n) mod b`, and monotone terms say nothing at all about their
+ * residues. Fibonacci is the counterexample already on the site - its terms are
+ * strictly increasing, so this returns true and calls the comparison vacuous,
+ * while the fibonacci-rosette entry rests on a permutation null that keeps
+ * every residue and their sum and destroys only the arrangement. That is the
+ * least vacuous comparison here, and this function currently marks it as the
+ * most.
+ *
+ * The fix is to ask what the statistic consumes rather than what the sequence
+ * is, which means this needs the view's modulus - see
+ * docs/ladder-in-the-engine-brief.md.
  */
 export function foregone(terms: readonly bigint[], type: SurrogateType): boolean {
   if (type !== 'permutation' || terms.length < 3) return false;

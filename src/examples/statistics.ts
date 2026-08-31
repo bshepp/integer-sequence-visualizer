@@ -150,3 +150,38 @@ export function residueStep(seq: SequenceView, modulus: number): number {
   }
   return sum / (seq.length - 1) / (modulus / 2);
 }
+
+/**
+ * How strongly the residues repeat, at whatever lag suits them best.
+ *
+ * The fraction of positions agreeing with the position one lag later,
+ * maximised over every lag up to a third of the sequence. 1 means exactly
+ * periodic; a sequence with no repeat structure scores about 1/modulus, since
+ * that is how often two unrelated residues coincide.
+ *
+ * This is what the eye is reading when one of these drawings comes out
+ * symmetrical. A polyarc turns by an angle set by each residue, so a residue
+ * sequence that repeats draws a motif that repeats, and the figure closes into
+ * a rosette or marches off as a frieze depending only on how far the path has
+ * turned by the end of one period. Fibonacci mod 36 scores exactly 1 at lag 24,
+ * its Pisano period.
+ *
+ * No lag is passed in on purpose. The caller would have to know the period to
+ * ask about it, and the interesting cases are the ones where the period is what
+ * you are trying to find out.
+ */
+export function residuePeriodicity(seq: SequenceView, modulus: number): number {
+  const n = seq.length;
+  if (n < 6 || modulus < 2) return 0;
+  const r = new Int32Array(n);
+  for (let i = 0; i < n; i++) r[i] = seq.mod(i, modulus);
+  let best = 0;
+  const maxLag = Math.floor(n / 3);
+  for (let lag = 1; lag <= maxLag; lag++) {
+    let hits = 0;
+    for (let i = 0; i + lag < n; i++) if (r[i] === r[i + lag]) hits++;
+    const rate = hits / (n - lag);
+    if (rate > best) best = rate;
+  }
+  return best;
+}

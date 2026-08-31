@@ -95,6 +95,26 @@ runs one, so 600 surrogate draws at the current default of 200. The worker
 already exists, and `polyarcPath` at 58 terms is cheap, but a 10,000-term
 b-file would not be.
 
+## A defect to fix on the way, not after
+
+`foregone()` decides a comparison was settled in advance by checking whether the
+terms are monotone. That is right for a turtle walk on the raw values and wrong
+for every view that reduces mod b, because those never see the terms - the
+polyarc and the mod-N grid consume `a(n) mod b`, and monotone terms imply
+nothing whatever about their residues.
+
+The counterexample is already on the site. `fibonacci-rosette` has strictly
+increasing terms, so `foregone()` returns true and would label it vacuous. Its
+permutation null keeps every residue *and their sum*, so both walks finish
+pointing the same way and only the arrangement is destroyed - which makes it the
+least vacuous comparison in the gallery, and the one this function is most
+confident about dismissing.
+
+So the check has to ask what the statistic consumes rather than what the sequence
+looks like, which means it needs the view's modulus passed in. Worth doing before
+the wiring rather than after: shipping a vacuity warning that fires hardest on
+the best example would be worse than shipping no warning.
+
 ## Your question about the name
 
 You asked whether the vacuity measure is something that already exists and has

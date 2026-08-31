@@ -90,6 +90,31 @@ export const EXAMPLES: ExampleEntry[] = [
     },
   },
   {
+    id: 'fibonacci-rosette',
+    title: 'A shape predicted before it was drawn',
+    // 240 terms because that is exactly ten Pisano periods at this modulus,
+    // which is one complete rosette. More terms retrace the same figure.
+    sequence: oeisSeq('A000045', 'Fibonacci numbers', fibonacci(240)),
+    state: {
+      seqRef: { kind: 'oeis', aNumber: 'A000045' },
+      vizId: 'polyarc', params: { angle: 1, modulus: 36, offset: -18 },
+      mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
+    },
+    verdict: 'survives-steps',
+    caption: 'Ten points, and the ten was worked out before anything was drawn. Shuffle it and the symmetry goes, though every residue stays.',
+    body: 'Fibonacci mod 36 closes into a ten-pointed rosette, and the ten was predictable in advance. Fibonacci is periodic modulo any m; here the period is the Pisano period, pi(36) = 24. So the residues repeat, so the arcs repeat, so the path draws one motif over and over. Whether those copies stack into a ring or march off in a line depends on one further number: how far the path has turned by the end of one period. Twenty-four terms turn -108 degrees in total, which is not a whole number of turns, so each copy arrives rotated 108 degrees from the last and ten of them close the circle. Feed the same sequence a modulus of 360 and one period turns exactly -1800 degrees - five whole turns - so the copies arrive unrotated and the drawing is a frieze marching off the page instead. That is the useful half of an answer to what these pictures show you. The symmetry is the protractor: choose the modulus and you choose the fold count. That there is a symmetry at all belongs to the sequence, and for a linear recurrence it is a theorem rather than a coincidence. Now the panel beside it, which is the same 240 terms shuffled. This is the one comparison here where the null model has nothing cheap to destroy: a permutation keeps every residue, and it keeps their sum, so both walks finish pointing in the same direction. Only the arrangement goes - and the rosette goes with it. Measured, the residues repeat perfectly, 1.000 at lag 24, against 0.11 to 0.15 for a shuffle of the same terms, 0.11 to 0.15 for fresh numbers matched to the same trend and spread, and 0.084 for the null that keeps the exact multiset of steps. All three reject. None of them is doing the cheap work of noticing that the sequence increases, which is the objection that empties out most comparisons on this site.',
+    evidence: {
+      statistic: 'residuePeriodicity',
+      measured: 1,
+      n: 200, seed: 1,
+      rungs: [
+        { surrogate: 'permutation', bandLo: 0.10964912280701754, bandHi: 0.14516129032258066, median: 0.12352941176470589 },
+        { surrogate: 'matched', bandLo: 0.10891089108910891, bandHi: 0.14689265536723164, median: 0.12626262626262627 },
+        { surrogate: 'difference', bandLo: 0.08368200836820083, bandHi: 0.08403361344537816, median: 0.08368200836820083 },
+      ],
+    },
+  },
+  {
     id: 'rainbow-rings',
     title: 'Structure that means nothing',
     // 2500 terms (a ~50x50 spiral): the beat between the hue period and the
