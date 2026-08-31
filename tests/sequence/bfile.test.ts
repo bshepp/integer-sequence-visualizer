@@ -44,9 +44,32 @@ describe('fetchBFile', () => {
       calls.push(url);
       return { ok: true, status: 200, json: async () => ({}), text: async () => good };
     };
-    const terms = await fetchBFile('45', 10000, f);
+    const { terms, truncated } = await fetchBFile('45', 10000, f);
     expect(calls[0]).toBe('/api/A000045/b000045.txt');
     expect(terms.length).toBe(7);
+    expect(truncated).toBe(false);
+  });
+
+  it('reports truncation when the cap cut the file short', async () => {
+    const f: FetchLike = async () => ({
+      ok: true, status: 200, json: async () => ({}), text: async () => good,
+    });
+    const { terms, truncated } = await fetchBFile('45', 3, f);
+    expect(terms).toEqual([0n, 1n, 1n]);
+    expect(truncated).toBe(true);
+  });
+
+  it('does not call a file that ends exactly on the cap truncated', async () => {
+    // The case the UI cannot guess and the one most likely to be seen here:
+    // A000040's b-file stops at the 10,000th prime, so asking for 10,000 gets
+    // 10,000 and there is nothing further. Reporting that as capped would tell
+    // a reader to raise a cap that cannot buy them a single extra term.
+    const f: FetchLike = async () => ({
+      ok: true, status: 200, json: async () => ({}), text: async () => good,
+    });
+    const { terms, truncated } = await fetchBFile('45', 7, f);
+    expect(terms.length).toBe(7);
+    expect(truncated).toBe(false);
   });
 
   it('throws on HTTP failure', async () => {

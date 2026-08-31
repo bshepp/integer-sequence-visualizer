@@ -143,15 +143,38 @@ export function parseBFile(text: string, cap: number): bigint[] {
   return terms;
 }
 
+/**
+ * What a b-file fetch found, rather than only what it kept.
+ *
+ * `truncated` is the fact the UI could not previously state: whether the cap
+ * stopped the parse or the file simply ran out. Without it "10,000 terms"
+ * means either "the first ten thousand of far more" or "every term OEIS
+ * publishes", and A000040 is genuinely the second - its b-file ends at the
+ * 10,000th prime - so guessing from `terms.length === cap` gets that exact
+ * case wrong, which is the case most likely to be looked at.
+ *
+ * When it comes back false, `terms.length` is the whole b-file, and the
+ * caller can stop offering to fetch more than that.
+ */
+export interface BFileResult {
+  terms: bigint[];
+  /** True if the b-file held more terms than the cap allowed through. */
+  truncated: boolean;
+}
+
 export async function fetchBFile(
   aNumber: string,
   cap = 10000,
   fetchFn: FetchLike = defaultFetch,
-): Promise<bigint[]> {
+): Promise<BFileResult> {
   const id = normalizeANumber(aNumber);
   const res = await fetchFn(`/api/${id}/b${id.slice(1)}.txt`);
   if (!res.ok) throw new Error(`B-file request failed (HTTP ${res.status}).`);
-  return parseBFile(await res.text(), cap);
+  // Parsed one past the cap, so overrun is observable without a second pass
+  // over the text or a duplicate of parseBFile's line rules - the discontinuity
+  // break included, which a naive line count would get wrong.
+  const probe = parseBFile(await res.text(), cap + 1);
+  return { terms: probe.slice(0, cap), truncated: probe.length > cap };
 }
 
 export function withTerms(seq: Sequence, terms: bigint[]): Sequence {

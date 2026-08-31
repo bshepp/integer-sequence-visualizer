@@ -66,6 +66,19 @@ describe('buildSequencePanel', () => {
     expect(el.querySelectorAll('.preset-button').length).toBe(PRESETS.length);
   });
 
+  it('names what each load button loads', () => {
+    // Two buttons in this panel begin with "Load" and sit a few centimetres
+    // apart. The A-number one said only "Load"; the b-file one promised "all
+    // terms" while a cap box underneath silently bounded it. Neither named
+    // what it would actually produce.
+    const { el } = buildSequencePanel({ onSequence: () => {}, onError: () => {} });
+    const labels = [...el.querySelectorAll('button')].map((b) => b.textContent ?? '');
+    expect(labels).toContain('Load Sequence');
+    expect(labels.some((t) => /^Load up to [\d,]+ terms \(b-file\)$/.test(t)),
+      `no b-file button naming its cap, got: ${labels.join(' | ')}`).toBe(true);
+    expect(labels, 'the unbounded promise should be gone').not.toContain('Load all terms (b-file)');
+  });
+
   it('setInfo shows the name, and enables the b-file fetch only for OEIS sequences', () => {
     // The b-file control is a permanent part of the "Load a sequence" section
     // rather than something that appears and vanishes with the info card, so
@@ -578,8 +591,15 @@ describe('the b-file term slider', () => {
     expect(pending.getAttribute('role')).toBe('status');
     drag(slider, 700);
     expect(pending.hidden).toBe(false);
-    expect(pending.textContent).toMatch(/Load all terms/i);
-    expect(pending.textContent).toMatch(/\d/);
+    // The count and the button's name both used to be repeated here. They now
+    // live on the button itself - it reads "Load up to N terms (b-file)" - so
+    // this line's only remaining job is to say the control was moved and not
+    // yet applied. Asserting the absence of the number keeps the two from
+    // drifting back into saying the same thing twice.
+    expect(pending.textContent).toMatch(/not fetched yet/i);
+    expect(pending.textContent).not.toMatch(/\d/);
+    const btn = p.el.querySelector<HTMLButtonElement>('.bfile-button')!;
+    expect(btn.textContent).toMatch(/\d/);
   });
 });
 

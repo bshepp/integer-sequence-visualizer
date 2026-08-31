@@ -102,7 +102,9 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     const input = document.createElement('input');
     input.placeholder = 'A000045';
     const btn = document.createElement('button');
-    btn.textContent = 'Load';
+    // "Load" alone sat under an A-number field beside a b-file button also
+    // beginning "Load", and named neither what it loaded nor how much.
+    btn.textContent = 'Load Sequence';
     btn.addEventListener('click', () => load(lookupById(input.value)));
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') load(lookupById(input.value)); });
     pane.append(labelledControl('OEIS A-number', input), btn);
@@ -226,12 +228,19 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
   const bfileBtn = document.createElement('button');
   bfileBtn.className = 'bfile-button';
   bfileBtn.type = 'button';
-  bfileBtn.textContent = 'Load all terms (b-file)';
+  // Text is set by syncCapLabel once the cap controls exist: the button used
+  // to promise "all terms" while a box directly beneath it capped the fetch,
+  // so the one number that decided what you got was the one thing the action
+  // did not mention.
+  bfileBtn.textContent = 'Load terms (b-file)';
 
   const bfileCap = document.createElement('input');
   bfileCap.type = 'number';
   bfileCap.value = '10000';
   bfileCap.className = 'bfile-cap';
+  // Set here as well as in applyCeiling, so the constraint holds before any
+  // sequence has been loaded rather than arriving with the first one.
+  bfileCap.max = '100000';
 
   // A slider as well as the box, because the useful range spans three orders
   // of magnitude and "how many terms" is a question you answer by feel rather
@@ -240,12 +249,24 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
   // difference between 200 and 2000 terms changes these pictures far more
   // than the difference between 90,000 and 100,000 does.
   const CAP_MIN = 50, CAP_MAX = 100000;
+
+  /**
+   * The largest cap worth offering, lowered once a fetch proves the b-file is
+   * shorter than it.
+   *
+   * Until then it has to be the optimistic 100,000: the length of a b-file is
+   * not knowable without fetching it, so the control cannot be honest about
+   * the ceiling in advance - only after. A000040 stops at the 10,000th prime,
+   * and before this the slider would happily offer 100,000 of them.
+   */
+  let capCeiling = CAP_MAX;
+  // Guarded because the ceiling can drop below CAP_MIN - a 30-term b-file is
+  // ordinary - and the log span is a divisor.
+  const logSpan = (): number => Math.max(0.01, Math.log10(capCeiling) - Math.log10(CAP_MIN));
   const capToSlider = (n: number): number =>
-    Math.round(1000 * (Math.log10(n) - Math.log10(CAP_MIN))
-      / (Math.log10(CAP_MAX) - Math.log10(CAP_MIN)));
+    Math.round(1000 * (Math.log10(n) - Math.log10(CAP_MIN)) / logSpan());
   const sliderToCap = (t: number): number => {
-    const raw = 10 ** (Math.log10(CAP_MIN)
-      + (t / 1000) * (Math.log10(CAP_MAX) - Math.log10(CAP_MIN)));
+    const raw = 10 ** (Math.log10(CAP_MIN) + (t / 1000) * logSpan());
     // Rounded to something a person would have typed, at a precision that
     // scales with the magnitude: 1-unit steps are meaningless at 90,000.
     const step = raw < 1000 ? 10 : raw < 10000 ? 100 : 1000;
@@ -269,16 +290,29 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
   bfilePending.setAttribute('role', 'status');
 
   let capDirty = false;
+  /** The cap as the controls currently read it, clamped to what can exist. */
+  const capValue = (): number =>
+    Math.max(1, Math.min(capCeiling, Math.round(Number(bfileCap.value)) || 1));
+
+  // The button names the number it will fetch, which is the whole of what the
+  // cap controls do. Before this the count lived only in a box below the
+  // button, so the action read as unbounded and the bound read as trivia.
+  const syncCapLabel = (): void => {
+    bfileBtn.textContent = `Load up to ${capValue().toLocaleString()} terms (b-file)`;
+  };
+
   const showPending = (): void => {
-    const n = Math.max(1, Number(bfileCap.value) || 1);
     bfilePending.hidden = !capDirty;
-    bfilePending.textContent = `Press "Load all terms" to fetch up to ${n.toLocaleString()} terms.`;
+    // No longer repeats the number: the button beside it is now saying it, and
+    // a status line that restates the control it sits under is noise.
+    bfilePending.textContent = 'Not fetched yet - press the button above.';
   };
   const setCap = (n: number, from: 'slider' | 'box'): void => {
-    const clamped = Math.max(1, Math.min(CAP_MAX, Math.round(n) || 1));
+    const clamped = Math.max(1, Math.min(capCeiling, Math.round(n) || 1));
     if (from !== 'box') bfileCap.value = String(clamped);
     if (from !== 'slider') bfileSlider.value = String(capToSlider(Math.max(CAP_MIN, clamped)));
     capDirty = true;
+    syncCapLabel();
     showPending();
   };
   bfileSlider.addEventListener('input', () => setCap(sliderToCap(Number(bfileSlider.value)), 'slider'));
@@ -299,8 +333,14 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     // garbage still coerces to NaN (Math.max with NaN is NaN), which
     // parseBFile's own Number.isFinite guard then rejects with a banner
     // instead of a silent 1-term result.
-    fetchBFile(seq.aNumber, Math.max(1, Number(bfileCap.value)))
-      .then((terms) => handlers.onSequence(withTerms(seq, terms)))
+    const asked = capValue();
+    fetchBFile(seq.aNumber, asked)
+      .then(({ terms, truncated }) => {
+        // Recorded before onSequence, because that calls setInfo synchronously
+        // and setInfo is what reads it.
+        bfileKnown = { aNumber: seq.aNumber!, count: terms.length, truncated };
+        handlers.onSequence(withTerms(seq, terms));
+      })
       .catch((e) => handlers.onError(e instanceof Error ? e.message : String(e)))
       .finally(() => {
         // Cleared whether the fetch succeeded or failed: on failure the banner
@@ -311,6 +351,32 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
         syncBfile();
       });
   });
+
+  /**
+   * What the last b-file fetch established about the sequence it fetched.
+   *
+   * Kept per A-number so it is discarded the moment a different sequence is
+   * loaded: a ceiling learned from one b-file says nothing about the next.
+   */
+  let bfileKnown: { aNumber: string; count: number; truncated: boolean } | null = null;
+
+  /**
+   * Re-points the cap controls at what is now known to exist.
+   *
+   * A fetch that was not truncated proves the b-file's exact length, so the
+   * ceiling becomes that and the slider stops offering terms OEIS does not
+   * publish. A truncated one proves only that there is more, which is not a
+   * number, so the optimistic ceiling stands.
+   */
+  function applyCeiling(seq: Sequence | null): void {
+    const known = bfileKnown && seq?.aNumber === bfileKnown.aNumber ? bfileKnown : null;
+    capCeiling = known && !known.truncated ? Math.max(1, known.count) : CAP_MAX;
+    const clamped = Math.min(capCeiling, Math.max(1, Math.round(Number(bfileCap.value)) || 1));
+    bfileCap.value = String(clamped);
+    bfileCap.max = String(capCeiling);
+    bfileSlider.value = String(capToSlider(Math.max(CAP_MIN, clamped)));
+    syncCapLabel();
+  }
 
   function syncBfile(): void {
     const available = loadedSeq?.source === 'oeis' && Boolean(loadedSeq.aNumber);
@@ -328,6 +394,9 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     bfileHint,
   );
   el.appendChild(bfileBox);
+  // Before any interaction, so the button arrives already naming its number
+  // rather than acquiring one the first time the slider is touched.
+  syncCapLabel();
   syncBfile();
 
   // info card
@@ -352,6 +421,7 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
 
   function setInfo(seq: Sequence): void {
     loadedSeq = seq;
+    applyCeiling(seq);
     syncBfile();
     info.replaceChildren();
     // Identity first. OEIS names run long -- A000002's is a full sentence and
@@ -367,8 +437,25 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
       a.textContent = seq.aNumber;
       meta.appendChild(a);
     }
-    meta.append(`${seq.aNumber ? ' · ' : ''}${seq.terms.length} terms · ${seq.source}`);
+    meta.append(`${seq.aNumber ? ' · ' : ''}${seq.terms.length.toLocaleString()} terms · ${seq.source}`);
     info.appendChild(meta);
+
+    // Whether that count is the whole b-file or the cap talking. Only shown for
+    // a sequence we actually fetched, because for a stored snapshot the honest
+    // answer is that we do not know - the snapshot caps terms per sequence and
+    // says nothing about how many exist.
+    //
+    // The distinction cannot be guessed from `length === cap`: A000040's b-file
+    // ends at exactly the 10,000th prime, so the commonest fetch on this site
+    // hits its cap precisely and is nonetheless complete.
+    if (bfileKnown && seq.aNumber === bfileKnown.aNumber && seq.terms.length === bfileKnown.count) {
+      const note = document.createElement('div');
+      note.className = `info-bfile-note${bfileKnown.truncated ? ' info-bfile-note--capped' : ''}`;
+      note.textContent = bfileKnown.truncated
+        ? `Capped at ${bfileKnown.count.toLocaleString()} - the b-file holds more. Raise the cap to fetch further.`
+        : `That is every term in the b-file. Raising the cap will not fetch more.`;
+      info.appendChild(note);
+    }
 
     const name = document.createElement('div');
     name.className = 'info-name';

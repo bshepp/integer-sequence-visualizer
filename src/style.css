@@ -74,6 +74,14 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .info-card { font-size: 15px; line-height: 1.45; }
 .info-name { font-weight: 600; }
 .info-meta { color: var(--muted); margin-bottom: 5px; font-size: 14px; }
+/* Says whether the term count above is the whole b-file or the cap talking.
+   Amber only when there is more to fetch, because that is the one a reader can
+   act on; the complete case is muted, since all it has to do is stop them
+   raising a cap that cannot buy another term. The light override repeats the
+   full selector - a comma does not distribute the :root prefix. */
+.info-bfile-note { margin-top: 5px; font-size: 11px; line-height: 1.4; color: var(--muted); }
+.info-bfile-note--capped { color: #d8a657; }
+:root[data-theme="light"] .info-bfile-note--capped { color: #8a5a00; }
 .bfile-box { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
 /* Sized like the tab-pane controls above it, but deliberately the accent
    colour: this is the action that makes the pictures worth looking at, and it
