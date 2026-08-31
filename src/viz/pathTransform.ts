@@ -39,20 +39,6 @@ export function toScreen(t: PathTransform, p: Pt): Pt {
   return { x: p.x * t.scale + t.ox, y: t.height - (p.y * t.scale + t.oy) };
 }
 
-/**
- * Path units to device pixels, read off the live canvas transform.
- *
- * Picks up the device pixel ratio and the viewport zoom in one number, because
- * both are already in the matrix by the time anything draws. Falls back to 1
- * for a context that cannot answer - jsdom has no getTransform, and the test
- * fake answers every call with undefined, so the result is checked rather than
- * the method's existence.
- */
-export function deviceScaleOf(ctx: CanvasRenderingContext2D): number {
-  const m = ctx.getTransform?.();
-  const s = m ? Math.hypot(m.a, m.b) : NaN;
-  return Number.isFinite(s) && s > 0 ? s : 1;
-}
 
 export interface ScreenArc {
   cx: number; cy: number; r: number; start: number; end: number; ccw: boolean;
@@ -87,19 +73,6 @@ const TWO_PI = 2 * Math.PI;
  * the scale from the canvas transform, which carries the zoom and the device
  * pixel ratio together, so the test asks what the reader will actually see.
  */
-/**
- * Exported because it is now a claim the site makes, not just a tuning knob.
- *
- * Every arc this culls to a straight chord is guaranteed to deviate from the
- * true curve by less than this many device pixels, which is what lets the real
- * and null panels be compared at all: they are fitted to their own bounding
- * boxes at different scales, so a sprawling surrogate has more of its arcs fall
- * under the threshold than a compact real sequence does. Measured at the hero's
- * settings, 46.6% of the real panel's segments are culled against 67.2% of its
- * permutation null's. That asymmetry is harmless only for as long as the bound
- * holds, so tests/viz/cullBound.test.ts checks it rather than trusting it.
- */
-export const VISIBLE_PX = 0.35;
 
 /**
  * The circular arc joining two drawn points, given how far the path turns
@@ -117,12 +90,38 @@ export const VISIBLE_PX = 0.35;
  * sequence space is still a left turn to the eye, but raw canvas angles
  * increase the other way.
  *
- * Returns null where an arc is not the right answer - a straight or nearly
- * straight segment, a repeated point, a bend too slight to see, and a segment
- * turning a full circle or more, where the sample pair no longer determines
- * one circle. Callers draw the chord instead.
+ * Returns null only where an arc is not a well-defined answer: a straight or
+ * nearly straight segment, a repeated point, and a segment turning a full
+ * circle or more, where the sample pair no longer determines one circle.
+ * Callers draw the chord instead.
+ *
+ * It used to return null for a fourth reason - a bend whose widest stand-off
+ * from its chord came to less than 0.35 device pixels, drawn as a straight
+ * line on the grounds that nobody could see the difference. That was true, and
+ * measured: across the hero and its three nulls the worst such error was
+ * 0.344px, and rendering with and without it moved 97% of the affected pixels
+ * by under 32/255 of a channel, with total ink differing by 0.2%.
+ *
+ * It was still removed, because the argument for it was about perception and
+ * the argument against it is about trust. The cull fired at different rates on
+ * the two panels - 46.6% of the real hero's segments against 67.2% of its
+ * permutation null's, since a sprawling surrogate is fitted smaller and so has
+ * smaller features - and a reader who learns that the null was drawn under a
+ * different rule than the sequence has every right to discount the comparison,
+ * whether or not the difference reaches their screen. This site asks people to
+ * trust a side-by-side. It should not be answering that question with a
+ * tolerance.
+ *
+ * It is not free. Measured as a controlled A/B - one loop, one dataset, the
+ * cull as the only variable, min of three - drawing every arc costs 35% more
+ * at 10,000 terms (449ms against 607ms) and 50% more at 2,000 (197ms against
+ * 294ms), on a 1200x700 panel at the hero's settings, where every segment was
+ * being culled. An earlier estimate of 20% came from a 500-term sample and was
+ * too low; a later measurement suggesting it was faster was drift between
+ * sessions rather than a result, which is why this one holds the two arms in
+ * the same run.
  */
-export function chordArc(a: Pt, b: Pt, worldTurn: number, deviceScale = 1): ScreenArc | null {
+export function chordArc(a: Pt, b: Pt, worldTurn: number): ScreenArc | null {
   const phi = -worldTurn;
   // Absolute, and deliberately not scaled: this one guards atan2 against a
   // centre thousands of units away, which is a numerical concern rather than
@@ -140,11 +139,6 @@ export function chordArc(a: Pt, b: Pt, worldTurn: number, deviceScale = 1): Scre
   const cx = (a.x + b.x) / 2 + nx * signed * Math.cos(half);
   const cy = (a.y + b.y) / 2 + ny * signed * Math.cos(half);
   const r = Math.abs(signed);
-  // Sagitta: the gap between the arc and its chord at their widest, in path
-  // units, scaled up to what the display will actually show.
-  const scale = Number.isFinite(deviceScale) && deviceScale > 0 ? deviceScale : 1;
-  if (r * (1 - Math.cos(half)) * scale < VISIBLE_PX) return null;
-
   const start = Math.atan2(a.y - cy, a.x - cx);
   return { cx, cy, r, start, end: start + phi, ccw: phi < 0 };
 }

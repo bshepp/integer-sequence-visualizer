@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { chordArc, deviceScaleOf, pathTransform, toScreen, type Pt } from '../../src/viz/pathTransform';
+import { chordArc, pathTransform, toScreen, type Pt } from '../../src/viz/pathTransform';
 import { polyarcPath, polyarcViz, segmentTurns, arcDegrees } from '../../src/viz/polyarc';
 import { turtleViz, strokePath } from '../../src/viz/turtle';
 import { SequenceView, type Sequence } from '../../src/sequence/sequence';
@@ -84,49 +84,22 @@ describe('chordArc', () => {
     expect(chordArc(a, b, NaN)).toBeNull();
   });
 
-  it('judges visibility in device pixels, so zooming in reveals the curve', () => {
-    // The magnification bug. A bend written off at 1x is not written off at
-    // 10x: the drawing is magnified but the decision to flatten it was not
-    // re-taken, so it showed as a flat facet in the middle of a curve. Stroke
-    // width is divided by the zoom to hold its on-screen thickness, so there
-    // was nothing to hide it either.
+  it('takes every bend it can name a circle for, however slight', () => {
+    // This used to decline any bend standing off its chord by under 0.35
+    // device pixels. It was right that nobody could see those, and it was
+    // dropped anyway: the cull fired at different rates on the real and null
+    // panels, and a comparison drawn under two different rules is not one a
+    // reader should have to take on trust. See chordArc's own note.
     const a = { x: 0, y: 0 }, b = { x: 100, y: 0 };
-    const faint = 0.012;
-    expect(chordArc(a, b, faint), 'should be flat at 1x').toBeNull();
-    expect(chordArc(a, b, faint, 10), 'should curve at 10x').not.toBeNull();
-    // And a retina display is a 2x transform before any zoom at all, which is
-    // why some of this was visible on those screens at 100%.
-    const arc = chordArc(a, b, 0.05, 2);
-    expect(arc).not.toBeNull();
-    expect(Math.hypot(b.x - arc!.cx, b.y - arc!.cy)).toBeCloseTo(arc!.r, 6);
-  });
-
-  it('falls back to a scale of 1 for a context that cannot report one', () => {
-    // jsdom has no getTransform; the test fake answers every call with
-    // undefined. Checking the result rather than the method's existence is the
-    // difference between a fallback and a crash.
-    const { ctx } = fakeCtx();
-    expect(deviceScaleOf(ctx)).toBe(1);
-    expect(deviceScaleOf({ getTransform: () => ({ a: 3, b: 0 }) } as never)).toBe(3);
-    expect(deviceScaleOf({ getTransform: () => ({ a: 0, b: 0 }) } as never)).toBe(1);
-  });
-
-  it('declines a bend nobody could see, and takes one they could', () => {
-    // The sagitta of a 100px chord grows with the turn. Half a pixel of stand-
-    // off is the whole difference between the two answers, so the boundary is
-    // pinned from both sides rather than asserted once.
-    const a = { x: 0, y: 0 }, b = { x: 100, y: 0 };
-    const sagitta = (turn: number) => {
+    for (const turn of [0.02, 0.002, 0.0002]) {
       const arc = chordArc(a, b, turn);
-      return arc ? arc.r * (1 - Math.cos(turn / 2)) : 0;
-    };
-    expect(chordArc(a, b, 0.02)).toBeNull();
-    expect(sagitta(0.02)).toBe(0);
-    const drawn = chordArc(a, b, 0.06);
-    expect(drawn).not.toBeNull();
-    expect(sagitta(0.06)).toBeGreaterThan(0.35);
-    // And it is still the right circle, not merely some circle.
-    expect(Math.hypot(b.x - drawn!.cx, b.y - drawn!.cy)).toBeCloseTo(drawn!.r, 6);
+      expect(arc, `turn ${turn} should still be an arc`).not.toBeNull();
+      // Still the right circle, not merely some circle.
+      expect(Math.hypot(b.x - arc!.cx, b.y - arc!.cy)).toBeCloseTo(arc!.r, 6);
+    }
+    // The one remaining threshold is numerical, not perceptual: below it the
+    // centre is so far away that atan2 stops being trustworthy.
+    expect(chordArc(a, b, 1e-5)).toBeNull();
   });
 });
 
@@ -140,16 +113,17 @@ describe('polyarc draws arcs, and only polyarc', () => {
     expect(arcs.every((c) => c.args.every((n) => typeof n === 'boolean' || Number.isFinite(n)))).toBe(true);
   });
 
-  it('keeps the straight line at the defaults, where no eye could tell', () => {
-    // At the default 30 degrees per term the arc stands off its chord by four
-    // hundredths of a pixel, and the circle it would need has its centre
-    // thousands of pixels off screen. Costs nothing either way - arcs and
-    // chords render in the same time - so this is about not asking the
-    // rasteriser to express a straight line as a fragment of a vast circle.
+  it('draws arcs at the defaults too, now that nothing is written off', () => {
+    // This used to assert the opposite. At the defaults each term bends 30 or
+    // 60 degrees, which over eight samples stands off its chord by about four
+    // hundredths of a pixel - invisible, and formerly drawn straight for that
+    // reason. It is drawn as the arc it is now, because "invisible" was a
+    // judgement about the reader's screen and this file is about what the
+    // renderer claims to have drawn.
     const { ctx, callLog } = fakeCtx();
     polyarcViz.render(seq, defaultParams(polyarcViz.params), ctx, SIZE);
-    expect(callLog.some((c) => c.name === 'lineTo')).toBe(true);
-    expect(callLog.some((c) => c.name === 'arc')).toBe(false);
+    expect(callLog.some((c) => c.name === 'arc')).toBe(true);
+    expect(callLog.some((c) => c.name === 'lineTo')).toBe(false);
   });
 
   it('starts each segment at the sample it is drawn from', () => {
