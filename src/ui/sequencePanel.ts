@@ -228,7 +228,7 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
   const bfileBtn = document.createElement('button');
   bfileBtn.className = 'bfile-button';
   bfileBtn.type = 'button';
-  // Text is set by syncCapLabel once the cap controls exist: the button used
+  // Text is set by syncCapUi once the cap controls exist: the button used
   // to promise "all terms" while a box directly beneath it capped the fetch,
   // so the one number that decided what you got was the one thing the action
   // did not mention.
@@ -297,8 +297,29 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
   // The button names the number it will fetch, which is the whole of what the
   // cap controls do. Before this the count lived only in a box below the
   // button, so the action read as unbounded and the bound read as trivia.
-  const syncCapLabel = (): void => {
-    bfileBtn.textContent = `Load up to ${capValue().toLocaleString()} terms (b-file)`;
+  /** Where a term count sits along the slider, as a percentage of its travel. */
+  const trackPct = (n: number): number =>
+    Math.max(0, Math.min(100, capToSlider(Math.max(CAP_MIN, n)) / 10));
+
+  const syncCapUi = (): void => {
+    const n = capValue();
+    const band = costBand(n);
+    bfileBtn.textContent = `Load up to ${n.toLocaleString()} terms (b-file)`;
+    bfileBtn.classList.toggle('bfile-button--caution', band === 'caution');
+    bfileBtn.classList.toggle('bfile-button--hot', band === 'hot');
+
+    bfileCost.hidden = band === 'ok';
+    bfileCost.classList.toggle('bfile-cost--hot', band === 'hot');
+    bfileCost.textContent = band === 'hot'
+      ? 'At this size every redraw takes seconds and the page stops responding while it draws. The curve views are the expensive ones - they draw an arc per sample, and a sharply bending term needs dozens.'
+      : 'Past a couple of thousand terms the curve views redraw slowly, because each one draws an arc per sample rather than a straight line.';
+
+    // Recomputed rather than fixed in CSS: the thresholds sit at fixed term
+    // counts, but the slider is log-scaled against a ceiling that drops once a
+    // b-file's true length is known, so their positions move with it.
+    const a = trackPct(TERMS_CAUTION), b = trackPct(TERMS_HOT);
+    bfileSlider.style.background =
+      `linear-gradient(to right, var(--accent) 0 ${a}%, #d8a657 ${a}% ${b}%, #e06c75 ${b}% 100%)`;
   };
 
   const showPending = (): void => {
@@ -312,11 +333,48 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     if (from !== 'box') bfileCap.value = String(clamped);
     if (from !== 'slider') bfileSlider.value = String(capToSlider(Math.max(CAP_MIN, clamped)));
     capDirty = true;
-    syncCapLabel();
+    syncCapUi();
     showPending();
   };
   bfileSlider.addEventListener('input', () => setCap(sliderToCap(Number(bfileSlider.value)), 'slider'));
   bfileCap.addEventListener('input', () => setCap(Number(bfileCap.value), 'box'));
+
+  /**
+   * Where fetching more terms stops being free, in terms.
+   *
+   * Measured in Chrome on this machine, drawing the real loop - one
+   * beginPath/stroke per segment, because each segment carries its own colour
+   * from the hue ramp and so cannot be batched into a single path:
+   *
+   *     segments     arcs      straight lines
+   *      100,000     1.17s     0.16s
+   *      360,000     4.26s     0.57s
+   *      720,000     8.46s     1.14s
+   *
+   * Linear, at about 11.7us per arc segment against 1.6us per line - arcs cost
+   * seven times what lines do. The worst realistic case is a polyarc at high
+   * angles, which needs 36 samples a term to stay smooth, drawn in two panels:
+   * 72 segments per term. That puts 10,000 terms - the default cap - at eight
+   * and a half seconds a frame, which is what a b-file load on the hero view
+   * actually does, and 100,000 at over a minute.
+   *
+   * The bands are stated in terms rather than segments because this panel does
+   * not know which visualizer is loaded, and cannot: the sample count is a
+   * property of the view and its parameters. So these are worst-case
+   * thresholds, and the copy says the cost depends on the view rather than
+   * promising a number it cannot know.
+   */
+  const TERMS_CAUTION = 2_000, TERMS_HOT = 20_000;
+  type CostBand = 'ok' | 'caution' | 'hot';
+  const costBand = (n: number): CostBand =>
+    n >= TERMS_HOT ? 'hot' : n >= TERMS_CAUTION ? 'caution' : 'ok';
+
+  const bfileCost = document.createElement('p');
+  bfileCost.className = 'bfile-cost';
+  bfileCost.hidden = true;
+  // Not a live region: it changes on every slider tick, and announcing each
+  // one would bury the control the user is actually operating. The button's
+  // own label carries the number, and that is what focus lands on.
 
   const bfileHint = document.createElement('p');
   bfileHint.className = 'bfile-hint';
@@ -375,7 +433,7 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     bfileCap.value = String(clamped);
     bfileCap.max = String(capCeiling);
     bfileSlider.value = String(capToSlider(Math.max(CAP_MIN, clamped)));
-    syncCapLabel();
+    syncCapUi();
   }
 
   function syncBfile(): void {
@@ -391,12 +449,13 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     labelledControl('Maximum terms to fetch', bfileCap),
     labelledControl('Maximum terms to fetch (slider)', bfileSlider, { visible: false }),
     bfilePending,
+    bfileCost,
     bfileHint,
   );
   el.appendChild(bfileBox);
   // Before any interaction, so the button arrives already naming its number
   // rather than acquiring one the first time the slider is touched.
-  syncCapLabel();
+  syncCapUi();
   syncBfile();
 
   // info card

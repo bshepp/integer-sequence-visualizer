@@ -60,6 +60,64 @@ describe('the b-file button says how many terms it will fetch', () => {
   });
 });
 
+describe('the cost of a large fetch is visible before it is paid', () => {
+  // Thresholds are worst-case and measured: a polyarc needing 36 samples a
+  // term, drawn in two panels, is 72 arc segments a term at ~11.7us each, so
+  // 10,000 terms is about eight and a half seconds a frame. The panel cannot
+  // know which visualizer is loaded, so these are stated in terms.
+  const setCap = (el: Element, n: number) => {
+    const cap = q<HTMLInputElement>(el, '.bfile-cap');
+    cap.value = String(n);
+    cap.dispatchEvent(new Event('input'));
+  };
+  const btn = (el: Element) => q<HTMLButtonElement>(el, '.bfile-button');
+  const cost = (el: Element) => q<HTMLParagraphElement>(el, '.bfile-cost');
+
+  it('says nothing at a size that draws instantly', () => {
+    const { el } = panelWithInfo();
+    setCap(el, 500);
+    expect(cost(el).hidden).toBe(true);
+    expect(btn(el).className).not.toMatch(/caution|hot/);
+  });
+
+  it('warns, and recolours the button, once redraws get slow', () => {
+    const { el } = panelWithInfo();
+    setCap(el, 5000);
+    expect(cost(el).hidden).toBe(false);
+    expect(cost(el).textContent).toMatch(/redraw slowly/i);
+    expect(btn(el).classList.contains('bfile-button--caution')).toBe(true);
+    expect(btn(el).classList.contains('bfile-button--hot')).toBe(false);
+  });
+
+  it('escalates when the page will stop responding', () => {
+    const { el } = panelWithInfo();
+    setCap(el, 50000);
+    expect(btn(el).classList.contains('bfile-button--hot')).toBe(true);
+    expect(btn(el).classList.contains('bfile-button--caution')).toBe(false);
+    expect(cost(el).textContent).toMatch(/stops responding/i);
+    expect(cost(el).classList.contains('bfile-cost--hot')).toBe(true);
+  });
+
+  it('clears the warning again on the way back down', () => {
+    // toggle(), not add(): a one-way escalation would leave a red button
+    // sitting over a 200-term fetch.
+    const { el } = panelWithInfo();
+    setCap(el, 50000);
+    setCap(el, 200);
+    expect(btn(el).className).not.toMatch(/caution|hot/);
+    expect(cost(el).hidden).toBe(true);
+  });
+
+  it('paints the slider as a cost ramp, with the stops in ascending order', () => {
+    const { el } = panelWithInfo();
+    const bg = q<HTMLInputElement>(el, '.bfile-slider').style.background;
+    const stops = [...bg.matchAll(/([\d.]+)%/g)].map((m) => Number(m[1]));
+    expect(stops.length, `no gradient stops in "${bg}"`).toBeGreaterThan(0);
+    expect(stops).toEqual([...stops].sort((a, b) => a - b));
+    expect(stops[stops.length - 1]).toBe(100);
+  });
+});
+
 describe('the terms display says whether that is all of them', () => {
   it('a complete fetch stops the control offering more than exists', async () => {
     // The A000040 case generalised: the fetch came back under its own cap, so

@@ -310,8 +310,40 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 }
 .busy[hidden] { display: none; }
 .bfile-hint { margin: 6px 0 0; font-size: 11px; line-height: 1.4; color: var(--accent); }
-.bfile-slider { width: 100%; margin: 2px 0 0; }
+/* appearance:none so the inline gradient shows as the track. The gradient is
+   set from JS because its stops sit at fixed term counts on a log scale whose
+   ceiling moves. It reads as what it is: cheap on the left, expensive on the
+   right. */
+.bfile-slider {
+  width: 100%; margin: 6px 0 0; height: 6px; border-radius: 3px;
+  -webkit-appearance: none; appearance: none; cursor: pointer;
+}
+.bfile-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--text); border: 2px solid var(--panel); cursor: pointer;
+}
+.bfile-slider::-moz-range-thumb {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--text); border: 2px solid var(--panel); cursor: pointer;
+}
+/* Firefox paints its own track over the input's background unless told not to. */
+.bfile-slider::-moz-range-track { background: transparent; }
 .bfile-slider:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* The button carries the cost too, so the warning is on the control you are
+   about to press rather than only in prose beneath it. Dark text on both,
+   because amber and red at these values are light. */
+.bfile-button--caution { background: #d8a657; border-color: #d8a657; color: #1a1c20; }
+.bfile-button--hot { background: #e06c75; border-color: #e06c75; color: #1a1c20; }
+:root[data-theme="light"] .bfile-button--caution { background: #b07600; border-color: #b07600; color: #ffffff; }
+:root[data-theme="light"] .bfile-button--hot { background: #c0392b; border-color: #c0392b; color: #ffffff; }
+
+.bfile-cost { margin: 6px 0 0; font-size: 11px; line-height: 1.4; color: #d8a657; }
+.bfile-cost--hot { color: #e06c75; }
+.bfile-cost[hidden] { display: none; }
+:root[data-theme="light"] .bfile-cost { color: #8a5a00; }
+:root[data-theme="light"] .bfile-cost--hot { color: #a3281b; }
 /* Amber, not the accent: this is an unfinished action rather than a piece of
    advice, and it sits directly above .bfile-hint which is already accent. */
 .bfile-pending { margin: 4px 0 0; font-size: 11px; line-height: 1.4; color: #d8a657; }
