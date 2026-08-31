@@ -1550,7 +1550,20 @@ export function mountApp(root: HTMLElement): void {
     dismissOverlay(false);
     const hash = '#' + encodeState(entry.state);
     lastHashWritten = hash;
-    try { history.replaceState(null, '', hash); } catch { /* sandboxed */ }
+    // pushState, not replaceState. goTo() reaches the landing and the About
+    // page by assigning location.hash, which pushes a history entry; this
+    // replaced that entry, so leaving either page destroyed the only record
+    // that the visitor had been there. Reported as: engine, then Worked
+    // examples, then click an example, then Back - and Back went to the
+    // previous *drawing*, skipping the gallery entirely, because the gallery's
+    // entry had been overwritten by this one.
+    //
+    // Every route out of the landing and the About page funnels through here -
+    // onPick, "Open the full engine", and About's "Open the engine" - so this
+    // is the whole fix. syncUrl() keeps using replaceState, correctly: a
+    // parameter tweak is not a place you should be able to go Back to, and it
+    // bails while an overlay is up, so it cannot overwrite this entry either.
+    try { history.pushState(null, '', hash); } catch { /* sandboxed */ }
     applyHash(hash, entry.sequence);
   }
 
