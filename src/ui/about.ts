@@ -102,11 +102,7 @@ function questionOpening(): HTMLParagraphElement {
     ' on the SeqFan mailing list. It is an app that draws OEIS sequences as '
     + 'polyarc curves. He asked whether such visualizations tell us, at a '
     + 'glance, anything useful or significant about the structure and character '
-    + 'of the underlying sequences. Twelve days later Neil Sloane asked the '
-    + 'sharper version of it on the same thread - what do the pictures tell you '
-    + 'about a sequence, and what exactly are they good for? Two people offered '
-    + 'partial answers and the thread moved on to more pictures. This site is an '
-    + 'attempt at a fuller one.',
+    + 'of the underlying sequences. This site is an attempt to answer him.',
   );
   return p;
 }
@@ -183,6 +179,12 @@ export function buildAbout(opts: AboutOptions): HTMLElement {
     section('The question', 'about-question'),
     questionOpening(),
     PARA('The difficulty is that a drawing of a sequence is also a drawing of the drawing method. A square spiral imposes a spiral; a cumulative walk imposes drift. The pattern on the screen is real either way, and staring harder will not tell you whether it belongs to these numbers or to any numbers put through the same machinery.'),
+    // Kept out of the opening deliberately. George asked the question and it is
+    // his thread; putting the chairman of the OEIS in the first paragraph gives
+    // the page a borrowed authority it has not earned, and reads as leaning on
+    // a name. It belongs here, where it is doing work: evidence that the
+    // question is worth asking, from someone who would know.
+    PARA('The question did not go away. Twelve days later, on the same thread, Neil Sloane put it more sharply: what do the pictures tell you about a sequence, and what exactly are they good for? Two people offered partial answers and the discussion moved on to more pictures. That sharper version is what this site is built against - not whether the drawings are striking, which nobody disputes, but what can actually be read off one.'),
 
     section('The method', 'about-method'),
     PARA('Every rendering here can be placed beside a null model of itself: the same terms in a random order, the same steps between terms reordered, or fresh numbers matched to the same trend and spread. If the same pattern is still there once the numbers underneath have been scrambled, the technique drew it rather than the sequence.'),
