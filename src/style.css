@@ -216,7 +216,22 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .landing-hero { margin: 8px 0 0; display: flex; flex-direction: column; gap: 8px; align-items: center; max-width: 100%; }
 .landing-hero canvas { max-width: 100%; border-radius: 5px; display: block; }
 .landing-hero-caption { color: var(--text); font-size: 14px; text-align: center; max-width: 62ch; }
-.landing-hero-body { margin: 0; max-width: 62ch; text-align: center; color: var(--muted); font-size: 13px; }
+/* Left-aligned, and that is the substantive fix rather than the width. This is
+   1,900 characters - twenty-seven lines at this measure - and centred text stops
+   being readable at about three, because the ragged left edge makes the eye hunt
+   for every line start. The lede above was cut from eight lines to six for that
+   exact reason while this sat underneath it at four times the length.
+
+   70ch rather than matching the 760px image: the image is the showpiece and the
+   prose is prose, and past about 75 characters a line the eye starts losing its
+   place on the return sweep. The column stays narrower than the picture on
+   purpose. 14px in full contrast because this is body text, not a caption - it
+   was 13px muted, which styled the most substantial writing on the page as a
+   footnote to the picture above it. */
+.landing-hero-body {
+  margin: 0; max-width: 70ch; text-align: left;
+  color: var(--text); font-size: 14px; line-height: 1.55;
+}
 /* Redraw-the-hero controls. Sized down from the primary actions below them:
    this is a thing to try, not the way into the site. */
 .hero-counts { display: flex; align-items: center; gap: var(--gap-within); flex-wrap: wrap; justify-content: center; }

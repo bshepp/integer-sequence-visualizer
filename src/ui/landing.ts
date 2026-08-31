@@ -411,7 +411,14 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   const feedback = buildFeedbackLink('landing-feedback');
 
   el.append(
-    h1, lede, credit, heroFigure, heroBody, actions,
+    // Actions sit directly under the figure and above the write-up. They used
+    // to follow it, which put the way into the site behind thirty-two lines of
+    // prose - most visitors would never have reached them. Above the image was
+    // the other option and is worse: the picture is what earns the click, and
+    // the image is itself a button into the engine, so there is already a call
+    // to action above the fold. What was needed was not to bury the buttons,
+    // not to promote them.
+    h1, lede, credit, heroFigure, actions, heroBody,
     stripLabel, strip,
     threadLabel, threadNote, threadStrip,
     attribution, feedback,
