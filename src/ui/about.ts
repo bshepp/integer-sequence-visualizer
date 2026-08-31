@@ -223,7 +223,7 @@ export function buildAbout(opts: AboutOptions): HTMLElement {
 
   body.append(
     section('Credit', 'about-credit'),
-    PARA('The SeqFan thread that started this is archived in the repository. From it: George Whale built NCurve and asked the question. Bill McEachen went looking through the sequences, named eight of them (French curve, pie crust, propeller, tire, saw blade, record disc, zipper, Slinky) and highlighted A019488, a sequence of Neil Sloane\'s; all eleven are preset in the sidebar, under his names where he gave them. Jean-Paul Allouche supplied the 1980s references above.'),
+    PARA('The SeqFan thread that started this is archived in the repository. From it: George Whale built NCurve and asked the question. Bill McEachen went looking through the sequences, named eight of them (French curve, pie crust, propeller, tire, saw blade, record disc, zipper, Slinky) and highlighted A019488, a sequence of Neil Sloane\'s; all eleven are preset in the sidebar, under his names where he gave them. He also mentioned, of his own images, that he had iterated no parameters - said in passing, about his own work, when nobody had asked and nobody would otherwise have known. That volunteered limitation is what the parameter sweep in this app was built to answer, and it is the most useful sentence anyone contributed to the thread. Jean-Paul Allouche supplied the 1980s references above, and Ed Pegg identified the 1995 curlicue fractals of Clifford Pickover as the precedent for a construction the thread had been discussing as new.'),
     PARA('Nothing here is claimed on their behalf, and none of them has endorsed this site. They are credited because the work descends from theirs.'),
   );
 
