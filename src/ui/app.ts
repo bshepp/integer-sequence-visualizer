@@ -349,14 +349,51 @@ export function mountApp(root: HTMLElement): void {
       b.setAttribute('aria-expanded', String(explain.isOpen() && b.dataset.info === explainSource));
     }
   };
-  const toggleExplain = (key: string, title: string, body: string): void => {
+  /**
+   * What each (i) says, computed when it is displayed rather than when it was
+   * pressed.
+   *
+   * It used to be passed in as a string at click time, so an open panel went on
+   * describing the state it had opened in: change the surrogate and it still
+   * read "Currently showing the permutation surrogate"; change the visualizer
+   * and it stayed titled "Turtle walk". A caption describing the wrong thing,
+   * in the panel whose whole job is to explain what is on screen.
+   */
+  const explainContent = (key: string): { title: string; body: string } | null => {
+    if (key === 'viz') {
+      const viz = getVisualizer(state.vizId);
+      return { title: viz.name, body: viz.explain.long };
+    }
+    if (key === 'null') {
+      return {
+        title: 'Null model',
+        body: [
+          'Any drawing of a sequence is also a drawing of the drawing method. A null model is the control: the same sequence with one thing deliberately destroyed. If a feature is still there afterwards, it did not depend on the thing that was destroyed; if it goes, it did.',
+          `Currently showing the ${comparison.surrogate} surrogate. ${SURROGATE_EXPLAIN[comparison.surrogate].long}`,
+          'One surrogate is one sample, and a single draw can mislead in either direction. Reshuffle draws another for a second opinion. Sweep runs a few hundred and reports where the real sequence falls against the whole spread, which is the number worth quoting.',
+        ].join('\n\n'),
+      };
+    }
+    return null;
+  };
+
+  const toggleExplain = (key: string): void => {
     if (explain.isOpen() && explainSource === key) {
       explain.hide();
       return;
     }
-    explain.show(title, body);
+    const content = explainContent(key);
+    if (!content) return;
+    explain.show(content.title, content.body);
     explainSource = key;
     syncInfoButtons();
+  };
+
+  /** Keeps an open panel describing now, not the moment it was opened. */
+  const refreshExplain = (): void => {
+    if (!explain.isOpen() || explainSource === null) return;
+    const content = explainContent(explainSource);
+    if (content) explain.update(content.title, content.body);
   };
 
   const explain = buildExplainPanel(() => { explainSource = null; syncInfoButtons(); });
@@ -374,7 +411,8 @@ export function mountApp(root: HTMLElement): void {
     // The null model half of this moved to its own (i) in the comparison bar,
     // beside the controls it actually describes. It was two bars away from
     // every one of them here.
-    toggleExplain('viz', viz.name, viz.explain.long);
+    void viz;
+    toggleExplain('viz');
   });
   topbar.appendChild(explainBtn);
   // Style sits between the (i) button and the visualizer's own parameters:
@@ -1081,13 +1119,7 @@ export function mountApp(root: HTMLElement): void {
   nullInfoBtn.setAttribute('aria-expanded', 'false');
   nullInfoBtn.setAttribute('aria-controls', `${uid}-explain`);
   infoButtons.push(nullInfoBtn);
-  nullInfoBtn.addEventListener('click', () => {
-    toggleExplain('null', 'Null model', [
-      'Any drawing of a sequence is also a drawing of the drawing method. A null model is the control: the same sequence with one thing deliberately destroyed. If a feature survives the destruction, it did not depend on what was destroyed.',
-      `Currently showing the ${comparison.surrogate} surrogate. ${SURROGATE_EXPLAIN[comparison.surrogate].long}`,
-      'One surrogate is one sample, and a single draw can mislead in either direction. Reshuffle draws another for a second opinion. Sweep runs a few hundred and reports where the real sequence falls against the whole spread, which is the number worth quoting.',
-    ].join('\n\n'));
-  });
+  nullInfoBtn.addEventListener('click', () => toggleExplain('null'));
   bar.el.querySelector('.null-toggle')!.after(nullInfoBtn);
   // Moves rather than copies: linkBtn is already in the bar by this point.
   nullInfoBtn.after(linkBtn);
@@ -1166,6 +1198,7 @@ export function mountApp(root: HTMLElement): void {
   }
 
   function syncPanelChrome(): void {
+    refreshExplain();
     canvasWrap.classList.toggle('canvas-wrap--side', comparison.mode === 'side');
     syncPinned();
   }

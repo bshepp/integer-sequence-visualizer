@@ -78,10 +78,15 @@ describe('"survives" means one thing on this site', () => {
   // highestSurviving() - and the one the surrogate literature uses, so the
   // first had to go. Anyone learning it from a visualizer's info popover read
   // "Survives all three nulls" on the gallery as exactly its opposite.
+  // Widened after the first version missed one. It banned "survives the
+  // shuffle" and "survives the scrambling" but not "survives the destruction",
+  // which is what the null-model info panel said - the one place on the site
+  // whose job is to define the term, teaching the losing sense of it. Matching
+  // the verb against the thing being destroyed, rather than against a fixed
+  // list of two nouns, is what should have been written first.
   const BANNED = [
-    /survives?\s+(the\s+)?shuffl/i,
-    /survives?\s+(the\s+)?scrambl/i,
-    /pattern\s+survives?/i,
+    /survives?\s+(the\s+)?(shuffl|scrambl|destruct|permut|reorder)/i,
+    /(pattern|feature|structure)\s+survives?/i,
     /survives?\s+having/i,
   ];
 

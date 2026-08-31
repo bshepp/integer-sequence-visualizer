@@ -264,6 +264,57 @@ describe('mountApp', () => {
     expect(label?.title).toMatch(/statistics and sweeps keep working/i);
   });
 
+  it('an open explanation describes now, not the moment it was opened', () => {
+    // The panel took its text as a string at click time, so it went on
+    // describing the state it had opened in: change the surrogate and it still
+    // read "Currently showing the permutation surrogate"; change the view and
+    // it stayed titled by the old one. A caption describing the wrong thing, in
+    // the panel whose whole job is to say what is on screen.
+    const root = document.createElement('div');
+    mountApp(root);
+    const info = [...root.querySelectorAll<HTMLButtonElement>('.explain-button')];
+    const nullBtn = info.find((b) => b.dataset.info === 'null')!;
+    const vizBtn = info.find((b) => b.dataset.info === 'viz')!;
+    const body = () => root.querySelector('.explain-body')!.textContent ?? '';
+    const title = () => root.querySelector('.explain-title')!.textContent ?? '';
+
+    nullBtn.click();
+    expect(body()).toContain('permutation surrogate');
+
+    const select = [...root.querySelectorAll<HTMLSelectElement>('.comparison-bar select')]
+      .find((el) => [...el.options].some((o) => o.value === 'difference'))!;
+    select.value = 'difference';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(body(), 'the panel still names the old surrogate').toContain('difference surrogate');
+    expect(body()).not.toContain('permutation surrogate');
+
+    vizBtn.click();
+    const before = title();
+    const picker = root.querySelector<HTMLSelectElement>('.viz-picker')!;
+    picker.value = picker.value === 'histogram' ? 'scatter' : 'histogram';
+    picker.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(title(), 'the panel still carries the old view name').not.toBe(before);
+  });
+
+  it('only the (i) whose explanation is showing reports itself expanded', () => {
+    const root = document.createElement('div');
+    mountApp(root);
+    const info = [...root.querySelectorAll<HTMLButtonElement>('.explain-button')];
+    const expanded = () => info.filter((b) => b.getAttribute('aria-expanded') === 'true');
+    expect(expanded()).toHaveLength(0);
+
+    info.find((b) => b.dataset.info === 'null')!.click();
+    expect(expanded().map((b) => b.dataset.info)).toEqual(['null']);
+
+    // Switching sources swaps the claim rather than leaving two open.
+    info.find((b) => b.dataset.info === 'viz')!.click();
+    expect(expanded().map((b) => b.dataset.info)).toEqual(['viz']);
+
+    // Pressing the showing one closes it.
+    info.find((b) => b.dataset.info === 'viz')!.click();
+    expect(expanded()).toHaveLength(0);
+  });
+
   it('renders a persistent attribution footer crediting OEIS under CC BY-SA 4.0', () => {
     const root = document.createElement('div');
     mountApp(root);
