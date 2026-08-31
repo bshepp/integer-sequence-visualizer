@@ -87,7 +87,19 @@ const TWO_PI = 2 * Math.PI;
  * the scale from the canvas transform, which carries the zoom and the device
  * pixel ratio together, so the test asks what the reader will actually see.
  */
-const VISIBLE_PX = 0.35;
+/**
+ * Exported because it is now a claim the site makes, not just a tuning knob.
+ *
+ * Every arc this culls to a straight chord is guaranteed to deviate from the
+ * true curve by less than this many device pixels, which is what lets the real
+ * and null panels be compared at all: they are fitted to their own bounding
+ * boxes at different scales, so a sprawling surrogate has more of its arcs fall
+ * under the threshold than a compact real sequence does. Measured at the hero's
+ * settings, 46.6% of the real panel's segments are culled against 67.2% of its
+ * permutation null's. That asymmetry is harmless only for as long as the bound
+ * holds, so tests/viz/cullBound.test.ts checks it rather than trusting it.
+ */
+export const VISIBLE_PX = 0.35;
 
 /**
  * The circular arc joining two drawn points, given how far the path turns
