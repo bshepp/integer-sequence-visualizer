@@ -7,6 +7,7 @@ import { surrogateSequence } from './comparison';
 import { canvasTheme, withCanvas } from '../viz/theme';
 import { buildFeedbackLink } from './feedbackLink';
 import { NCURVE_URL } from './links';
+import { primes } from '../examples/sequences';
 
 /** Reserved literal hashes, checked before decodeState so they cannot collide. */
 export const EXAMPLES_HASH = 'examples';
@@ -156,6 +157,35 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
 
   const hero = heroEntry();
 
+  /**
+   * Term counts the hero can be redrawn at, from the landing page itself.
+   *
+   * The engine doing its job in one click, rather than something you have to
+   * navigate to another page and operate controls to see. The counts are also
+   * the honest answer to "wouldn't more terms be better": they would not, and
+   * this is the cheapest possible way to find that out. A longer walk has a
+   * bigger bounding box, so the drawing is fitted smaller to fit the frame and
+   * every coil shrinks - 10,000 primes carry less visible detail than 58, not
+   * more.
+   *
+   * Generated rather than bundled: primes(10000) runs in 5ms and ends at
+   * 104,729, exactly where the OEIS b-file ends, so this is the same data
+   * rather than a stand-in. Bundling it would have cost about 60KB.
+   */
+  const HERO_COUNTS = [hero.sequence.terms.length, 500, 2000, 10000];
+  const heroCache = new Map<number, ExampleEntry>();
+  const heroAt = (n: number): ExampleEntry => {
+    let e = heroCache.get(n);
+    if (!e) {
+      e = n === hero.sequence.terms.length
+        ? hero
+        : { ...hero, sequence: { ...hero.sequence, terms: primes(n) } };
+      heroCache.set(n, e);
+    }
+    return e;
+  };
+  let shownCount = HERO_COUNTS[0]!;
+
   const h1 = document.createElement('h1');
   h1.className = 'landing-title';
   h1.textContent = HEADLINE;
@@ -202,7 +232,10 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   heroButton.className = 'landing-hero-button';
   heroButton.type = 'button';
   heroButton.setAttribute('aria-label', `Open ${hero.title} in the engine`);
-  heroButton.addEventListener('click', () => opts.onPick(hero));
+  // openEntry() takes the entry's own sequence, so this opens the engine at the
+  // count currently displayed. Handing it the 58-term hero while a 10,000-term
+  // drawing was on screen would be the exact mismatch this site keeps hunting.
+  heroButton.addEventListener('click', () => opts.onPick(heroAt(shownCount)));
   const heroCanvas = document.createElement('canvas');
   heroCanvas.setAttribute('role', 'img');
   heroCanvas.setAttribute('aria-label', `${hero.title}. ${hero.caption}`);
@@ -213,7 +246,74 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   verdictTag.className = `verdict verdict--${hero.verdict}`;
   verdictTag.textContent = VERDICT_LABEL[hero.verdict];
   heroCaption.append(verdictTag, document.createTextNode(` ${hero.caption}`));
-  heroFigure.append(heroButton, heroCaption);
+
+  // Redraws the hero in place. The whole engine runs on this page already -
+  // the hero is a live render, not a screenshot - so letting a visitor change
+  // one input and watch it redraw costs nothing and is the shortest possible
+  // demonstration that the thing works.
+  const countRow = document.createElement('div');
+  countRow.className = 'hero-counts';
+  countRow.setAttribute('role', 'group');
+  countRow.setAttribute('aria-label', 'Redraw the hero with this many primes');
+  const countLabel = document.createElement('span');
+  countLabel.className = 'hero-counts-label';
+  countLabel.textContent = 'Draw it with';
+  countRow.appendChild(countLabel);
+
+  const heroNote = document.createElement('p');
+  heroNote.className = 'hero-note';
+  heroNote.setAttribute('role', 'status');
+
+  const countButtons: HTMLButtonElement[] = HERO_COUNTS.map((n) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'hero-count';
+    b.textContent = n.toLocaleString();
+    b.setAttribute('aria-label', `${n.toLocaleString()} primes`);
+    b.addEventListener('click', () => showCount(n));
+    countRow.appendChild(b);
+    return b;
+  });
+  const countUnit = document.createElement('span');
+  countUnit.className = 'hero-counts-label';
+  countUnit.textContent = 'primes';
+  countRow.appendChild(countUnit);
+
+  function paintCount(n: number): void {
+    const t0 = performance.now();
+    paintEntry(heroAt(n), heroCanvas, 760, 340);
+    const ms = Math.round(performance.now() - t0);
+    heroNote.textContent = n === HERO_COUNTS[0]
+      ? `${n.toLocaleString()} primes - all the OEIS publishes inline - drawn in ${ms} ms.`
+      // Names the count the prose below is about. That prose opens "This is 58
+      // primes" and carries measurements taken at 58, so leaving it unqualified
+      // under a 10,000-term drawing would be a caption describing the wrong
+      // picture - the exact fault this site spends its time pointing out.
+      : `${n.toLocaleString()} primes, drawn in ${ms} ms. More terms is a longer walk, `
+        + 'so the drawing is fitted smaller to fit the frame and every coil shrinks. '
+        + `Detail goes down, not up. The write-up below is about the ${HERO_COUNTS[0]!.toLocaleString()}-term drawing.`;
+  }
+
+  function showCount(n: number): void {
+    shownCount = n;
+    countButtons.forEach((b, i) => {
+      const on = HERO_COUNTS[i] === n;
+      b.classList.toggle('hero-count--on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    heroButton.setAttribute('aria-label',
+      `Open ${hero.title}, ${n.toLocaleString()} terms, in the engine`);
+    heroCanvas.setAttribute('aria-label',
+      `${hero.title}, ${n.toLocaleString()} terms. ${hero.caption}`);
+    if (n < 2000) { paintCount(n); return; }
+    // The big ones block the main thread for around a second. Two frames: one
+    // to show the pressed button and the notice, one to start the render -
+    // otherwise the page freezes with no sign it heard the click.
+    heroNote.textContent = `Drawing ${n.toLocaleString()} primes...`;
+    requestAnimationFrame(() => requestAnimationFrame(() => paintCount(n)));
+  }
+
+  heroFigure.append(heroButton, heroCaption, countRow, heroNote);
 
   const heroBody = document.createElement('p');
   heroBody.className = 'landing-hero-body';
@@ -316,6 +416,6 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
     threadLabel, threadNote, threadStrip,
     attribution, feedback,
   );
-  requestAnimationFrame(() => paintEntry(hero, heroCanvas, 760, 340));
+  requestAnimationFrame(() => showCount(HERO_COUNTS[0]!));
   return el;
 }

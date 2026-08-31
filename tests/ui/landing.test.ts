@@ -161,3 +161,54 @@ describe('about page', () => {
     }
   });
 });
+
+describe('redrawing the hero from the landing page', () => {
+  const mk = (onPick = vi.fn()) => {
+    const el = buildLanding({ onOpen() {}, onPick, onAbout() {} });
+    return { el, onPick, counts: [...el.querySelectorAll<HTMLButtonElement>('.hero-count')] };
+  };
+
+  it('offers the four term counts, with the hero\'s own count first', () => {
+    const { counts } = mk();
+    expect(counts.map((b) => b.textContent)).toEqual(['58', '500', '2,000', '10,000']);
+  });
+
+  it('marks exactly one count as current', () => {
+    const { counts } = mk();
+    counts[1]!.click();
+    const pressed = counts.filter((b) => b.getAttribute('aria-pressed') === 'true');
+    expect(pressed).toHaveLength(1);
+    expect(pressed[0]!.textContent).toBe('500');
+  });
+
+  it('opens the engine at the count on screen, not at the hero default', () => {
+    // The mismatch this control could so easily have introduced: a visitor
+    // clicking a 500-term drawing and being handed the 58-term view. openEntry
+    // takes the entry's own sequence, so the fix is to hand it the entry that
+    // was actually drawn.
+    const { el, onPick, counts } = mk();
+    counts[1]!.click();
+    el.querySelector<HTMLButtonElement>('.landing-hero-button')!.click();
+    expect(onPick).toHaveBeenCalledTimes(1);
+    const entry = onPick.mock.calls[0]![0] as { sequence: { terms: bigint[]; aNumber?: string } };
+    expect(entry.sequence.terms).toHaveLength(500);
+    expect(entry.sequence.aNumber).toBe('A000040');
+    // Real primes, not padding: the 500th is 3571.
+    expect(entry.sequence.terms[499]).toBe(3571n);
+  });
+
+  it('still opens the default view when nothing has been changed', () => {
+    const { el, onPick } = mk();
+    el.querySelector<HTMLButtonElement>('.landing-hero-button')!.click();
+    expect((onPick.mock.calls[0]![0] as { sequence: { terms: bigint[] } }).sequence.terms)
+      .toHaveLength(58);
+  });
+
+  it('says what changed, and does not promise more detail for more terms', () => {
+    const { el, counts } = mk();
+    const note = () => el.querySelector('.hero-note')!.textContent ?? '';
+    counts[1]!.click();
+    expect(note()).toMatch(/500 primes/);
+    expect(note(), 'the lesson is the point of the control').toMatch(/detail goes down, not up/i);
+  });
+});
