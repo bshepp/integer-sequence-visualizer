@@ -4,6 +4,8 @@ import { sequenceFromPaste } from '../sequence/pasteParser';
 import { sequenceFromFormula, validateFormula } from '../sequence/formula';
 import { PRESETS } from '../sequence/presets';
 import { labelledControl } from './a11y';
+import type { Params } from '../viz/types';
+import { estimateFrameMs, bandFor, costMessage, type CostBand } from '../viz/renderCost';
 
 interface Handlers {
   onSequence(seq: Sequence): void;
@@ -17,7 +19,12 @@ interface Handlers {
 // on. Cheap to make correct; expensive to debug later.
 let panelSeq = 0;
 
-export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setInfo(seq: Sequence): void } {
+export function buildSequencePanel(handlers: Handlers): {
+  el: HTMLElement;
+  setInfo(seq: Sequence): void;
+  /** Which view is loaded, so the b-file cost warning can be about that view. */
+  setView(id: string, name: string, params: Params): void;
+} {
   const uid = `sp${++panelSeq}`;
   const el = document.createElement('div');
   el.className = 'sequence-panel';
@@ -297,30 +304,54 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
   // The button names the number it will fetch, which is the whole of what the
   // cap controls do. Before this the count lived only in a box below the
   // button, so the action read as unbounded and the bound read as trivia.
-  /** Where a term count sits along the slider, as a percentage of its travel. */
-  const trackPct = (n: number): number =>
-    Math.max(0, Math.min(100, capToSlider(Math.max(CAP_MIN, n)) / 10));
+  const bandAt = (n: number): CostBand => bandFor(estimateFrameMs(viewId, viewParams, n));
+
+  /**
+   * Where the bands begin along the slider, as percentages of its travel.
+   *
+   * Sampled rather than solved. Cost is linear in terms for eight of the nine
+   * views, but the polyarc's samples-per-term steps down as the point budget
+   * bites, so its cost is piecewise and inverting it analytically is more work
+   * than walking the track. Forty probes is imperceptible and cannot get the
+   * shape wrong.
+   */
+  const gradientStops = (): { caution: number; hot: number } => {
+    let caution = 100, hot = 100;
+    for (let t = 0; t <= 1000; t += 25) {
+      const band = bandAt(Math.min(capCeiling, sliderToCap(t)));
+      const pct = t / 10;
+      if (band !== 'ok' && caution === 100) caution = pct;
+      if (band === 'hot' && hot === 100) { hot = pct; break; }
+    }
+    return { caution, hot: Math.max(hot, caution) };
+  };
 
   const syncCapUi = (): void => {
     const n = capValue();
-    const band = costBand(n);
+    const band = bandAt(n);
     bfileBtn.textContent = `Load up to ${n.toLocaleString()} terms (b-file)`;
     bfileBtn.classList.toggle('bfile-button--caution', band === 'caution');
     bfileBtn.classList.toggle('bfile-button--hot', band === 'hot');
 
-    bfileCost.hidden = band === 'ok';
+    const message = costMessage(viewName, viewId, viewParams, n);
+    bfileCost.hidden = message === null;
     bfileCost.classList.toggle('bfile-cost--hot', band === 'hot');
-    bfileCost.textContent = band === 'hot'
-      ? 'At this size every redraw takes seconds and the page stops responding while it draws. The curve views are the expensive ones - they draw an arc per sample, and a sharply bending term needs dozens.'
-      : 'Past a couple of thousand terms the curve views redraw slowly, because each one draws an arc per sample rather than a straight line.';
+    bfileCost.textContent = message ?? '';
 
-    // Recomputed rather than fixed in CSS: the thresholds sit at fixed term
-    // counts, but the slider is log-scaled against a ceiling that drops once a
-    // b-file's true length is known, so their positions move with it.
-    const a = trackPct(TERMS_CAUTION), b = trackPct(TERMS_HOT);
+    // Recomputed rather than fixed in CSS. The stops move with the loaded view -
+    // on the stats views nothing on this slider is expensive and the track stays
+    // one colour all the way to 100,000 - and with the ceiling, which drops once
+    // a b-file's true length is known.
+    const { caution, hot } = gradientStops();
     bfileSlider.style.background =
-      `linear-gradient(to right, var(--accent) 0 ${a}%, #d8a657 ${a}% ${b}%, #e06c75 ${b}% 100%)`;
+      `linear-gradient(to right, var(--accent) 0 ${caution}%, #d8a657 ${caution}% ${hot}%, #e06c75 ${hot}% 100%)`;
   };
+
+  /** Told by app.ts which view is loaded, so the warning can be about it. */
+  function setView(id: string, name: string, params: Params): void {
+    viewId = id; viewName = name; viewParams = params;
+    syncCapUi();
+  }
 
   const showPending = (): void => {
     bfilePending.hidden = !capDirty;
@@ -340,34 +371,18 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
   bfileCap.addEventListener('input', () => setCap(Number(bfileCap.value), 'box'));
 
   /**
-   * Where fetching more terms stops being free, in terms.
+   * Which view the warning is about.
    *
-   * Measured in Chrome on this machine, drawing the real loop - one
-   * beginPath/stroke per segment, because each segment carries its own colour
-   * from the hue ramp and so cannot be batched into a single path:
-   *
-   *     segments     arcs      straight lines
-   *      100,000     1.17s     0.16s
-   *      360,000     4.26s     0.57s
-   *      720,000     8.46s     1.14s
-   *
-   * Linear, at about 11.7us per arc segment against 1.6us per line - arcs cost
-   * seven times what lines do. The worst realistic case is a polyarc at high
-   * angles, which needs 36 samples a term to stay smooth, drawn in two panels:
-   * 72 segments per term. That puts 10,000 terms - the default cap - at eight
-   * and a half seconds a frame, which is what a b-file load on the hero view
-   * actually does, and 100,000 at over a minute.
-   *
-   * The bands are stated in terms rather than segments because this panel does
-   * not know which visualizer is loaded, and cannot: the sample count is a
-   * property of the view and its parameters. So these are worst-case
-   * thresholds, and the copy says the cost depends on the view rather than
-   * promising a number it cannot know.
+   * The panel does not otherwise care what is being drawn, and an earlier
+   * version of this warning said so and priced every view as the most expensive
+   * one. That made it a false alarm everywhere except the polyarc: 20,000 terms
+   * costs 7ms on the autocorrelation view, and telling someone that is slow
+   * teaches them to ignore the warning that matters. app.ts pushes the current
+   * view in whenever it changes.
    */
-  const TERMS_CAUTION = 2_000, TERMS_HOT = 20_000;
-  type CostBand = 'ok' | 'caution' | 'hot';
-  const costBand = (n: number): CostBand =>
-    n >= TERMS_HOT ? 'hot' : n >= TERMS_CAUTION ? 'caution' : 'ok';
+  let viewId = 'polyarc';
+  let viewName = 'curve';
+  let viewParams: Params = {};
 
   const bfileCost = document.createElement('p');
   bfileCost.className = 'bfile-cost';
@@ -522,5 +537,5 @@ export function buildSequencePanel(handlers: Handlers): { el: HTMLElement; setIn
     info.appendChild(name);
   }
 
-  return { el, setInfo };
+  return { el, setInfo, setView };
 }

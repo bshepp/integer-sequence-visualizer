@@ -222,6 +222,16 @@ export function mountApp(root: HTMLElement): void {
     onError: showError,
   });
   sidebar.appendChild(panel.el);
+
+  /**
+   * Keeps the b-file cost warning pointed at the view actually loaded.
+   *
+   * Cheap enough to call on every parameter nudge: it re-prices a slider, not a
+   * drawing. Without it the warning priced everything as a polyarc, which is a
+   * hundredfold overestimate on the stats views.
+   */
+  const syncPanelCost = (): void =>
+    panel.setView(state.vizId, getVisualizer(state.vizId).name, state.params);
   layout.appendChild(sidebar);
 
   // main column
@@ -253,6 +263,7 @@ export function mountApp(root: HTMLElement): void {
     saidInert = false;
     state.params = defaultParams(getVisualizer(state.vizId).params);
     rebuildParams();
+    syncPanelCost();
     bar.update(Boolean(getVisualizer(state.vizId).statistics), supportsSuperimpose(getVisualizer(state.vizId)));
     redraw();
   });
@@ -423,11 +434,13 @@ export function mountApp(root: HTMLElement): void {
         // would redraw three times for a single press.
         Object.assign(state.params, randomiseNumbers(getVisualizer(state.vizId).params, shuffleSeed++));
         rebuildParams();
+        syncPanelCost();
         userChanged();
       }),
     );
   }
   rebuildParams();
+  syncPanelCost();
 
 
 
@@ -967,7 +980,7 @@ export function mountApp(root: HTMLElement): void {
     const overlay = buildSweepView({
       seq: state.seq, viz: getVisualizer(state.vizId), baseParams: { ...state.params },
       paramId: numeric[0]!.id, count: 12,
-      onPick(id, value) { state.params[id] = value; rebuildParams(); redraw(); },
+      onPick(id, value) { state.params[id] = value; rebuildParams(); syncPanelCost(); redraw(); },
       onClose() {
         overlay.remove();
         setEngineInert(false);
@@ -1490,6 +1503,7 @@ export function mountApp(root: HTMLElement): void {
         state.params = { ...defaultParams(getVisualizer(decoded.vizId).params), ...decoded.params };
         picker.value = state.vizId;
         rebuildParams();
+        syncPanelCost();
       }
       if (MODES.includes(decoded.mode)) comparison.mode = decoded.mode;
       if (SURROGATES.includes(decoded.surrogate)) comparison.surrogate = decoded.surrogate;

@@ -83,6 +83,32 @@ export function segmentsFor(
 }
 
 /**
+ * Samples per term for these settings, without needing the sequence.
+ *
+ * segmentsFor reads the sharpest turn any term actually takes; this takes the
+ * sharpest turn any term *could* take at this modulus, which is the same
+ * calculation over the extreme residues rather than the real ones. Used by the
+ * render-cost estimate, which has to answer "what would this cost" before the
+ * terms in question have been fetched.
+ *
+ * Worst case by construction, so the estimate errs towards warning.
+ */
+export function segmentsForParams(
+  termCount: number,
+  opts: { angle: number; modulus: number; offset: number },
+): number {
+  const maxDeg = Math.max(
+    Math.abs(arcDegrees(0, opts.angle, opts.offset)),
+    Math.abs(arcDegrees(Math.max(0, opts.modulus - 1), opts.angle, opts.offset)),
+  );
+  const wanted = Math.ceil(maxDeg / DEG_PER_SEGMENT);
+  const floor = Math.ceil(maxDeg / MAX_TURN_PER_SEGMENT);
+  const affordable = Math.floor(MAX_POINTS / Math.max(1, termCount));
+  const budgeted = Math.min(wanted, Math.max(MIN_SEGMENTS, affordable));
+  return Math.max(MIN_SEGMENTS, floor, budgeted);
+}
+
+/**
  * Arc angle per term, in degrees: `angle x (a(n) mod b) + c`.
  *
  * One formula covering two techniques that were previously exclusive.

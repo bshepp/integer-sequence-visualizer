@@ -84,9 +84,38 @@ describe('the cost of a large fetch is visible before it is paid', () => {
     const { el } = panelWithInfo();
     setCap(el, 5000);
     expect(cost(el).hidden).toBe(false);
-    expect(cost(el).textContent).toMatch(/redraw slowly/i);
+    expect(cost(el).textContent).toMatch(/5,000 terms/);
+    expect(cost(el).textContent, 'should quote a time, not a vague warning')
+      .toMatch(/\d+\s*(ms|seconds)/);
     expect(btn(el).classList.contains('bfile-button--caution')).toBe(true);
     expect(btn(el).classList.contains('bfile-button--hot')).toBe(false);
+  });
+
+  it('prices the view that is loaded, not the most expensive one', () => {
+    // The bug this replaced: the warning was term-count-based and its copy
+    // named "the curve views" whatever was on screen, so the autocorrelation
+    // view - 7ms at 20,000 terms - was warned about as if it were a polyarc.
+    // A warning that cries wolf on the cheap views teaches the reader to
+    // ignore the one that matters.
+    const panel = panelWithInfo();
+    panel.setView('autocorr', 'Autocorrelation', {});
+    setCap(panel.el, 100000);
+    expect(cost(panel.el).hidden, 'nothing on this slider is slow on autocorr').toBe(true);
+    expect(btn(panel.el).className).not.toMatch(/caution|hot/);
+
+    // Same term count, the view it really is expensive on.
+    panel.setView('polyarc', 'Polyarc curve', { angle: 64, modulus: 187, offset: -90 });
+    setCap(panel.el, 100000);
+    expect(cost(panel.el).hidden).toBe(false);
+    expect(cost(panel.el).textContent).toMatch(/polyarc curve/i);
+    expect(btn(panel.el).classList.contains('bfile-button--hot')).toBe(true);
+  });
+
+  it('names the view in the warning, so it cannot be about a different one', () => {
+    const panel = panelWithInfo();
+    panel.setView('digitwalk', '2D digit walk', { base: 10 });
+    setCap(panel.el, 40000);
+    expect(cost(panel.el).textContent).toMatch(/2D digit walk/);
   });
 
   it('escalates when the page will stop responding', () => {
@@ -96,6 +125,16 @@ describe('the cost of a large fetch is visible before it is paid', () => {
     expect(btn(el).classList.contains('bfile-button--caution')).toBe(false);
     expect(cost(el).textContent).toMatch(/stops responding/i);
     expect(cost(el).classList.contains('bfile-cost--hot')).toBe(true);
+  });
+
+  it('leaves the track one colour when no size on it is expensive', () => {
+    // The gradient is the other half of the same claim: on a cheap view the
+    // slider should not be showing a red end that the reader can never reach.
+    const panel = panelWithInfo();
+    panel.setView('histogram', 'Histogram', {});
+    const bg = q<HTMLInputElement>(panel.el, '.bfile-slider').style.background;
+    const stops = [...bg.matchAll(/([\d.]+)%/g)].map((m) => Number(m[1]));
+    expect(stops.every((v) => v === 100), `expected a flat track, got ${bg}`).toBe(true);
   });
 
   it('clears the warning again on the way back down', () => {
