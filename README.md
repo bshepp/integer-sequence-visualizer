@@ -73,9 +73,12 @@ experimental apparatus for answering it.
 - **Superimpose**: draw the real sequence over its own null in one frame,
   offered only where position carries information (grids place term *n* by
   index, so an overlay would simply overwrite).
-- **Export**: PNG with the OEIS credit drawn into the bitmap, plus CSV and
-  JSON carrying it in a header - attribution has to survive leaving the page.
-  Terms export at full BigInt precision.
+- **Export**: PNG with the OEIS credit drawn into the bitmap, **SVG** carrying
+  the geometry as real paths rather than pixels, plus CSV and JSON with the
+  credit in a header - attribution has to survive leaving the page. Terms export
+  at full BigInt precision. The SVG path is a recording surface standing in for
+  the canvas context, so all nine views export without any per-view code and the
+  vector output cannot disagree with what was drawn.
 - **The numbers behind the picture**: the sequence as a comma-separated run,
   the way a sequence is written everywhere else, with an index-and-term table
   one click away. Either doubles as the textual equivalent of the canvas for

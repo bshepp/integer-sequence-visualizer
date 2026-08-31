@@ -12,10 +12,15 @@ export interface Citation {
 /**
  * The mathematical lineage of this class of picture.
  *
- * The two 1980s references came from Jean-Paul Allouche on the SeqFan thread
- * and are reproduced exactly as he gave them. As he noted there, neither
- * appears to be linked from the relevant OEIS entries, which is a real and
- * easy contribution still going spare.
+ * Four of these were handed over by the SeqFan thread rather than found here,
+ * which is worth recording as a fact about the thread: post a construction to
+ * that list and its precedents arrive within days. Jean-Paul Allouche supplied
+ * the two 1980s papers and Zantema, reproduced exactly as he gave them; Ed Pegg
+ * identified Pickover's curlicues as the 1995 precedent for a technique the
+ * thread had been discussing as new.
+ *
+ * As Allouche noted, neither 1980s paper appears to be linked from the relevant
+ * OEIS entries - a real and easy contribution still going spare.
  */
 export const CITATIONS: Citation[] = [
   {
@@ -31,6 +36,19 @@ export const CITATIONS: Citation[] = [
     text: 'J.-M. Deshouillers, "Geometric aspect of Weyl sums", in Elementary and Analytic Theory of Numbers (Warsaw, 1982), Banach Center Publ. 17, PWN, Warsaw, 1985, pp. 75–82.',
     href: 'https://bibliotekanauki.pl/articles/721340.pdf',
     note: 'Similar pictures throughout. Also supplied by Jean-Paul Allouche.',
+  },
+  {
+    // Raised by Ed Pegg on the SeqFan thread, 11 August 2026, as the precedent
+    // for a construction the thread had been treating as new. Attribution and
+    // date are his words; the links are the two he gave.
+    text: 'Clifford A. Pickover, Curlicue fractals (1995).',
+    href: 'https://mathworld.wolfram.com/CurlicueFractal.html',
+    note: 'The 1995 precedent for this class of construction: a path turning by an angle derived from a term index. Identified by Ed Pegg, who asked the obvious question nobody else had.',
+  },
+  {
+    text: 'H. Zantema, "Turtle graphics of morphic sequences", Fractals 24 (2016), no. 1.',
+    href: 'https://hzantema.win.tue.nl/turtle.pdf',
+    note: 'Turtle-graphic renderings of sequences, treated as mathematics rather than as illustration. Supplied by Jean-Paul Allouche, along with the corrected link.',
   },
   {
     text: 'M. L. Stein, S. M. Ulam, M. B. Wells, "A visual display of some properties of the distribution of primes", American Mathematical Monthly 71 (1964), 516–520.',
@@ -84,7 +102,11 @@ function questionOpening(): HTMLParagraphElement {
     ' on the SeqFan mailing list. It is an app that draws OEIS sequences as '
     + 'polyarc curves. He asked whether such visualizations tell us, at a '
     + 'glance, anything useful or significant about the structure and character '
-    + 'of the underlying sequences. Nobody answered. This site is an attempt to.',
+    + 'of the underlying sequences. Twelve days later Neil Sloane asked the '
+    + 'sharper version of it on the same thread - what do the pictures tell you '
+    + 'about a sequence, and what exactly are they good for? Two people offered '
+    + 'partial answers and the thread moved on to more pictures. This site is an '
+    + 'attempt at a fuller one.',
   );
   return p;
 }
