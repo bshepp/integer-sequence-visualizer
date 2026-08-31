@@ -161,6 +161,13 @@ Two limitations follow directly from this approach, both by design:
 - Origin thread: [`docs/seqfan-ncurve-thread.md`](docs/seqfan-ncurve-thread.md)
 - Does line shape matter? [`docs/line-shape-answer.md`](docs/line-shape-answer.md)
   - measured: no, by two to three orders of magnitude.
+- Is the A000464 pentagram real? [`docs/pentagram-answer.md`](docs/pentagram-answer.md)
+  - the closed figure is; the five points are the protractor.
+- What the site believed and then measured:
+  [`docs/measurement-log.md`](docs/measurement-log.md) - including the
+  predictions that turned out wrong, which are most of them.
+- Wiring the null ladder into the engine:
+  [`docs/ladder-in-the-engine-brief.md`](docs/ladder-in-the-engine-brief.md)
 
 ## Architecture (one paragraph)
 
