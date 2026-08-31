@@ -18,8 +18,11 @@ export const EXAMPLES: ExampleEntry[] = [
     title: 'The prettiest picture here, and what it is made of',
     // 58 terms, which is what the OEIS publishes inline for A000040 and what
     // the engine loads when you open this entry. More primes do not improve
-    // it: the drawing is two spirals and a sweep, and a few hundred terms
-    // fills that in until it is a disc.
+    // it, and the landing page now lets anyone check that in one click: the
+    // drawing is two spirals and a sweep, 500 primes fragment it into a chain
+    // of small coils, and 10,000 is a tangled clump using a third of the frame.
+    // The walk gets longer, so its bounding box grows, so the fit shrinks every
+    // coil. This comment asserted it for weeks before it was verified.
     sequence: oeisSeq('A000040', 'The prime numbers', primes(58)),
     state: {
       seqRef: { kind: 'oeis', aNumber: 'A000040' },
@@ -28,7 +31,7 @@ export const EXAMPLES: ExampleEntry[] = [
     },
     verdict: 'untestable',
     caption: 'Two spirals and a sweep from the primes. Shuffle them and it scatters - which proves nothing at all.',
-    body: 'This is 58 primes, each bending the path by 64 x (p mod 187) - 90 degrees, and it is the best-looking thing on this site. The panel beside it is the same primes shuffled, and it falls apart completely, which is exactly the sort of comparison that should make you suspicious rather than convinced. The primes increase, so a shuffle of them was never going to look the same, and the rejection carries no more information than "the primes increase" does. Here is what is actually going on. Consecutive primes below 300 differ by about 6, and 6 out of 187 is a small turn, so each arc is nearly the arc before it and the path curves smoothly. Measured, the residue moves 5.0% of the way round the dial per term; shuffled, it moves 49%. That is the whole difference between the two panels. Now the part that decides it: keep the exact multiset of gaps between the primes and merely reorder them, and the figure comes back at 5.0% every single time, to seventeen decimal places, across all 200 surrogates. The smoothness belongs to the size of prime gaps, not to the order they arrive in - and no null that preserves those gaps can test it. That is not a disappointing answer. Small prime gaps are the interesting thing about primes, and this drawing is a picture of them.',
+    body: 'This is 58 primes, each bending the path by 64 x (p mod 187) - 90 degrees, and it is the best-looking thing on this site. The panel beside it is the same primes shuffled, and it falls apart completely, which is exactly the sort of comparison that should make you suspicious rather than convinced. The primes increase, so a shuffle of them was never going to look the same, and the rejection carries no more information than "the primes increase" does. Here is what is actually going on. Consecutive primes below 300 differ by about 6, and 6 out of 187 is a small turn, so each arc is nearly the arc before it and the path curves smoothly. Measured, the residue moves 5.0% of the way round the dial per term; shuffled, it moves 49%. That is the whole difference between the two panels. Now the part that decides it: keep the exact multiset of gaps between the primes and merely reorder them, and the figure comes back at 5.0% every single time, to seventeen decimal places, across all 200 surrogates. The smoothness belongs to the size of prime gaps, not to the order they arrive in - and no null that preserves those gaps can test it. That is not a disappointing answer. Small prime gaps are the interesting thing about primes, and this drawing is a picture of them. The buttons above redraw all of this at 500, 2,000 and 10,000 primes, and it is worth doing. The residue step climbs with the count - 5.0%, 7.6%, 9.3%, 11.2% - because prime gaps grow as primes get larger, while a shuffle of the same terms sits near 50% at every count. So the measured separation gets wider as you add terms, at the same time as the picture gets harder to read: by 10,000 both panels look like the same tangle, and the numbers say they are nothing alike. The difference null has no power at any of the four counts, so the verdict above does not change either. That gap between what you can see and what can be measured is the whole subject of this site.',
     evidence: {
       statistic: 'residueStep',
       measured: 0.05047377802795759,
