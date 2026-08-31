@@ -654,9 +654,14 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
    the second half would have painted light-mode gold onto the dark theme. */
 :root[data-theme="light"] .verdict--explained-by-steps,
 :root[data-theme="light"] .verdict--explained-by-trend { background: #f7edd4; color: #7a5a10; }
+/* Its own line rather than a tail on the lede. The negative top margin used to
+   pull it up against the paragraph above, so the two read as one block and the
+   attribution looked like a footnote to the pitch. It is set at the lede's size
+   and in the brighter text colour the captions and the write-up use, because
+   naming where this came from is not secondary information. */
 .landing-credit {
-  max-width: 62ch; margin: -6px auto 18px; text-align: center;
-  font-size: 13px; color: var(--muted);
+  max-width: var(--measure-intro); margin: 10px auto 6px; text-align: center;
+  font-size: 15px; color: var(--text);
 }
 .style-hint { font-size: 11px; color: #d8a657; align-self: center; }
 :root[data-theme="light"] .style-hint { color: #8a5a00; }

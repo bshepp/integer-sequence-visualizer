@@ -203,20 +203,22 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
 
   const lede = document.createElement('p');
   lede.className = 'landing-lede';
-  // "so you can tell which" was the promise that had to go: it offered to
-  // settle the question the picture raises, and what the apparatus settles is
-  // narrower than that. Naming the gap here rather than burying it in About,
-  // because this sentence is what a visitor reads before deciding whether the
-  // site is honest.
+  // Two sentences, which is what a deck is. It ran to five lines centred, and
+  // the rule this page follows - set out on the hero write-up below - is that
+  // centred text stops being readable at about three, because the ragged left
+  // edge makes the eye hunt for each line start. It had already been cut from
+  // eight to six on that reasoning; stopping at six was applying the rule until
+  // it felt better rather than until it was satisfied.
   //
-  // Kept to six lines at the 62ch measure below. The first pass at this ran to
-  // eight, and centred text stops being readable at about three - the ragged
-  // left edge makes the eye hunt for each line start - so the honest version
-  // was quietly costing more than the overclaim it replaced. The specifics it
-  // dropped (which number, which scrambling) are on every worked example and
-  // in About's method section, where a reader who wants them is already going.
+  // What went was the mechanism and the caveat, and neither is lost. The
+  // mechanism is the hero image directly below - two labelled panels, the real
+  // sequence beside its null - which explains it better than a sentence about
+  // it can. The caveat that a measurement is narrower than what you can see is
+  // still made by the hero caption, by the write-up, and by About's method
+  // section, and the headline no longer overclaims in the way that made it
+  // necessary here.
   lede.textContent =
-    'Integer sequences make beautiful pictures. Every pattern you see is really there; the question is which of them belong to the sequence and which to the way it is drawn. This tool draws both at once - your sequence, and a null model built from the same numbers. What it measures is always narrower than what you can see.';
+    'Integer sequences make beautiful pictures. Every pattern you see is really there; the question is which of them belong to the sequence and which to the way it is drawn.';
 
   // The origin credit belongs on the first page a visitor sees, not three
   // clicks away on About. "Prompted by" rather than "based on" because that is
