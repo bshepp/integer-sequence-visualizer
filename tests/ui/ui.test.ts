@@ -246,6 +246,24 @@ describe('mountApp', () => {
     expect(header!.textContent).not.toMatch(/survives a null/i);
   });
 
+  it('offers a way to load a sequence without drawing it', () => {
+    // The escape hatch for large loads. Measured on this machine, one panel at
+    // 20,000 terms costs 5ms on the stats views but 2.2s on the polyarc
+    // settings the hero uses, so the cost is real and confined to one family.
+    // jsdom has no canvas context, so drawScene returns before the branch this
+    // guards - what is checkable here is that the control exists, is on by
+    // default, and is reachable and named.
+    const root = document.createElement('div');
+    mountApp(root);
+    const box = root.querySelector<HTMLInputElement>('.draw-toggle-box');
+    expect(box, 'no draw toggle').not.toBeNull();
+    expect(box!.type).toBe('checkbox');
+    expect(box!.checked, 'drawing must be on by default').toBe(true);
+    const label = box!.closest('label');
+    expect(label?.textContent).toMatch(/draw the sequence/i);
+    expect(label?.title).toMatch(/statistics and sweeps keep working/i);
+  });
+
   it('renders a persistent attribution footer crediting OEIS under CC BY-SA 4.0', () => {
     const root = document.createElement('div');
     mountApp(root);

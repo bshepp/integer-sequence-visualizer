@@ -524,6 +524,27 @@ export function mountApp(root: HTMLElement): void {
   // retraces itself, which said nothing that the endpoints alone do not.
   let markEnds = false;
 
+  /**
+   * Whether to draw the picture at all.
+   *
+   * The drawing is the expensive half of this app and, for a mathematician
+   * loading fifty thousand terms to read the numbers or run a sweep, it is the
+   * half they did not ask for. Measured on this machine, a single panel at
+   * 20,000 terms: 5ms on the stats views, 23-28ms on basic and grid, 53ms on a
+   * turtle walk, and 532ms on a polyarc at its defaults - but 2.2s on the
+   * polyarc settings the hero and every SeqFan entry use, because those need
+   * dozens of arc samples a term. Two panels double all of it.
+   *
+   * So this is not a global speed switch, it is an escape hatch for the one
+   * family that has a real cost, and it leaves everything that is not drawing
+   * - the terms, the exports, the statistics, the sweep - working normally.
+   *
+   * Deliberately not in the URL. Every other toggle here is shareable because
+   * it is part of what the picture *is*; this one is a property of the machine
+   * looking at it, and a shared link that renders nothing would read as broken.
+   */
+  let drawSequence = true;
+
   /** Which viewport a panel draws and hit-tests with. */
   const viewportFor = (panel: 'real' | 'null'): Viewport =>
     (panel === 'null' && !viewportLinked ? nullViewport : viewport);
@@ -773,6 +794,24 @@ export function mountApp(root: HTMLElement): void {
       : 'Ring the first term and fill the last, so you can see where the drawing begins and ends';
   }
   syncEnds();
+
+  // A real checkbox rather than another aria-pressed button: the others toggle
+  // a feature of the drawing, this one decides whether there is a drawing, and
+  // it should not be one more thing in a row of identical grey buttons.
+  const drawToggle = document.createElement('label');
+  drawToggle.className = 'draw-toggle';
+  const drawBox = document.createElement('input');
+  drawBox.type = 'checkbox';
+  drawBox.className = 'draw-toggle-box';
+  drawBox.checked = drawSequence;
+  drawBox.addEventListener('change', () => {
+    drawSequence = drawBox.checked;
+    redraw();
+  });
+  drawToggle.append(drawBox, document.createTextNode('Draw the sequence'));
+  drawToggle.title = 'Untick to load and analyse large sequences without paying to render them. '
+    + 'The numbers, exports, statistics and sweeps keep working.';
+  exportBar.appendChild(drawToggle);
 
   barSep();
 
@@ -1115,6 +1154,23 @@ export function mountApp(root: HTMLElement): void {
       ctx.fillStyle = canvasTheme().muted;
       ctx.font = '16px system-ui';
       ctx.fillText('Load a sequence to begin - try a preset on the left.', 24, 40);
+      return;
+    }
+    if (!drawSequence) {
+      // Says what is still available rather than only what is switched off: the
+      // point of the toggle is that the rest of the app keeps working, and a
+      // blank canvas on its own reads as a failure.
+      const t = canvasTheme();
+      ctx.fillStyle = t.text;
+      ctx.font = '16px system-ui';
+      ctx.fillText('Drawing is off.', 24, 40);
+      ctx.fillStyle = t.muted;
+      ctx.font = '13px system-ui';
+      ctx.fillText(
+        `${state.seq.terms.length.toLocaleString()} terms loaded. The numbers, exports, statistics and sweeps all still work.`,
+        24, 66,
+      );
+      ctx.fillText('Tick "Draw the sequence" in the bar below to draw it.', 24, 88);
       return;
     }
     const viz = getVisualizer(state.vizId);

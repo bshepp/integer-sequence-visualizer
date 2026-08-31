@@ -82,6 +82,16 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .info-bfile-note { margin-top: 5px; font-size: 11px; line-height: 1.4; color: var(--muted); }
 .info-bfile-note--capped { color: #d8a657; }
 :root[data-theme="light"] .info-bfile-note--capped { color: #8a5a00; }
+/* Sits in the export bar among buttons, so it needs to read as a control and
+   not as a stray caption. The accent-coloured box is the same signal the
+   b-file button uses for "this is the one that costs something". */
+.draw-toggle {
+  display: inline-flex; align-items: center; gap: var(--gap-within);
+  color: var(--muted); font-size: 12px; cursor: pointer; user-select: none;
+}
+.draw-toggle:hover { color: var(--text); }
+.draw-toggle-box { accent-color: var(--accent); cursor: pointer; margin: 0; }
+
 .bfile-box { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
 /* Sized like the tab-pane controls above it, but deliberately the accent
    colour: this is the action that makes the pictures worth looking at, and it
