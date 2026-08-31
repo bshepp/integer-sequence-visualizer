@@ -32,6 +32,7 @@ import { buildAbout } from './about';
 import { buildStyleControls } from './styleControls';
 import { sequenceRows, toCSV, toJSON, downloadBlob } from './exportData';
 import { exportCanvasPng } from './exportImage';
+import { buildSvg, downloadSvg, type SvgPanel } from './exportSvg';
 import { buildDataTable } from './dataTable';
 import { citationFor } from './citation';
 import { buildFeedbackLink } from './feedbackLink';
@@ -722,6 +723,37 @@ export function mountApp(root: HTMLElement): void {
   mkExport('export-png', 'PNG', () => {
     if (!state.seq) { showNotice('Load a sequence first.'); return; }
     exportCanvasPng(canvas, state.seq, `${slug()}-${state.vizId}.png`);
+  });
+  mkExport('export-svg', 'SVG', () => {
+    if (!state.seq) { showNotice('Load a sequence first.'); return; }
+    // Re-rendered rather than traced from the bitmap: the canvas has already
+    // thrown the geometry away, so the only way to get paths back is to draw
+    // it again onto a surface that records them.
+    const rect = canvasWrap.getBoundingClientRect();
+    const width = Math.max(200, Math.round(rect.width));
+    const height = Math.max(200, Math.round(rect.height));
+    const panels: SvgPanel[] = [
+      { seq: state.seq, style: styleFor('real'), viewport: viewportFor('real'), label: seqLabel(state.seq) },
+    ];
+    // Only 'side' puts two drawings in two places. 'over' and 'flip' share
+    // every pixel, and a vector file of two paths on top of each other is a
+    // worse artifact than one of the real sequence alone.
+    if (comparison.mode === 'side') {
+      const surr = surrogateSequence(state.seq, comparison.surrogate, comparison.seed);
+      panels.push({
+        seq: surr, style: styleFor('null'), viewport: viewportFor('null'),
+        label: `${comparison.surrogate} null`,
+      });
+    }
+    const { svg, elements, bytes } = buildSvg(panels, state.vizId, state.params, { width, height }, state.seq);
+    downloadSvg(svg, `${slug()}-${state.vizId}.svg`);
+    // Said after the fact rather than as a warning before it: the file is
+    // already saved, and the number is the one that decides whether an editor
+    // will open it happily.
+    if (bytes > 4_000_000) {
+      showNotice(`Saved ${(bytes / 1e6).toFixed(1)} MB of SVG, ${elements.toLocaleString()} elements. `
+        + 'Editors get slow past a few hundred thousand - fewer terms, or a lower Mod b, makes a smaller file.');
+    }
   });
   mkExport('export-csv', 'CSV', () => {
     if (!state.seq) { showNotice('Load a sequence first.'); return; }
