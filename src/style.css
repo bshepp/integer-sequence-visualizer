@@ -287,7 +287,19 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 }
 .hero-count:hover { border-color: var(--accent); }
 .hero-count--on { background: var(--accent); color: var(--bg); border-color: var(--accent); }
-.hero-note { margin: 0; max-width: var(--measure-intro); text-align: center; color: var(--muted); font-size: 12px; min-height: 2.4em; }
+/* Feedback on an action, not an annotation, which is why it is full contrast
+   rather than --muted: it reports what just happened when a button was pressed.
+
+   min-height reserves two lines so the page does not resize when the message
+   changes. It was 2.4em against a message that ran to three lines, so pressing
+   a count button shoved everything below it down and then back up. The height
+   is only safe because every message is kept inside two lines at this measure -
+   tests/ui/landing.test.ts pins that, since the cause is the copy rather than
+   the CSS and the copy is what will change. */
+.hero-note {
+  margin: 0; max-width: var(--measure-body); text-align: center;
+  color: var(--text); font-size: 13px; line-height: 1.45; min-height: 2.9em;
+}
 :root[data-theme="light"] .hero-count { background: #ffffff; border-color: #c8ccd4; }
 :root[data-theme="light"] .hero-count--on { background: var(--accent); color: #ffffff; border-color: var(--accent); }
 .landing-open {

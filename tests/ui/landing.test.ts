@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { shouldShowLanding, buildLanding, EXAMPLES_HASH } from '../../src/ui/landing';
+import { shouldShowLanding, buildLanding, EXAMPLES_HASH, NOTE_MAX_CHARS } from '../../src/ui/landing';
 import { encodeState } from '../../src/ui/urlState';
 import { EXAMPLES } from '../../src/examples/entries';
 import { registerAll } from '../../src/viz/all';
@@ -202,6 +202,21 @@ describe('redrawing the hero from the landing page', () => {
     el.querySelector<HTMLButtonElement>('.landing-hero-button')!.click();
     expect((onPick.mock.calls[0]![0] as { sequence: { terms: bigint[] } }).sequence.terms)
       .toHaveLength(58);
+  });
+
+  it('keeps every note inside the height the box reserves', () => {
+    // The box reserves two lines so the page does not resize when the message
+    // changes. It used to reserve two against a message that ran to three, so
+    // pressing a count button shoved the whole page down and then back up.
+    // jsdom has no layout, so the invariant is enforced where it is actually
+    // decided: in the length of the copy.
+    const { el, counts } = mk();
+    const note = () => el.querySelector('.hero-note')!.textContent ?? '';
+    for (const b of counts) {
+      b.click();
+      expect(note().length, `"${note()}" is ${note().length} chars, over the two-line budget`)
+        .toBeLessThanOrEqual(NOTE_MAX_CHARS);
+    }
   });
 
   it('says what changed, and does not promise more detail for more terms', () => {

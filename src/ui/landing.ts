@@ -49,6 +49,17 @@ export function shouldShowLanding(hash: string): boolean {
 export const HEADLINE = 'Which part of the picture is the sequence?';
 
 /**
+ * Character budget for the line under the hero's term-count buttons.
+ *
+ * That box reserves two lines of height so the page does not resize when the
+ * message changes, and two lines at its measure is about this many characters.
+ * Exceeding it pushes everything below the hero down and back up on every
+ * button press, which is what it used to do. Enforced in landing.test.ts,
+ * because the copy is what changes and the CSS is not.
+ */
+export const NOTE_MAX_CHARS = 176;
+
+/**
  * Named for the rung reached, not for a verdict on reality.
  *
  * "Survives the null" was the old label on most of these, and it claimed more
@@ -283,15 +294,19 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
     const t0 = performance.now();
     paintEntry(heroAt(n), heroCanvas, 760, 340);
     const ms = Math.round(performance.now() - t0);
+    // Both messages are kept inside two lines at the note's measure, because
+    // the box reserves exactly two: a third line would resize the page every
+    // time a count button was pressed. NOTE_MAX_CHARS is the budget, and a test
+    // enforces it - the copy is the thing that will drift, not the CSS.
     heroNote.textContent = n === HERO_COUNTS[0]
       ? `${n.toLocaleString()} primes - all the OEIS publishes inline - drawn in ${ms} ms.`
       // Names the count the prose below is about. That prose opens "This is 58
       // primes" and carries measurements taken at 58, so leaving it unqualified
       // under a 10,000-term drawing would be a caption describing the wrong
       // picture - the exact fault this site spends its time pointing out.
-      : `${n.toLocaleString()} primes, drawn in ${ms} ms. More terms is a longer walk, `
-        + 'so the drawing is fitted smaller to fit the frame and every coil shrinks. '
-        + `Detail goes down, not up. The write-up below is about the ${HERO_COUNTS[0]!.toLocaleString()}-term drawing.`;
+      : `${n.toLocaleString()} primes, drawn in ${ms} ms. A longer walk is fitted smaller, `
+        + 'so every coil shrinks: detail goes down, not up. '
+        + `The write-up below describes the ${HERO_COUNTS[0]!.toLocaleString()}-term drawing.`;
   }
 
   function showCount(n: number): void {
