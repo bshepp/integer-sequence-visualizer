@@ -388,17 +388,20 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
 
   const threadNote = document.createElement('p');
   threadNote.className = 'landing-strip-note';
-  threadNote.append('These are sequences Bill McEachen picked out of ');
+  threadNote.append('Sequences Bill McEachen picked out of ');
   const ncurve2 = document.createElement('a');
   ncurve2.href = NCURVE_URL;
   ncurve2.target = '_blank';
   ncurve2.rel = 'noopener noreferrer';
   ncurve2.textContent = 'NCurve';
   threadNote.append(ncurve2);
+  // Kept to three lines. It has to be centred - the shelf below is a wrapping
+  // flex row whose left edge moves with how many thumbnails fit, so there is no
+  // stable edge to align to - and centred text stops being readable at about
+  // three lines. It ran to five.
   threadNote.append(
-    ' and gave names to, drawn here by the same rule his were: arc = (a(n) mod 360) - 180. '
-    + 'He mentioned he had iterated no parameters, and nobody has put a null model beside any '
-    + 'of them. Each one opens with the comparison already switched on, so you can be the first.',
+    ' and named, drawn by his rule: arc = (a(n) mod 360) - 180. Each opens with a '
+    + 'null model beside it, and nobody has run one yet - so you can be the first.',
   );
 
   const threadStrip = buildStrip(threadEntries());

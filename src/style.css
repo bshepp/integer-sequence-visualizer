@@ -309,7 +309,20 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .landing-strip-label { margin: 20px 0 0; font-size: 13px; font-weight: 400; color: var(--muted); }
 /* Sets the untested shelf apart from the worked one above it, so the two
    headings cannot be read as one run of examples. */
-.landing-strip-label + .landing-strip-note { margin: 6px 0 0; font-size: 13px; color: var(--muted); max-width: var(--measure-intro); }
+/* Centred, because it has to be: the shelf beneath is a wrapping flex row whose
+   left edge moves with how many thumbnails fit a row, so there is no stable edge
+   to align a left-aligned paragraph to. It was left-aligned inside a centred
+   block, which gave it a left edge matching neither the label above nor the
+   thumbnails below - three elements, three different edges. Being centred is
+   what caps it at three lines; the copy was trimmed from five to suit.
+
+   Full contrast at 14px rather than 13px muted: it carries the standing
+   invitation on this page, which is not an aside. Its label stays muted, which
+   is the normal way round - a section label is meta, its text is not. */
+.landing-strip-label + .landing-strip-note {
+  margin: 8px 0 2px; font-size: 14px; line-height: 1.5; text-align: center;
+  color: var(--text); max-width: var(--measure-intro);
+}
 .landing-strip-note a { color: inherit; }
 .examples-strip { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; max-width: 1100px; }
 .example-thumb {
@@ -661,7 +674,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
    naming where this came from is not secondary information. */
 .landing-credit {
   max-width: var(--measure-intro); margin: 10px auto 6px; text-align: center;
-  font-size: 15px; color: var(--text);
+  font-size: 14px; color: var(--text);
 }
 .style-hint { font-size: 11px; color: #d8a657; align-self: center; }
 :root[data-theme="light"] .style-hint { color: #8a5a00; }
