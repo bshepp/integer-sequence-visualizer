@@ -64,7 +64,7 @@ describe('style controls', () => {
   });
 });
 
-import { sequenceRows, toCSV, toJSON, attributionLine } from '../../src/ui/exportData';
+import { sequenceRows, toCSV, toJSON, attributionLine, type ViewMeta } from '../../src/ui/exportData';
 import { buildDataTable } from '../../src/ui/dataTable';
 import { drawAttribution } from '../../src/ui/exportImage';
 import { fakeCtx } from '../helpers/fakeCtx';
@@ -127,8 +127,67 @@ describe('export formats carry attribution', () => {
   it('quotes fields containing a comma so the CSV stays parseable', () => {
     const commas: Sequence = { ...fib, terms: [1n], name: 'x' };
     const rows = sequenceRows(commas).map((r) => ({ ...r, note: 'a,b' }));
-    const line = toCSV(commas, rows).trim().split('\n')[2]!;
+    // Found rather than indexed: the header is comment lines plus a column row,
+    // and that count changes whenever the export learns to record something new.
+    const line = toCSV(commas, rows).trim().split('\n')
+      .find((l) => !l.startsWith('#') && !l.startsWith('n,'))!;
     expect(line).toContain('"a,b"');
+  });
+});
+
+describe('data exports record the view they came from', () => {
+  // The terms do not depend on the visualizer, so these files could reasonably
+  // omit it - except that the README calls them "the numbers behind the
+  // picture", and a file that cannot say which picture does not live up to
+  // that. Someone holding the CSV should be able to get the figure back.
+  const view: ViewMeta = {
+    vizId: 'polyarc',
+    vizName: 'Polyarc curve',
+    params: { angle: 64, modulus: 187, offset: -90, styleLineWidth: 2 },
+    mode: 'side',
+    surrogate: 'permutation',
+    seed: 7,
+    url: 'https://ulam.briansheppard.com/#seq=A000040&viz=polyarc',
+  };
+
+  it('puts the view in the CSV header, above the data', () => {
+    const lines = toCSV(fib, sequenceRows(fib), view).split('\n');
+    const comments = lines.filter((l) => l.startsWith('#')).join(' ');
+    expect(comments).toContain('Polyarc curve (polyarc)');
+    expect(comments).toContain('angle=64');
+    expect(comments).toContain('permutation surrogate, seed 7');
+    expect(comments).toContain('https://ulam.briansheppard.com/');
+    // Attribution survives alongside it rather than being displaced by it.
+    expect(comments).toContain('OEIS Foundation');
+    // Provenance leads, and the column row still directly precedes the data.
+    expect(lines.indexOf('n,term')).toBe(lines.filter((l) => l.startsWith('#')).length);
+  });
+
+  it('leaves style keys out, since they are not data', () => {
+    expect(toCSV(fib, sequenceRows(fib), view)).not.toContain('styleLineWidth');
+  });
+
+  it('records the view as structure in JSON, and the seed with it', () => {
+    const parsed = JSON.parse(toJSON(fib, sequenceRows(fib), view));
+    expect(parsed.view.visualizer).toBe('polyarc');
+    expect(parsed.view.params.modulus).toBe(187);
+    // Only the real sequence is ever exported, so the surrogate and the seed
+    // are what make the other half of a comparison reconstructible.
+    expect(parsed.view.comparison).toEqual({ mode: 'side', surrogate: 'permutation', seed: 7 });
+    expect(parsed.rows).toHaveLength(7);
+  });
+
+  it('says the null is off rather than naming a surrogate that was not used', () => {
+    const off = { ...view, mode: 'off' };
+    expect(JSON.parse(toJSON(fib, sequenceRows(fib), off)).view.comparison).toEqual({ mode: 'off' });
+    expect(toCSV(fib, sequenceRows(fib), off)).toContain('Null model: off');
+  });
+
+  it('omits the view entirely when there is none, rather than writing nulls', () => {
+    // Absence should mean "not recorded", never "recorded as nothing".
+    expect('view' in JSON.parse(toJSON(fib, sequenceRows(fib)))).toBe(false);
+    expect(toCSV(fib, sequenceRows(fib)).split('\n').filter((l) => l.startsWith('#')))
+      .toHaveLength(1);
   });
 });
 

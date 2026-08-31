@@ -30,7 +30,7 @@ import type { Size } from '../viz/types';
 import { buildLanding, shouldShowLanding, routeFor, EXAMPLES_HASH, ABOUT_HASH } from './landing';
 import { buildAbout } from './about';
 import { buildStyleControls } from './styleControls';
-import { sequenceRows, toCSV, toJSON, downloadBlob } from './exportData';
+import { sequenceRows, toCSV, toJSON, downloadBlob, type ViewMeta } from './exportData';
 import { exportCanvasPng } from './exportImage';
 import { buildSvg, downloadSvg, type SvgPanel } from './exportSvg';
 import { buildDataTable } from './dataTable';
@@ -731,6 +731,22 @@ export function mountApp(root: HTMLElement): void {
     exportBar.appendChild(hr);
   };
 
+  /**
+   * What the data exports record about the picture they were taken from.
+   *
+   * location.href is the same reproducer Copy citation uses, so a CSV and a
+   * citation of the same view cannot disagree about where it lives.
+   */
+  const viewMeta = (): ViewMeta => ({
+    vizId: state.vizId,
+    vizName: getVisualizer(state.vizId).name,
+    params: state.params,
+    mode: comparison.mode,
+    surrogate: comparison.surrogate,
+    seed: comparison.seed,
+    url: location.href,
+  });
+
   const slug = () => (state.seq?.aNumber ?? state.seq?.name ?? 'sequence').replace(/[^\w.-]+/g, '-');
 
   mkExport('export-png', 'PNG', () => {
@@ -770,11 +786,11 @@ export function mountApp(root: HTMLElement): void {
   });
   mkExport('export-csv', 'CSV', () => {
     if (!state.seq) { showNotice('Load a sequence first.'); return; }
-    downloadBlob(`${slug()}.csv`, 'text/csv;charset=utf-8', toCSV(state.seq, sequenceRows(state.seq)));
+    downloadBlob(`${slug()}.csv`, 'text/csv;charset=utf-8', toCSV(state.seq, sequenceRows(state.seq), viewMeta()));
   });
   mkExport('export-json', 'JSON', () => {
     if (!state.seq) { showNotice('Load a sequence first.'); return; }
-    downloadBlob(`${slug()}.json`, 'application/json', toJSON(state.seq, sequenceRows(state.seq)));
+    downloadBlob(`${slug()}.json`, 'application/json', toJSON(state.seq, sequenceRows(state.seq), viewMeta()));
   });
 
   mkExport('copy-citation', 'Copy citation', () => {
