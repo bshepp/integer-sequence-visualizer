@@ -18,6 +18,30 @@
    does, which would shove the rest of the bar sideways. */
 :root { --gap-control: 10px; --gap-within: 6px; }
 
+/* Two text measures and one contrast rule, because six of each had accumulated
+   a fix at a time and two of them were wrong.
+
+   The roles: prose the reader is meant to read through gets full contrast at
+   16px; text that introduces or annotates it gets --muted and stays smaller.
+   Muted body prose was the actual fault - every paragraph on the About page was
+   --muted at 14px, which set the longest writing on the site as a footnote to
+   itself, the same mistake the landing hero body had.
+
+   The measures are in ch so they track the font size, since a comfortable line
+   is a character count rather than a pixel width. Note that ch is the width of
+   the "0" glyph and most letters are narrower, so these deliver about 1.17x
+   their nominal value - the landing hero body measures 88 characters at 75ch.
+   The exact ratio depends on the prose, so treat it as a rule of thumb and
+   measure rather than predict: this page's About paragraphs come out at 81
+   characters in a container predicted to give 90.
+
+   The About page sets a px container instead, deliberately - see about.ts -
+   because a per-element ch measure misaligns when a heading and its body differ
+   in size. Its 660px held ~93 characters at 14px and holds 81 at 16px, which is
+   why raising the size there fixed the measure without touching the container:
+   bigger type means fewer characters in the same width. */
+:root { --measure-body: 75ch; --measure-intro: 62ch; }
+
 html, body { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, sans-serif; }
 #app { display: flex; flex-direction: column; height: 100%; }
@@ -212,10 +236,10 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
   display: flex; flex-direction: column; align-items: center; gap: 14px;
 }
 .landing-title { margin: 0; font-size: clamp(24px, 4vw, 38px); text-align: center; }
-.landing-lede { margin: 0; max-width: 62ch; text-align: center; color: var(--muted); font-size: 15px; }
+.landing-lede { margin: 0; max-width: var(--measure-intro); text-align: center; color: var(--muted); font-size: 15px; }
 .landing-hero { margin: 8px 0 0; display: flex; flex-direction: column; gap: 8px; align-items: center; max-width: 100%; }
 .landing-hero canvas { max-width: 100%; border-radius: 5px; display: block; }
-.landing-hero-caption { color: var(--text); font-size: 14px; text-align: center; max-width: 62ch; }
+.landing-hero-caption { color: var(--text); font-size: 14px; text-align: center; max-width: var(--measure-intro); }
 /* Left-aligned, and that is the substantive fix rather than the width. This is
    1,900 characters - twenty-seven lines at this measure - and centred text stops
    being readable at about three, because the ragged left edge makes the eye hunt
@@ -250,7 +274,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
    centred, which styled the most substantial writing on the page as a footnote
    to the picture above it. */
 .landing-hero-body {
-  margin: 0; max-width: 75ch; text-align: left;
+  margin: 0; max-width: var(--measure-body); text-align: left;
   color: var(--text); font-size: 16px; line-height: 1.55;
 }
 /* Redraw-the-hero controls. Sized down from the primary actions below them:
@@ -263,7 +287,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 }
 .hero-count:hover { border-color: var(--accent); }
 .hero-count--on { background: var(--accent); color: var(--bg); border-color: var(--accent); }
-.hero-note { margin: 0; max-width: 62ch; text-align: center; color: var(--muted); font-size: 12px; min-height: 2.4em; }
+.hero-note { margin: 0; max-width: var(--measure-intro); text-align: center; color: var(--muted); font-size: 12px; min-height: 2.4em; }
 :root[data-theme="light"] .hero-count { background: #ffffff; border-color: #c8ccd4; }
 :root[data-theme="light"] .hero-count--on { background: var(--accent); color: #ffffff; border-color: var(--accent); }
 .landing-open {
@@ -273,7 +297,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .landing-strip-label { margin: 20px 0 0; font-size: 13px; font-weight: 400; color: var(--muted); }
 /* Sets the untested shelf apart from the worked one above it, so the two
    headings cannot be read as one run of examples. */
-.landing-strip-label + .landing-strip-note { margin: 6px 0 0; font-size: 13px; color: var(--muted); max-width: 70ch; }
+.landing-strip-label + .landing-strip-note { margin: 6px 0 0; font-size: 13px; color: var(--muted); max-width: var(--measure-intro); }
 .landing-strip-note a { color: inherit; }
 .examples-strip { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; max-width: 1100px; }
 .example-thumb {
@@ -429,9 +453,13 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 }
 .about-inner { max-width: 660px; margin: 0 auto; }
 .about-title { margin: 10px 0 18px; font-size: clamp(22px, 3.5vw, 32px); }
-.about-body { color: var(--text); font-size: 14px; line-height: 1.65; }
-.about-body h2 { font-size: 16px; margin: 28px 0 8px; color: var(--text); }
-.about-body p { margin: 0 0 12px; color: var(--muted); }
+.about-body { color: var(--text); font-size: 16px; line-height: 1.65; }
+/* Bumped with the body below it - at 16px each the heading stopped outranking
+   its own section. */
+.about-body h2 { font-size: 18px; margin: 28px 0 8px; color: var(--text); }
+/* Inherits --text. This said --muted, which is why every paragraph of the
+   longest prose on the site read as an aside to the headings above it. */
+.about-body p { margin: 0 0 12px; }
 .about-body a { color: var(--accent); }
 .about-citations-head {
   border-top: 1px solid #3a3d44; padding-top: 20px; margin-top: 34px !important;
