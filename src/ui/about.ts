@@ -12,12 +12,14 @@ export interface Citation {
 /**
  * The mathematical lineage of this class of picture.
  *
- * Four of these were handed over by the SeqFan thread rather than found here,
+ * Six of these were handed over by the SeqFan thread rather than found here,
  * which is worth recording as a fact about the thread: post a construction to
  * that list and its precedents arrive within days. Jean-Paul Allouche supplied
- * the two 1980s papers and Zantema, reproduced exactly as he gave them; Ed Pegg
- * identified Pickover's curlicues as the 1995 precedent for a technique the
- * thread had been discussing as new.
+ * the two 1980s papers and both Zantema references, reproduced as he gave them,
+ * and the Moore-van der Poorten paper, whose record is Project Euclid's because
+ * he gave a link rather than a reference; Ed Pegg identified Pickover's
+ * curlicues as the 1995 precedent for a technique the thread had been
+ * discussing as new.
  *
  * As Allouche noted, neither 1980s paper appears to be linked from the relevant
  * OEIS entries - a real and easy contribution still going spare.
@@ -38,6 +40,14 @@ export const CITATIONS: Citation[] = [
     note: 'Similar pictures throughout. Also supplied by Jean-Paul Allouche.',
   },
   {
+    // Allouche gave the PDF link on the thread, 11 August 2026, with the
+    // authors but not the reference; volume, year and pages are Project
+    // Euclid's record (euclid.pcma/1416406253), checked against the PDF.
+    text: 'R. R. Moore, A. J. van der Poorten, "On the thermodynamics of curves and other curlicues", Miniconference on Geometry and Physics, Proc. Centre Math. Appl. Austral. Nat. Univ. 22 (1989), 82–109.',
+    href: 'https://maths.anu.edu.au/files/CMAProcVol22-MoorePoorten.pdf',
+    note: 'Curlicues as objects of study, and the renormalisation of curves full of curls and twists. Supplied by Jean-Paul Allouche.',
+  },
+  {
     // Raised by Ed Pegg on the SeqFan thread, 11 August 2026, as the precedent
     // for a construction the thread had been treating as new. Attribution and
     // date are his words; the links are the two he gave.
@@ -49,6 +59,10 @@ export const CITATIONS: Citation[] = [
     text: 'H. Zantema, "Turtle graphics of morphic sequences", Fractals 24 (2016), no. 1.',
     href: 'https://hzantema.win.tue.nl/turtle.pdf',
     note: 'Turtle-graphic renderings of sequences, treated as mathematics rather than as illustration. Supplied by Jean-Paul Allouche, along with the corrected link.',
+  },
+  {
+    text: 'H. Zantema, Playing with Infinity: Turtles, Patterns and Pictures, CRC Press, Taylor & Francis group, 2024.',
+    note: 'The same subject at book length. Supplied by Jean-Paul Allouche.',
   },
   {
     text: 'M. L. Stein, S. M. Ulam, M. B. Wells, "A visual display of some properties of the distribution of primes", American Mathematical Monthly 71 (1964), 516–520.',
@@ -223,7 +237,7 @@ export function buildAbout(opts: AboutOptions): HTMLElement {
 
   body.append(
     section('Credit', 'about-credit'),
-    PARA('The SeqFan thread that started this is archived in the repository. From it: George Whale built NCurve and asked the question. Bill McEachen went looking through the sequences, named eight of them (French curve, pie crust, propeller, tire, saw blade, record disc, zipper, Slinky) and highlighted A019488, a sequence of Neil Sloane\'s; all eleven are preset in the sidebar, under his names where he gave them. He also mentioned, of his own images, that he had iterated no parameters - said in passing, about his own work, when nobody had asked and nobody would otherwise have known. That volunteered limitation is what the parameter sweep in this app was built to answer, and it is the most useful sentence anyone contributed to the thread. Jean-Paul Allouche supplied the 1980s references above, and Ed Pegg identified the 1995 curlicue fractals of Clifford Pickover as the precedent for a construction the thread had been discussing as new.'),
+    PARA('The SeqFan thread that started this is archived in the repository. From it: George Whale built NCurve and asked the question. Bill McEachen went looking through the sequences, named eight of them (French curve, pie crust, propeller, tire, saw blade, record disc, zipper, Slinky) and highlighted A019488, a sequence of Neil Sloane\'s; all eleven are preset in the sidebar, under his names where he gave them. He also mentioned, of his own images, that he had iterated no parameters - said in passing, about his own work, when nobody had asked and nobody would otherwise have known. That volunteered limitation is what the parameter sweep in this app was built to answer, and it is the most useful sentence anyone contributed to the thread. Joshua Weinstein stated the rule that says, from the residues alone, how many folds a figure will have and when it will repeat as a chain instead of closing. Jean-Paul Allouche supplied five of the references above, and Ed Pegg identified the 1995 curlicue fractals of Clifford Pickover as the precedent for a construction the thread had been discussing as new.'),
     PARA('Nothing here is claimed on their behalf, and none of them has endorsed this site. They are credited because the work descends from theirs.'),
   );
 
