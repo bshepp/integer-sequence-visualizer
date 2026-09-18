@@ -135,13 +135,14 @@ export function arcDegrees(residue: number, angle: number, offset: number): numb
  */
 export function segmentTurns(
   seq: SequenceView,
-  opts: { angle: number; modulus: number; offset: number; segments?: number },
+  opts: { angle: number; modulus: number; offset: number; segments?: number; hand?: number },
 ): (segment: number) => number {
   const segments = opts.segments ?? MIN_SEGMENTS;
+  const hand = opts.hand ?? 1;
   const perTerm = new Float64Array(seq.length);
   for (let i = 0; i < seq.length; i++) {
     const deg = arcDegrees(seq.mod(i, opts.modulus), opts.angle, opts.offset);
-    perTerm[i] = (deg * Math.PI) / 180 / segments;
+    perTerm[i] = (hand * deg * Math.PI) / 180 / segments;
   }
   // Segment i runs from pts[i-1] to pts[i], and term t owns the `segments`
   // points after the origin, so the first segment belongs to term 0.
@@ -174,15 +175,16 @@ export function segmentTurns(
  */
 export function polyarcPath(
   seq: SequenceView,
-  opts: { angle: number; modulus: number; offset: number; segments?: number },
+  opts: { angle: number; modulus: number; offset: number; segments?: number; hand?: number },
 ): Array<{ x: number; y: number }> {
   const segments = opts.segments ?? MIN_SEGMENTS;
+  const hand = opts.hand ?? 1;
   const pts = [{ x: 0, y: 0 }];
   let heading = 0;
   let x = 0, y = 0;
   for (let i = 0; i < seq.length; i++) {
     const residue = seq.mod(i, opts.modulus);
-    const delta = (arcDegrees(residue, opts.angle, opts.offset) * Math.PI) / 180;
+    const delta = (hand * arcDegrees(residue, opts.angle, opts.offset) * Math.PI) / 180;
     const h = heading;
     if (Math.abs(delta) < 1e-12) {
       // The delta -> 0 limit of the arc below, taken explicitly because the
@@ -216,14 +218,32 @@ export function polyarcPath(
  * locate() addresses a path that was drawn differently.
  */
 function sampled(seq: SequenceView, params: Params): {
-  angle: number; modulus: number; offset: number; segments: number;
+  angle: number; modulus: number; offset: number; segments: number; hand: number;
 } {
   const opts = {
     angle: Number(params.angle),
     modulus: Number(params.modulus),
     offset: Number(params.offset),
   };
-  return { ...opts, segments: segmentsFor(seq, opts) };
+  return { ...opts, segments: segmentsFor(seq, opts), hand: handOf(params) };
+}
+
+/**
+ * Which way a positive arc bends on screen: -1 for NCurve's way, 1 for maths'.
+ *
+ * polyarcPath works in maths coordinates, where a positive turn is
+ * anticlockwise, and pathTransform flips y so the screen agrees. NCurve draws
+ * in screen coordinates without that flip, so the same numbers bend the other
+ * way there, and every drawing in the SeqFan thread came out as the mirror
+ * image of this view's. Found by rendering Bill McEachen's eleven curves at
+ * the settings printed on his own images: same shapes, reflected top to bottom.
+ *
+ * NCurve's way is the default because those drawings are what this view is
+ * compared against. Reflection changes no measurement on the site - residues,
+ * steps and runs do not know which way the pen turned.
+ */
+export function handOf(params: Params): number {
+  return params.turn === 'maths' ? 1 : -1;
 }
 
 export const polyarcViz: Visualizer = {
@@ -233,7 +253,7 @@ export const polyarcViz: Visualizer = {
   minTerms: 4,
   explain: {
     short: 'An NCurve-style smooth curve, bending by each term mod N.',
-    long: 'The technique from the SeqFan thread that prompted this project: each term bends the path by an angle set by its residue, drawn as a smooth arc rather than a hard corner. The arc is angle x (a(n) mod b) + c degrees, which covers the NCurve rule at angle 1 and the centred-residue variant at c = -angle x (b-1)/2. Raising b past a handful of residues is where the organic shapes come from: at b = 360 every whole degree is reachable. It has a limit worth knowing: once b is larger than every term, the residues are the terms and raising it further changes nothing, so A000002 with its 1s and 2s has exactly two distinct settings of b and looks like a broken control. Whether those shapes mean anything is exactly the open question here -- draw a null model beside it and see which of them a scrambling of the same numbers also produces.',
+    long: 'The technique from the SeqFan thread that prompted this project: each term bends the path by an angle set by its residue, drawn as a smooth arc rather than a hard corner. The arc is angle x (a(n) mod b) + c degrees, which covers the NCurve rule at angle 1 and the centred-residue variant at c = -angle x (b-1)/2. Raising b past a handful of residues is where the organic shapes come from: at b = 360 every whole degree is reachable. It has a limit worth knowing: once b is larger than every term, the residues are the terms and raising it further changes nothing, so A000002 with its 1s and 2s has exactly two distinct settings of b and looks like a broken control. Turn sets which way the pen bends: ncurve matches NCurve\'s own drawings, and maths draws their mirror image. Whether those shapes mean anything is exactly the open question here -- draw a null model beside it and see which of them a scrambling of the same numbers also produces.',
   },
   params: [
     // Defaults reproduce the previous centred view exactly: 30 x (r - 3) is
@@ -243,6 +263,9 @@ export const polyarcViz: Visualizer = {
     // what put its drawings out of reach.
     { kind: 'number', id: 'modulus', label: 'Mod b', default: 7, min: 2, max: 360, step: 1 },
     { kind: 'number', id: 'offset', label: '+/- c', default: -90, min: -360, max: 360, step: 1 },
+    // Handedness. 'ncurve' draws what NCurve draws; 'maths' is the mirror
+    // image, with positive turns anticlockwise. See handOf.
+    { kind: 'select', id: 'turn', label: 'Turn', default: 'ncurve', options: ['ncurve', 'maths'] },
   ],
   render(seq: SequenceView, params: Params, ctx: CanvasRenderingContext2D, size: Size) {
     const opts = sampled(seq, params);

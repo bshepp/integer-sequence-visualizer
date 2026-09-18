@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { EXAMPLES, heroEntry, workedEntries, threadEntries } from '../../src/examples/entries';
+import { PRESETS } from '../../src/sequence/presets';
 import { encodeState, decodeState } from '../../src/ui/urlState';
 import { registerAll } from '../../src/viz/all';
 import { allVisualizers, clearRegistry } from '../../src/viz/registry';
@@ -103,12 +104,21 @@ describe('worked examples', () => {
     }
   });
 
-  it('the thread shelf really is drawn by the rule the page says it is', () => {
-    // The note under the heading tells the reader these use NCurve's own rule,
-    // arc = (a(n) mod 360) - 180, which is the polyarc view at angle 1.
+  it('the thread shelf draws the pictures Bill named, as his own images record them', () => {
+    // The note under the heading says these are drawn at the settings NCurve
+    // printed on Bill's images. That record lives once, on the presets, and is
+    // pinned against the images in tests/sequence/presets.test.ts. This used
+    // to assert mod 360 - 180 for all of them, which was true of the code and
+    // false of Sloane's, whose image is mod 220, +320 - so the test passed
+    // while the shelf showed a different picture from the one it described.
     for (const e of threadEntries()) {
-      expect(e.state.vizId, e.id).toBe('polyarc');
-      expect(e.state.params, e.id).toEqual({ angle: 1, modulus: 360, offset: -180 });
+      const view = PRESETS.find((p) => p.aNumber === e.sequence.aNumber)?.view;
+      expect(view, `${e.id} has no record of Bill's image`).toBeDefined();
+      expect(e.state.vizId, e.id).toBe(view!.vizId);
+      expect(e.state.params, e.id).toEqual({
+        angle: view!.params.angle, modulus: view!.params.modulus, offset: view!.params.offset,
+      });
+      expect(e.sequence.terms.length, `${e.id} term count`).toBe(view!.terms);
     }
   });
 

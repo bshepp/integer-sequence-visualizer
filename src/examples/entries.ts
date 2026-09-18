@@ -242,11 +242,16 @@ export const EXAMPLES: ExampleEntry[] = [
   // ---------------------------------------------------------------------
   // From the SeqFan thread. Drawn, not worked.
   //
-  // NCurve's own rule in every one: arc = 1 x (a(n) mod 360) - 180, which is
-  // what the polyarc view does at angle 1. Bill McEachen said he iterated no
-  // parameters, so these are close to the settings the pictures in the thread
-  // were made at, and deliberately so - the point of the shelf is that these
-  // are the thread's images, now with a null model one click away.
+  // The settings and term counts NCurve printed on Bill McEachen's own images,
+  // read off his messages of 3 and 4 August 2026, and drawn NCurve's way round
+  // (see handOf in polyarc.ts). Bill said he iterated no parameters, and for
+  // all but one that is NCurve's rule at its defaults, arc = a(n) mod 360 - 180.
+  // The exception is A019488, which he took from a drawing Neil Sloane had
+  // added: mod 220, +320. The point of the shelf is that these are the
+  // thread's images, now with a null model one click away - so they have to be
+  // the thread's images. Until September the counts were whatever had been
+  // bundled and Sloane's was drawn at the defaults, which is a different
+  // picture from the one the text describes.
   //
   // Every one carries verdict 'open' and says in its own words that nothing
   // has been measured. Naming a sequence is not the same as knowing anything
@@ -277,7 +282,7 @@ export const EXAMPLES: ExampleEntry[] = [
     },
     verdict: 'open',
     group: 'thread',
-    caption: "Named for its shape by Bill McEachen. Twenty terms, growing fast.",
+    caption: "Named for its shape by Bill McEachen. 201 terms, growing fast.",
     body: 'The exponential generating function cos(x)/(cos(x) - sin(x)) expanded as a series. Its terms climb past seven quintillion by the twentieth, so under a modulus of 360 the residues jump about freely and successive arcs have little to do with one another. Worth watching what the permutation surrogate does here in particular: when the residues are already scattered, shuffling them may change remarkably little, and a null that cannot tell the difference is telling you something.',
   },
   {
@@ -300,13 +305,13 @@ export const EXAMPLES: ExampleEntry[] = [
     sequence: oeisSeq('A019488', 'Expansion of 1/((1-4*x)*(1-6*x)*(1-11*x))', A019488_TERMS),
     state: {
       seqRef: { kind: 'oeis', aNumber: 'A019488' },
-      vizId: 'polyarc', params: { angle: 1, modulus: 360, offset: -180 },
+      vizId: 'polyarc', params: { angle: 1, modulus: 220, offset: 320 },
       mode: 'side', surrogate: 'permutation', seed: 1, ensembleN: 200,
     },
     verdict: 'open',
     group: 'thread',
     caption: 'The one that started the collecting: Bill picked it out first.',
-    body: 'A019488 is the expansion of 1/((1-4x)(1-6x)(1-11x)), and its OEIS author line reads N. J. A. Sloane. It was the first NCurve drawing anyone in the thread singled out - Bill McEachen called it his favourite, George Whale built a gallery partly to hold it, and the collecting of named curves followed from there. Drawn here from the first hundred-odd terms of its b-file. Nothing about the picture has been measured.',
+    body: 'A019488 is the expansion of 1/((1-4x)(1-6x)(1-11x)), and its OEIS author line reads N. J. A. Sloane. It was the first NCurve drawing anyone in the thread singled out - Bill McEachen called it his favourite, George Whale built a gallery partly to hold it, and the collecting of named curves followed from there. Drawn at the settings on Bill\'s own image of it - mod 220 and +320, not NCurve\'s defaults - from all 201 terms of its b-file. Nothing about the picture has been measured.',
   },
   {
     id: 'thread-zipper',

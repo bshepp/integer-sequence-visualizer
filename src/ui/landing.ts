@@ -400,8 +400,8 @@ export function buildLanding(opts: LandingOptions): HTMLElement {
   // stable edge to align to - and centred text stops being readable at about
   // three lines. It ran to five.
   threadNote.append(
-    ' and named, drawn by his rule: arc = (a(n) mod 360) - 180. Each opens with a '
-    + 'null model beside it, and nobody has run one yet - so you can be the first.',
+    ' and named, drawn at the settings NCurve printed on his own images. Each opens '
+    + 'with a null model beside it, and nobody has run one yet - so you can be the first.',
   );
 
   const threadStrip = buildStrip(threadEntries());

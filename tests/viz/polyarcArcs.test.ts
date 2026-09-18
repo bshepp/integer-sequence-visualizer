@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { chordArc, pathTransform, toScreen, type Pt } from '../../src/viz/pathTransform';
-import { polyarcPath, polyarcViz, segmentTurns, arcDegrees } from '../../src/viz/polyarc';
+import { polyarcPath, polyarcViz, segmentTurns, arcDegrees, handOf } from '../../src/viz/polyarc';
 import { turtleViz, strokePath } from '../../src/viz/turtle';
 import { SequenceView, type Sequence } from '../../src/sequence/sequence';
 import { defaultParams } from '../../src/viz/types';
@@ -166,7 +166,8 @@ describe('the samples did not move', () => {
     // than from the model: position() and locate() measure against these, and
     // an arc that missed them would report the cursor off the line.
     const params = defaultParams(polyarcViz.params);
-    const pts = polyarcPath(seq, OPTS);
+    // The same way round as the view draws it, which is NCurve's by default.
+    const pts = polyarcPath(seq, { ...OPTS, hand: handOf(params) });
     const t = pathTransform(pts, SIZE);
     for (const index of [0, 3, 9, seq.length - 1]) {
       const p = polyarcViz.position!(seq, params, SIZE, index)!;

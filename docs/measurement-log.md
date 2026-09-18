@@ -201,6 +201,64 @@ not somewhere you should have to press Back to escape.
 
 ---
 
+## Presets: do Bill's named curves draw what he named?
+
+**Asked as:** "will you go through the presets on the engine page and make sure
+they render the correct things?"
+
+All 26 presets load the right sequence: each A-number's OEIS name matches its
+label. The eleven Bill McEachen named for how they looked in NCurve did not draw
+what he named:
+
+- **A preset loaded only the sequence**, into whatever view happened to be
+  open, from the few dozen terms the OEIS entry lists inline. "Zipper" drew a
+  zipper only in the curve view, at NCurve's settings, with 1,000 terms - and
+  it loaded 42.
+- **The thread shelf's "Sloane's" was drawn at NCurve's defaults.** Bill's image
+  of it is mod 220, +320: a different picture from the one its text described.
+- **Shelf term counts were whatever had been bundled** - Propeller 91, Saw blade
+  123, Zipper 300, Slinky 400 - where Bill drew 201, 201, 1,000 and 1,000.
+- **Every curve on the site was the mirror image of NCurve's.** Same shapes,
+  reflected top to bottom.
+
+The ground truth is the settings NCurve prints in the corner of every image,
+read off the attachments to Bill's messages of 3 and 4 August 2026 and
+cross-checked against George Whale's gallery where it has them:
+
+| preset | mod b | c | terms |
+|---|---|---|---|
+| French curve A000376 | 360 | -180 | 20 |
+| Pie crust A000464 | 360 | -180 | 216 |
+| Propeller A000828 | 360 | -180 | 201 |
+| Tire A001051 | 360 | -180 | 1,000 |
+| Saw blade A001553 | 360 | -180 | 201 |
+| A001571 | 360 | -180 | 201 |
+| A001603 | 360 | -180 | 1,188 |
+| Sloane's A019488 | 220 | +320 | 201 |
+| Record disc A039188 | 360 | -180 | 70 |
+| Zipper A039685 | 360 | -180 | 1,000 |
+| Slinky A039970 | 360 | -180 | 1,000 |
+
+One disagreement between the two sources: the gallery's propeller is 64 terms
+and Bill's own image 201. The site follows Bill, since the name is his.
+
+The mirror image has a mechanism. `polyarcPath` works in maths coordinates,
+where a positive turn is anticlockwise, and `pathTransform` flips y so the
+screen agrees; NCurve draws in screen coordinates without the flip. It is now a
+`turn` setting on the curve view, defaulting to NCurve's way round. No
+measurement moves: residues, steps and runs do not know which way the pen
+turned.
+
+**A test passed the whole time.** `entries.test.ts` asserted mod 360 - 180 for
+every thread entry, which was true of the code and false of the picture. It now
+checks the shelf against the record of Bill's images, which
+`tests/sequence/presets.test.ts` pins as a table.
+
+Cost: full-length term arrays take the bundle from 59 KB to 88 KB gzipped,
+most of it A000828, whose 201st term has 396 digits.
+
+---
+
 ## Standing lessons
 
 - **Measure in one run.** Two of the wrong numbers above came from comparing

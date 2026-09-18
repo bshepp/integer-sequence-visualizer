@@ -2,7 +2,7 @@ import type { Sequence } from '../sequence/sequence';
 import { lookupById, search, fetchBFile, withTerms } from '../sequence/oeisClient';
 import { sequenceFromPaste } from '../sequence/pasteParser';
 import { sequenceFromFormula, validateFormula } from '../sequence/formula';
-import { PRESETS } from '../sequence/presets';
+import { PRESETS, type PresetView } from '../sequence/presets';
 import { labelledControl } from './a11y';
 import type { Params } from '../viz/types';
 import { estimateFrameMs, bandFor, costMessage, type CostBand } from '../viz/renderCost';
@@ -10,6 +10,12 @@ import { estimateFrameMs, bandFor, costMessage, type CostBand } from '../viz/ren
 interface Handlers {
   onSequence(seq: Sequence): void;
   onError(msg: string): void;
+  /**
+   * A preset that is a picture rather than a sequence: load it into the view
+   * it was named in. Optional so the panel still works where nothing can
+   * switch views - there a preset just loads its sequence, as they all used to.
+   */
+  onPreset?(seq: Sequence, view: PresetView): void;
 }
 
 // Panel instances get distinct id prefixes. Only one panel exists in the
@@ -488,7 +494,36 @@ export function buildSequencePanel(handlers: Handlers): {
     b.className = 'preset-button';
     b.textContent = p.label;
     b.title = p.aNumber;
-    b.addEventListener('click', () => load(lookupById(p.aNumber)));
+    b.addEventListener('click', () => {
+      const view = p.view;
+      const onPreset = handlers.onPreset;
+      if (!view || !onPreset) { load(lookupById(p.aNumber)); return; }
+      // Bill's presets used to load only the sequence, into whatever view was
+      // open, from the few dozen terms the OEIS entry lists inline. "Zipper"
+      // then drew a zipper only by coincidence: in the curve view, at NCurve's
+      // settings, with the full thousand terms. Now the name brings its
+      // picture with it.
+      b.disabled = true;
+      lookupById(p.aNumber)
+        .then(async (seq) => {
+          try {
+            const { terms, truncated } = await fetchBFile(p.aNumber, view.terms);
+            // Recorded before onPreset for the same reason as the b-file
+            // button's: it leads to setInfo, which reads it.
+            bfileKnown = { aNumber: p.aNumber, count: terms.length, truncated };
+            onPreset(withTerms(seq, terms), view);
+          } catch (e) {
+            // Still the right view, just thinner - and said so, rather than
+            // leaving a sparse picture to pass for the one Bill named.
+            onPreset(seq, view);
+            handlers.onError(
+              `The b-file did not load (${e instanceof Error ? e.message : String(e)}), so this is drawn from the ${seq.terms.length} terms the OEIS entry lists inline.`,
+            );
+          }
+        })
+        .catch((e) => handlers.onError(e instanceof Error ? e.message : String(e)))
+        .finally(() => { b.disabled = false; });
+    });
     shelf.appendChild(b);
   }
   el.appendChild(shelf);

@@ -544,6 +544,72 @@ describe('mountApp - ensemble failure does not stay permanently stuck on "Comput
   });
 });
 
+describe('presets that name pictures', () => {
+  // Bill McEachen's eleven are named for how they looked in NCurve. Before
+  // this, clicking one loaded its sequence into whatever view was open, from
+  // the few dozen terms the OEIS entry lists inline, so "Zipper" drew a zipper
+  // only if the visitor happened to be in the curve view at NCurve's settings.
+  const shard = {
+    A039685: { n: 'Numbers m such that m^2 ends in 444.', d: '38,462,538,962' },
+    A000045: { n: 'Fibonacci numbers', d: '0,1,1,2,3,5,8,13' },
+  };
+  const bfile = Array.from({ length: 1200 }, (_, i) => `${i + 1} ${38 + 500 * i}`).join('\n');
+  const reply = (body: { json?: unknown; text?: string }, ok = true) => ({
+    ok, status: ok ? 200 : 404, json: async () => body.json ?? {}, text: async () => body.text ?? '',
+  });
+  const fetchMock = vi.fn(async (url: string) => {
+    if (url.startsWith('/data/seq/')) return reply({ json: shard });
+    if (url === '/api/A039685/b039685.txt') return reply({ text: bfile });
+    return reply({}, false);
+  });
+  const clickPreset = (root: ParentNode, label: string): void =>
+    [...root.querySelectorAll<HTMLButtonElement>('.preset-button')].find((b) => b.textContent === label)!.click();
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    history.replaceState(null, '', location.pathname);
+  });
+
+  it('the panel hands over the view and the terms the picture was drawn from', async () => {
+    vi.stubGlobal('fetch', fetchMock);
+    const onPreset = vi.fn();
+    const onSequence = vi.fn();
+    const { el } = buildSequencePanel({ onSequence, onError: () => {}, onPreset });
+    clickPreset(el, 'Zipper');
+    await vi.waitFor(() => expect(onPreset).toHaveBeenCalledTimes(1));
+    const [seq, view] = onPreset.mock.calls[0]!;
+    expect(view).toBe(PRESETS.find((p) => p.label === 'Zipper')!.view);
+    // 1,000 of the b-file's 1,200: the count on Bill's image, not the b-file's.
+    expect(seq.terms).toHaveLength(1000);
+    expect(onSequence).not.toHaveBeenCalled();
+  });
+
+  it('a classic preset still just loads its sequence into the open view', async () => {
+    vi.stubGlobal('fetch', fetchMock);
+    const onPreset = vi.fn();
+    const onSequence = vi.fn();
+    const { el } = buildSequencePanel({ onSequence, onError: () => {}, onPreset });
+    clickPreset(el, 'Fibonacci');
+    await vi.waitFor(() => expect(onSequence).toHaveBeenCalledTimes(1));
+    expect(onPreset).not.toHaveBeenCalled();
+  });
+
+  it("in the app, Zipper switches to the curve view at NCurve's settings", async () => {
+    vi.stubGlobal('fetch', fetchMock);
+    // Start on the engine rather than the landing, so the address is written.
+    location.hash = '#viz=scatter';
+    const root = document.createElement('div');
+    mountApp(root);
+    const picker = root.querySelector<HTMLSelectElement>('.viz-picker')!;
+    expect(picker.value).toBe('scatter');
+    clickPreset(root, 'Zipper');
+    await vi.waitFor(() => expect(picker.value).toBe('polyarc'));
+    await vi.waitFor(() => expect(decodeState(location.hash)?.vizId).toBe('polyarc'));
+    expect(decodeState(location.hash)!.params).toMatchObject({ angle: 1, modulus: 360, offset: -180, turn: 'ncurve' });
+    expect(root.querySelector('.info-card')!.textContent).toMatch(/1,000 terms/);
+  });
+});
+
 describe('accessibility of the app chrome', () => {
   it('the engine chrome carries exactly one h1', () => {
     // Scoped to the engine header: the landing overlay is a separate screen

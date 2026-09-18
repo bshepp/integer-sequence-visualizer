@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { polyarcPath, polyarcViz, arcDegrees } from '../../src/viz/polyarc';
+import { polyarcPath, polyarcViz, arcDegrees, handOf, segmentTurns } from '../../src/viz/polyarc';
 import { SequenceView, type Sequence } from '../../src/sequence/sequence';
 import { defaultParams } from '../../src/viz/types';
 import { fakeCtx } from '../helpers/fakeCtx';
@@ -65,7 +65,7 @@ describe('polyarcPath', () => {
     const then = polyarcPath(mk([1n, 5n, 2n, 6n]), { angle: 30, modulus: 7, offset: -30 * (7 - 1) / 2 });
     expect(now).toEqual(then);
     const spec = polyarcViz.params.map((p) => [p.id, (p as { default: unknown }).default]);
-    expect(spec).toEqual([['angle', 30], ['modulus', 7], ['offset', -90]]);
+    expect(spec).toEqual([['angle', 30], ['modulus', 7], ['offset', -90], ['turn', 'ncurve']]);
   });
 
   it('reaches every whole degree once b is opened up', () => {
@@ -76,6 +76,38 @@ describe('polyarcPath', () => {
     const angles = new Set<number>();
     for (let r = 0; r < 360; r++) angles.add(arcDegrees(r, 1, -180));
     expect(angles.size).toBe(360);
+  });
+});
+
+describe('turn: which way the pen bends', () => {
+  // Found by drawing Bill McEachen's eleven curves at the settings printed on
+  // his own NCurve images: every one came out the same shape, reflected top to
+  // bottom. This view worked in maths coordinates and NCurve in screen ones.
+  const seq = mk([3n, 17n, 250n, 91n, 7n]);
+  const opts = { angle: 1, modulus: 360, offset: -180 };
+
+  it("defaults to NCurve's way round, with the maths convention one setting away", () => {
+    expect(handOf(defaultParams(polyarcViz.params))).toBe(-1);
+    expect(handOf({ ...defaultParams(polyarcViz.params), turn: 'maths' })).toBe(1);
+  });
+
+  it('the two settings draw mirror images of each other', () => {
+    const ncurve = polyarcPath(seq, { ...opts, hand: -1 });
+    const maths = polyarcPath(seq, { ...opts, hand: 1 });
+    expect(ncurve).toHaveLength(maths.length);
+    ncurve.forEach((p, i) => {
+      expect(p.x).toBeCloseTo(maths[i]!.x, 12);
+      expect(p.y).toBeCloseTo(-maths[i]!.y, 12);
+    });
+  });
+
+  it('the arcs between samples bend the same way as the path', () => {
+    // strokePath recovers each arc from the turn it is handed. Flipping the
+    // path without flipping these would join mirrored samples with arcs that
+    // bulge the wrong way.
+    const ncurve = segmentTurns(seq, { ...opts, hand: -1, segments: 8 });
+    const maths = segmentTurns(seq, { ...opts, hand: 1, segments: 8 });
+    for (let i = 1; i <= 40; i++) expect(ncurve(i)).toBeCloseTo(-maths(i), 15);
   });
 });
 

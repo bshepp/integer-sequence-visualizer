@@ -1,4 +1,5 @@
 import type { Sequence } from '../sequence/sequence';
+import type { PresetView } from '../sequence/presets';
 import { SequenceView } from '../sequence/sequence';
 import { registerAll } from '../viz/all';
 import { allVisualizers, getVisualizer } from '../viz/registry';
@@ -217,9 +218,30 @@ export function mountApp(root: HTMLElement): void {
     redraw();
   }
 
+  /**
+   * A preset that names a picture: switch to the view it was named in, then
+   * load its terms. What the picker does on a change of view, with the view's
+   * settings laid over its defaults, and the zoom reset so the picture arrives
+   * framed rather than wherever the last one was left. The comparison mode and
+   * the line style are the visitor's and are kept.
+   */
+  function applyPreset(seq: Sequence, view: PresetView): void {
+    state.vizId = view.vizId;
+    saidInert = false;
+    state.params = { ...defaultParams(getVisualizer(view.vizId).params), ...view.params };
+    picker.value = state.vizId;
+    rebuildParams();
+    syncPanelCost();
+    viewport = { ...IDENTITY_VIEWPORT };
+    nullViewport = { ...IDENTITY_VIEWPORT };
+    syncZoomBars();
+    applySeq(seq);
+  }
+
   const panel = buildSequencePanel({
     onSequence: applySeq,
     onError: showError,
+    onPreset: applyPreset,
   });
   sidebar.appendChild(panel.el);
 
