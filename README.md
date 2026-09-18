@@ -169,6 +169,9 @@ Two limitations follow directly from this approach, both by design:
 - What the site believed and then measured:
   [`docs/measurement-log.md`](docs/measurement-log.md) - including the
   predictions that turned out wrong, which are most of them.
+- Who found what: [`docs/who-found-what.md`](docs/who-found-what.md) - which
+  parts came from Brian and which from Claude, reconstructed from the working
+  record.
 - Wiring the null ladder into the engine:
   [`docs/ladder-in-the-engine-brief.md`](docs/ladder-in-the-engine-brief.md)
 
