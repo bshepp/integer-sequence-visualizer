@@ -2,6 +2,8 @@
 import { describe, it, expect } from 'vitest';
 import { colorsFor } from '../../src/viz3d/colors';
 import { liftPath } from '../../src/viz3d/lift';
+import { DEFAULT_STYLE } from '../../src/viz/style';
+import { canvasTheme } from '../../src/viz/theme';
 
 const geometry = liftPath(
   [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }],
@@ -33,7 +35,39 @@ describe('colorsFor', () => {
     expect(Math.abs(colors[1]! - g)).toBeLessThanOrEqual(1);
     expect(Math.abs(colors[2]! - b)).toBeLessThanOrEqual(1);
   });
+
+  // Regression: strokeColorAt does not only return hsl(...) - blackLine
+  // returns '#000000' and colorMode 'none' returns the theme's muted hex.
+  // parseCssColor's [\d.]+ regex used to pull too few groups out of either
+  // form and silently fall back to white, which is exactly wrong: a style
+  // override should never be invisible.
+  it('blackLine forces pure black for every vertex', () => {
+    const colors = colorsFor(geometry, 3, { ...DEFAULT_STYLE, blackLine: true });
+    for (let i = 0; i < colors.length; i++) {
+      expect(colors[i]).toBe(0);
+    }
+  });
+
+  it("colorMode 'none' gives the theme's muted grey for every vertex, not white", () => {
+    const style = { ...DEFAULT_STYLE, colorMode: 'none' as const };
+    const colors = colorsFor(geometry, 3, style);
+    const [er, eg, eb] = hexToRgb(canvasTheme().muted);
+    expect([er, eg, eb]).not.toEqual([255, 255, 255]);
+    for (let i = 0; i < colors.length / 3; i++) {
+      expect(colors[i * 3]).toBe(er);
+      expect(colors[i * 3 + 1]).toBe(eg);
+      expect(colors[i * 3 + 2]).toBe(eb);
+    }
+  });
 });
+
+/** Reference hex parser, deliberately independent of colors.ts's own parser. */
+function hexToRgb(hex: string): [number, number, number] {
+  const m = hex.match(/^#([0-9a-fA-F]{6})$/);
+  if (!m) throw new Error(`hexToRgb: not a 6-digit hex colour: ${hex}`);
+  const n = parseInt(m[1]!, 16);
+  return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
+}
 
 /** Reference conversion, deliberately written out rather than imported. */
 function hslToRgb(h: number, s: number, l: number): [number, number, number] {
