@@ -50,12 +50,20 @@ which is not a real number, and a `readPixels`-based approach is dominated by
 the pixel transfer rather than the draw. Neither is trustworthy, so neither is
 reported as a fact here.
 
-`bench.ts` still returns an `msPerFrame` field per row (Stage B widened
-`BenchRow` to carry it alongside `buildMs`/`uploadMs`/`totalMs`), and it now
-falls back to a timer instead of `requestAnimationFrame` when the tab is
-hidden, so the harness terminates instead of hanging. That fallback makes the
-harness finish; it does not make the number it produces in a hidden tab a
-frame rate. Treat `msPerFrame` as meaningful only from a run in a visible tab.
+`bench.ts` returns two fields per row for this: `framePacing`
+(`'raf' | 'timer'`) and `msPerFrame` (`number | null`). `framePacing` is
+`'raf'` only when every one of that row's 30 frames was paced by a real
+`requestAnimationFrame` callback, and flips to `'timer'` the moment even one
+frame falls back to a plain timer - checked frame by frame, since a tab can
+go hidden partway through a row's sweep, not read once at the start. When a
+row is `'timer'`-paced, its `msPerFrame` is `null`, not a number with an
+asterisk: a reading from an unpaced loop is not a frame time, and `null`
+cannot be copied into a table and mistaken for a real one the way a plausible
+number could be. This is what happened on this run - every row's timing came
+back `framePacing: 'timer'`, `msPerFrame: null` - which is the whole reason
+this file reports build+upload cost as the fact and frame rate as
+unmeasured, rather than printing whatever number the timer fallback
+produced.
 
 ## Getting a real frame-rate number later
 
@@ -68,9 +76,10 @@ To measure steady-state frame rate (not attempted in this pass):
    foreground. `document.hidden` must read `false` for the whole run.
 3. Watch the console: `runBench` prints a table (`console.table`) and the GPU
    string (`console.log('GPU:', ...)`).
-4. Read `msPerFrame` from that table. It is only honest if the tab stayed
-   visible for the whole run - switching away partway through will silently
-   fall back to the timer path for the remaining frames.
+4. Check `framePacing` before trusting `msPerFrame` on any row. `'raf'` means
+   that row's `msPerFrame` is a real measurement; `'timer'` means it is
+   `null` in the table, because the tab lost visibility during that row's
+   sweep. Only copy `msPerFrame` values from `'raf'` rows into this document.
 
 ## Standing lesson
 

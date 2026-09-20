@@ -2,27 +2,39 @@
 import { createScene } from './scene';
 import { liftPath } from '../lift';
 
+/** Which timer paced a frame: a real vsync, or the hidden-tab fallback. */
+export type FramePacing = 'raf' | 'timer';
+
 /**
  * One vertex count's cost, broken into the phases that turned out to differ:
  * building the path in JS, uploading it to the GPU, and steady-state frame
  * time once it's on screen. `totalMs` is `buildMs + uploadMs` - the stall a
  * viewer feels when a drawing is constructed, before any frame is drawn.
  *
- * `msPerFrame` is only honest when the tab is visible - see `nextFrame`
- * below. In an automated, hidden tab the frame callback is throttled, so the
- * number this field carries there is not steady-state frame rate; it is
- * whatever the timer fallback measured, which is not the same thing.
+ * `framePacing` is data, not a comment to be trusted on faith: it is `'raf'`
+ * only when every one of this row's frames was paced by a real
+ * `requestAnimationFrame` callback, and `'timer'` the moment even one frame
+ * fell back to the hidden-tab timer (see `nextFrame` below) - a tab can go
+ * hidden partway through a row's sweep, so this is checked frame by frame,
+ * not read once at the row's start. When it is `'timer'`, `msPerFrame` is
+ * `null` rather than a number that merely carries a warning in its type
+ * comment: a reading from an unpaced loop is not a frame time, and a `null`
+ * cannot be pasted into a table and mistaken for one the way a plausible
+ * number can.
  */
 export interface BenchRow {
   vertices: number;
   buildMs: number;
   uploadMs: number;
   totalMs: number;
-  msPerFrame: number;
+  msPerFrame: number | null;
+  framePacing: FramePacing;
 }
 
 /**
- * One frame's wait, however the tab can currently deliver it.
+ * One frame's wait, however the tab can currently deliver it - and which of
+ * the two it was, so the caller can tell a real frame boundary from a
+ * fallback rather than inferring it after the fact.
  *
  * `requestAnimationFrame` never fires while `document.hidden` is true - an
  * automated browser tab, or one in a background window - so awaiting it
@@ -31,9 +43,9 @@ export interface BenchRow {
  * it is what keeps `runBench` from hanging rather than a claim about frame
  * pacing.
  */
-function nextFrame(): Promise<void> {
-  if (document.hidden) return new Promise((resolve) => setTimeout(resolve, 0));
-  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+function nextFrame(): Promise<FramePacing> {
+  if (document.hidden) return new Promise((resolve) => setTimeout(() => resolve('timer'), 0));
+  return new Promise((resolve) => requestAnimationFrame(() => resolve('raf')));
 }
 
 /**
@@ -66,15 +78,17 @@ export async function runBench(canvas: HTMLCanvasElement): Promise<BenchRow[]> {
       const uploadMs = performance.now() - uploadStart;
 
       const FRAMES = 30;
+      let framePacing: FramePacing = 'raf';
       const frameStart = performance.now();
       for (let f = 0; f < FRAMES; f++) {
         scene.resize();
         gl?.finish();
-        await nextFrame();
+        const pacing = await nextFrame();
+        if (pacing === 'timer') framePacing = 'timer'; // sticky: one fallback taints the whole row's average
       }
-      const msPerFrame = (performance.now() - frameStart) / FRAMES;
+      const msPerFrame = framePacing === 'raf' ? (performance.now() - frameStart) / FRAMES : null;
 
-      rows.push({ vertices, buildMs, uploadMs, totalMs: buildMs + uploadMs, msPerFrame });
+      rows.push({ vertices, buildMs, uploadMs, totalMs: buildMs + uploadMs, msPerFrame, framePacing });
     }
     return rows;
   } finally {
