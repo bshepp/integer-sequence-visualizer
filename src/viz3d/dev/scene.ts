@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { Geometry3D } from '../types';
+import { decimate } from '../pick';
 
 export interface Scene3D {
   setGeometry(g: Geometry3D, colors?: Uint8Array): void;
@@ -10,6 +11,9 @@ export interface Scene3D {
   dispose(): void;
 }
 
+/** Vertex cap for the invisible picking proxy - see `decimate` in ../pick.ts. */
+const MAX_PICK_VERTICES = 20_000;
+
 /**
  * The only file in this repository that knows a GPU exists.
  *
@@ -17,8 +21,13 @@ export interface Scene3D {
  * invent convergence and looking down z is exactly the 2D picture. Depth test
  * off, because occlusion could otherwise make a difference between the real
  * and null panels that is about the camera rather than the numbers.
+ *
+ * `onPick`, if given, is called with a term index when the viewer clicks a
+ * vertex of the REAL object (never the null model - see the click handler
+ * below). It is optional so existing callers that only want to draw, not
+ * pick, still compile.
  */
-export function createScene(canvas: HTMLCanvasElement): Scene3D {
+export function createScene(canvas: HTMLCanvasElement, onPick?: (term: number) => void): Scene3D {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
 
@@ -44,6 +53,30 @@ export function createScene(canvas: HTMLCanvasElement): Scene3D {
   // the frustum for the new aspect ratio without moving the camera or the
   // orbit target - that would throw away the angle the viewer had chosen.
   let halfExtent = 1;
+
+  // The picking proxy: an invisible, decimated THREE.Points copy of the real
+  // object (see decimate() in ../pick.ts), cheap enough to raycast against on
+  // click. proxySource[hitIndex] maps a hit back to a vertex index in the
+  // real geometry, and currentTermOf maps that vertex index to its term.
+  let proxy: THREE.Points | null = null;
+  let proxyMaterial: THREE.PointsMaterial | null = null;
+  let proxySource: Uint32Array | null = null;
+  let currentTermOf: Uint32Array | null = null;
+
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+
+  // Picking happens on click, never on pointermove/hover: a raycast against
+  // tens of thousands of points is far too slow to run on every mouse move.
+  canvas.addEventListener('click', (e) => {
+    if (!proxy || !onPick || !proxySource || !currentTermOf) return;
+    const rect = canvas.getBoundingClientRect();
+    pointer.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+    raycaster.setFromCamera(pointer, camera);
+    raycaster.params.Points.threshold = (camera.top - camera.bottom) / 100;
+    const hit = raycaster.intersectObject(proxy, false)[0];
+    if (hit?.index !== undefined) onPick(currentTermOf[proxySource[hit.index]!]!);
+  });
 
   function frame(): void {
     renderer.render(scene, camera);
@@ -74,6 +107,17 @@ export function createScene(canvas: HTMLCanvasElement): Scene3D {
         material?.dispose();
         scene.remove(object);
       }
+      // The proxy belongs to the real object and is rebuilt (and disposed -
+      // geometry AND material, the leak an earlier review caught here) every
+      // time the real object is, so a click always raycasts against the
+      // geometry currently on screen rather than a stale one.
+      if (proxy) {
+        proxy.geometry.dispose();
+        proxyMaterial?.dispose();
+        scene.remove(proxy);
+        proxy = null;
+        proxyMaterial = null;
+      }
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(g.positions, 3));
       if (colors) {
@@ -90,6 +134,17 @@ export function createScene(canvas: HTMLCanvasElement): Scene3D {
       // Index order is back-to-front because z is monotonic in index.
       object.renderOrder = 0;
       scene.add(object);
+
+      const { positions: proxyPositions, sourceIndex } = decimate(g, MAX_PICK_VERTICES);
+      const proxyGeometry = new THREE.BufferGeometry();
+      proxyGeometry.setAttribute('position', new THREE.BufferAttribute(proxyPositions, 3));
+      proxyMaterial = new THREE.PointsMaterial();
+      proxy = new THREE.Points(proxyGeometry, proxyMaterial);
+      proxy.visible = false;
+      scene.add(proxy);
+      proxySource = sourceIndex;
+      currentTermOf = g.termOf;
+
       fit(g);
       frame();
     },
@@ -143,6 +198,8 @@ export function createScene(canvas: HTMLCanvasElement): Scene3D {
       material?.dispose();
       nullObject?.geometry.dispose();
       nullMaterial?.dispose();
+      proxy?.geometry.dispose();
+      proxyMaterial?.dispose();
       renderer.dispose();
     },
   };
