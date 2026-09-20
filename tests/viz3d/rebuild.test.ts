@@ -18,7 +18,7 @@ function sequenceOf(n: number): Sequence {
   return { terms: Array.from({ length: n }, (_, i) => BigInt(i + 1)), name: 't', offset: 0, source: 'oeis' };
 }
 
-const baseState: ControlState = { vizId: 'turtle', aNumber: 'A_FIRST', terms: 3, step: 0 };
+const baseState: ControlState = { vizId: 'turtle', aNumber: 'A_FIRST', terms: 3, step: 0, nullOn: true };
 
 describe('createRebuilder', () => {
   it('keeps only the last-started request\'s geometry, even when an earlier request\'s fetch resolves after it', async () => {
@@ -36,7 +36,10 @@ describe('createRebuilder', () => {
     };
 
     const calls: Geometry3D[] = [];
-    const scene = { setGeometry: (g: Geometry3D) => { calls.push(g); } };
+    const scene = {
+      setGeometry: (g: Geometry3D) => { calls.push(g); },
+      setNullGeometry: () => {},
+    };
     const rebuild = createRebuilder(scene, loader);
 
     // Start the first request (3 terms), then - before it resolves - start

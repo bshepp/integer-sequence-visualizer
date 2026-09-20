@@ -6,6 +6,8 @@ export interface ControlState {
   aNumber: string;
   terms: number;
   step: number;
+  /** Whether the null-model panel is drawn beside the real object. Defaults to true. */
+  nullOn: boolean;
 }
 
 /**
@@ -66,6 +68,14 @@ export function buildControls(initial: ControlState, onChange: (s: ControlState)
     emit({ step: 0 });
   });
 
-  el.append(viz, aNumber, terms, step, flat);
+  const nullToggleLabel = document.createElement('label');
+  const nullToggle = document.createElement('input');
+  nullToggle.className = 'nulltoggle';
+  nullToggle.type = 'checkbox';
+  nullToggle.checked = state.nullOn;
+  nullToggle.addEventListener('change', () => emit({ nullOn: nullToggle.checked }));
+  nullToggleLabel.append(nullToggle, document.createTextNode('null'));
+
+  el.append(viz, aNumber, terms, step, flat, nullToggleLabel);
   return el;
 }

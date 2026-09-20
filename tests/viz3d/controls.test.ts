@@ -3,7 +3,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { buildControls, type ControlState } from '../../src/viz3d/dev/controls';
 
-const initial: ControlState = { vizId: 'turtle', aNumber: 'A000002', terms: 500, step: 0.5 };
+const initial: ControlState = { vizId: 'turtle', aNumber: 'A000002', terms: 500, step: 0.5, nullOn: true };
 
 describe('buildControls', () => {
   it('offers exactly the views that support 3D', () => {
@@ -35,5 +35,15 @@ describe('buildControls', () => {
     const el = buildControls(initial, onChange);
     el.querySelector<HTMLButtonElement>('button.flat')!.click();
     expect(onChange).toHaveBeenCalledWith({ ...initial, step: 0 });
+  });
+
+  it('reports the null-model toggle', () => {
+    const onChange = vi.fn();
+    const el = buildControls(initial, onChange);
+    const checkbox = el.querySelector<HTMLInputElement>('input.nulltoggle')!;
+    expect(checkbox.checked).toBe(true);
+    checkbox.checked = false;
+    checkbox.dispatchEvent(new Event('change'));
+    expect(onChange).toHaveBeenCalledWith({ ...initial, nullOn: false });
   });
 });

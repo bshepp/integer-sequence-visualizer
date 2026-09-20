@@ -5,6 +5,7 @@ import type { Geometry3D } from '../types';
 
 export interface Scene3D {
   setGeometry(g: Geometry3D, colors?: Uint8Array): void;
+  setNullGeometry(g: Geometry3D | null, colors?: Uint8Array): void;
   resize(): void;
   dispose(): void;
 }
@@ -34,6 +35,11 @@ export function createScene(canvas: HTMLCanvasElement): Scene3D {
 
   let object: THREE.Line | null = null;
   let material: THREE.LineBasicMaterial | null = null;
+  // The null-model object, tracked and disposed the same way as `object` /
+  // `material` above - two objects sharing this one scene and camera, not a
+  // second scene, so a single drag rotates both identically.
+  let nullObject: THREE.Line | null = null;
+  let nullMaterial: THREE.LineBasicMaterial | null = null;
   // The half-extent fit() last computed, remembered so resize() can rebuild
   // the frustum for the new aspect ratio without moving the camera or the
   // orbit target - that would throw away the angle the viewer had chosen.
@@ -87,6 +93,40 @@ export function createScene(canvas: HTMLCanvasElement): Scene3D {
       fit(g);
       frame();
     },
+    setNullGeometry(g, colors) {
+      if (nullObject) {
+        nullObject.geometry.dispose();
+        nullMaterial?.dispose();
+        scene.remove(nullObject);
+        nullObject = null;
+        nullMaterial = null;
+      }
+      if (!g) {
+        frame();
+        return;
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(g.positions, 3));
+      if (colors) {
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3, true));
+      }
+      nullMaterial = new THREE.LineBasicMaterial({
+        vertexColors: Boolean(colors),
+        color: colors ? 0xffffff : 0xff9f7f,
+        depthTest: false,
+        transparent: true,
+        opacity: 0.9,
+      });
+      nullObject = new THREE.Line(geometry, nullMaterial);
+      // Offset along x by the real object's own width (1.2x, with a floor for
+      // a degenerate zero-width bounds) rather than moved in view space -
+      // this is the same scene and camera as `object`, so one drag rotates
+      // both identically. That shared camera is the whole point: two objects
+      // under two cameras is not a comparison.
+      nullObject.position.x = (g.bounds.max[0] - g.bounds.min[0]) * 1.2 || 1;
+      scene.add(nullObject);
+      frame();
+    },
     resize() {
       renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
       const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
@@ -101,6 +141,8 @@ export function createScene(canvas: HTMLCanvasElement): Scene3D {
       controls.dispose();
       object?.geometry.dispose();
       material?.dispose();
+      nullObject?.geometry.dispose();
+      nullMaterial?.dispose();
       renderer.dispose();
     },
   };
