@@ -5,6 +5,7 @@ import { SequenceView, type Sequence } from '../../sequence/sequence';
 import { getVisualizer } from '../../viz/registry';
 import { defaultParams } from '../../viz/types';
 import { geometryFor } from '../geometry';
+import { colorsFor } from '../colors';
 import { createScene, type Scene3D } from './scene';
 import { buildControls, type ControlState } from './controls';
 
@@ -34,7 +35,7 @@ export function createRebuilder(
     const seq = new SequenceView({ ...loaded, terms: loaded.terms.slice(0, state.terms) });
     const defaults = defaultParams(getVisualizer(state.vizId).params);
     const geometry = geometryFor(state.vizId, seq, defaults, { step: state.step });
-    if (geometry) scene.setGeometry(geometry);
+    if (geometry) scene.setGeometry(geometry, colorsFor(geometry, seq.length));
   };
 }
 

@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { Geometry3D } from '../types';
 
 export interface Scene3D {
-  setGeometry(g: Geometry3D): void;
+  setGeometry(g: Geometry3D, colors?: Uint8Array): void;
   resize(): void;
   dispose(): void;
 }
@@ -62,7 +62,7 @@ export function createScene(canvas: HTMLCanvasElement): Scene3D {
   }
 
   return {
-    setGeometry(g) {
+    setGeometry(g, colors) {
       if (object) {
         object.geometry.dispose();
         material?.dispose();
@@ -70,7 +70,16 @@ export function createScene(canvas: HTMLCanvasElement): Scene3D {
       }
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(g.positions, 3));
-      material = new THREE.LineBasicMaterial({ color: 0x7fd4ff, depthTest: false, transparent: true, opacity: 0.9 });
+      if (colors) {
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3, true));
+      }
+      material = new THREE.LineBasicMaterial({
+        vertexColors: Boolean(colors),
+        color: colors ? 0xffffff : 0x7fd4ff,
+        depthTest: false,
+        transparent: true,
+        opacity: 0.9,
+      });
       object = new THREE.Line(geometry, material);
       // Index order is back-to-front because z is monotonic in index.
       object.renderOrder = 0;
