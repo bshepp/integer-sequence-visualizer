@@ -32,7 +32,9 @@ describe('the 3D tool stays out of the shipped bundle', () => {
     const line = main.split('\n').find((l) => l.includes('viz3d/dev/route'));
     expect(line, 'main.ts does not reference the 3D route').toBeTruthy();
     expect(line!).toMatch(/import\(/);
-    const guard = main.slice(0, main.indexOf('viz3d/dev/route'));
-    expect(guard).toMatch(/import\.meta\.env\.DEV[^]*$/);
+    // Not just "a DEV guard appears somewhere earlier in the file" (the
+    // pre-existing ?ogcard block already satisfies that) - the dynamic
+    // import must sit inside its own `if (import.meta.env.DEV ...) { ... }`.
+    expect(main).toMatch(/if \(import\.meta\.env\.DEV[\s\S]{0,200}?\{[\s\S]{0,400}?import\('\.\/viz3d\/dev\/route'\)/);
   });
 });

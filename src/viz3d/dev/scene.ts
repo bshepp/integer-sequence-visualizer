@@ -33,6 +33,11 @@ export function createScene(canvas: HTMLCanvasElement): Scene3D {
   controls.enableDamping = false;
 
   let object: THREE.Line | null = null;
+  let material: THREE.LineBasicMaterial | null = null;
+  // The half-extent fit() last computed, remembered so resize() can rebuild
+  // the frustum for the new aspect ratio without moving the camera or the
+  // orbit target - that would throw away the angle the viewer had chosen.
+  let halfExtent = 1;
 
   function frame(): void {
     renderer.render(scene, camera);
@@ -44,6 +49,7 @@ export function createScene(canvas: HTMLCanvasElement): Scene3D {
     const [maxX, maxY, maxZ] = g.bounds.max;
     const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, cz = (minZ + maxZ) / 2;
     const half = Math.max(maxX - minX, maxY - minY, maxZ - minZ) / 2 || 1;
+    halfExtent = half;
     const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
     camera.left = -half * aspect * 1.1;
     camera.right = half * aspect * 1.1;
@@ -59,11 +65,12 @@ export function createScene(canvas: HTMLCanvasElement): Scene3D {
     setGeometry(g) {
       if (object) {
         object.geometry.dispose();
+        material?.dispose();
         scene.remove(object);
       }
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(g.positions, 3));
-      const material = new THREE.LineBasicMaterial({ color: 0x7fd4ff, depthTest: false, transparent: true, opacity: 0.9 });
+      material = new THREE.LineBasicMaterial({ color: 0x7fd4ff, depthTest: false, transparent: true, opacity: 0.9 });
       object = new THREE.Line(geometry, material);
       // Index order is back-to-front because z is monotonic in index.
       object.renderOrder = 0;
@@ -73,11 +80,18 @@ export function createScene(canvas: HTMLCanvasElement): Scene3D {
     },
     resize() {
       renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+      const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
+      camera.left = -halfExtent * aspect * 1.1;
+      camera.right = halfExtent * aspect * 1.1;
+      camera.top = halfExtent * 1.1;
+      camera.bottom = -halfExtent * 1.1;
+      camera.updateProjectionMatrix();
       frame();
     },
     dispose() {
       controls.dispose();
       object?.geometry.dispose();
+      material?.dispose();
       renderer.dispose();
     },
   };
