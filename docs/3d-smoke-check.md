@@ -7,12 +7,17 @@ a term. This document is the procedure for the part the suite structurally
 cannot see. Run it by hand, in a real browser, after any change under
 `src/viz3d/`.
 
-Everything under "Checks verified by hand" below has been run at least once
+Everything under "Checks verified on screen" below has been run at least once
 and passed, on the machine and GPU in `docs/3d-measurements.md`
 (`ANGLE (NVIDIA, NVIDIA GeForce GTX 1650 SUPER ..., D3D11)`, 2026-09-20).
-"Checks automation could not settle" is the opposite: things this project
-tried to get a machine to confirm and could not, with the reason why, and the
-by-hand step that settles each one in seconds.
+"Verified on screen" is deliberate wording, not a synonym for "by hand": these
+runs were driven through Chrome automation - a hidden tab, controlled by tool
+calls, with synthetic pointer capture neutralised so dispatched drag and wheel
+events register the way real ones would - and confirmed by reading back the
+rendered pixels, the console and the DOM, not by a person sitting at the
+keyboard. "Checks automation could not settle" is the opposite: things this
+project tried to get a machine to confirm and could not, with the reason why,
+and the by-hand step that settles each one in seconds.
 
 ## Setup
 
@@ -35,7 +40,7 @@ This is the dev-only route (`src/viz3d/dev/route.ts`, mounted from
 param). It replaces the whole page with the 3D tool's own canvas and
 controls — it does not coexist with the normal engine UI in the same tab.
 
-## Checks verified by hand
+## Checks verified on screen
 
 ### 1. It draws
 
@@ -114,8 +119,16 @@ Asking for more terms than the OEIS entry lists inline fetches the b-file
 
 Drag on the canvas: the view orbits (both the real and null objects
 together, one camera — `OrbitControls` in `scene.ts` never runs two
-cameras). Scroll the wheel: the view zooms in and out. Both respond
-smoothly with no console errors.
+cameras). Scroll the wheel: the view zooms in and out.
+
+Verified on screen, not by hand: a synthetic pointer-drag sequence
+(pointerdown, a run of pointermove, pointerup) and a synthetic wheel event
+were dispatched at the canvas through Chrome automation in a hidden tab, with
+pointer capture neutralised first — a hidden/automated tab cannot rely on real
+OS-level pointer capture the way a person's drag can. Reading the camera state
+and the rendered pixels back before and after each showed the orbit and the
+zoom actually moved the view, and `read_console_messages` showed nothing
+logged. No person dragged a mouse for this check.
 
 ### 6. The bundle
 

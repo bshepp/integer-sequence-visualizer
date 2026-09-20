@@ -81,7 +81,11 @@ export async function runBench(canvas: HTMLCanvasElement): Promise<BenchRow[]> {
       let framePacing: FramePacing = 'raf';
       const frameStart = performance.now();
       for (let f = 0; f < FRAMES; f++) {
-        scene.resize();
+        // A plain re-render, not resize() - resize() reassigns the canvas
+        // size and reallocates the drawing buffer, which is real GPU work
+        // that has nothing to do with steady-state frame cost and would
+        // otherwise be paid every one of these 30 iterations.
+        scene.render();
         gl?.finish();
         const pacing = await nextFrame();
         if (pacing === 'timer') framePacing = 'timer'; // sticky: one fallback taints the whole row's average

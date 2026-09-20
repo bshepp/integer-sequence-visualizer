@@ -220,6 +220,18 @@ and refuses to deploy if it appears.
 
 ## Deferred, with what it would cost
 
+- **Depth fade.** Named in *Architecture* (`optional depth fade`) and staged
+  for stage 3 alongside colour by index, but not built in this pass. It is a
+  legibility aid, not a correctness fix - depth test stays off regardless, so
+  nothing about the canonical zero or the real/null comparison depends on it -
+  and judging whether a fade actually reads as "further away" rather than just
+  "dimmer" needs a visible browser tab to look at, which this pass did not
+  have (see `docs/3d-smoke-check.md`: the checks that needed a screen were
+  driven through Chrome automation in a hidden tab). Building it blind, with
+  no way to judge the result, is worse than leaving it out. Costs one more
+  per-vertex attribute (distance from camera, or reuse `termOf`-derived depth)
+  and a shader tweak in `dev/scene.ts` - small, once someone can actually look
+  at it.
 - **Shipping publicly:** keyboard orbit, a disabled-state reason, `prefers-reduced-motion`,
   an accessible description carrying the angle, the SVG export question (a GPU
   draw has no canvas calls for `svgSurface.ts` to record), and the exploratory

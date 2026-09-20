@@ -3,12 +3,18 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { Geometry3D } from '../types';
 import { decimate } from '../pick';
-import { framingFor, type Framing } from '../frame';
+import { framingFor, frustumFor, type Framing } from '../frame';
 
 export interface Scene3D {
   setGeometry(g: Geometry3D, colors?: Uint8Array): void;
   setNullGeometry(g: Geometry3D | null, colors?: Uint8Array): void;
   resize(): void;
+  /** Re-renders the current frame without touching the canvas size or the
+   *  camera - what a benchmark loop wants between frames. `resize()` is for
+   *  an actual window resize: it reassigns the canvas size and reallocates
+   *  the drawing buffer, which is wasted work (and a real cost) when nothing
+   *  about the viewport has changed. */
+  render(): void;
   dispose(): void;
 }
 
@@ -43,13 +49,15 @@ export function createScene(canvas: HTMLCanvasElement, onPick?: (term: number) =
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = false;
 
-  let object: THREE.Line | null = null;
-  let material: THREE.LineBasicMaterial | null = null;
+  // THREE.Line for mode 'lines', THREE.Points for mode 'points' - see
+  // buildDrawable() below, which is the one place that decides between them.
+  let object: THREE.Line | THREE.Points | null = null;
+  let material: THREE.LineBasicMaterial | THREE.PointsMaterial | null = null;
   // The null-model object, tracked and disposed the same way as `object` /
   // `material` above - two objects sharing this one scene and camera, not a
   // second scene, so a single drag rotates both identically.
-  let nullObject: THREE.Line | null = null;
-  let nullMaterial: THREE.LineBasicMaterial | null = null;
+  let nullObject: THREE.Line | THREE.Points | null = null;
+  let nullMaterial: THREE.LineBasicMaterial | THREE.PointsMaterial | null = null;
   // The half-extent reframe() last computed, remembered so resize() can
   // rebuild the frustum for the new aspect ratio without moving the camera or
   // the orbit target - that would throw away the angle the viewer had chosen.
@@ -76,7 +84,11 @@ export function createScene(canvas: HTMLCanvasElement, onPick?: (term: number) =
 
   // Picking happens on click, never on pointermove/hover: a raycast against
   // tens of thousands of points is far too slow to run on every mouse move.
-  canvas.addEventListener('click', (e) => {
+  // Named (not inline) so dispose() can remove exactly this listener - the
+  // canvas outlives any one scene on the benchmark path, which builds a
+  // second scene on the same canvas, so a listener left attached here
+  // accumulates one per scene rather than being replaced.
+  function handleClick(e: MouseEvent): void {
     if (!proxy || !onPick || !proxySource || !currentTermOf) return;
     const rect = canvas.getBoundingClientRect();
     pointer.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
@@ -84,7 +96,8 @@ export function createScene(canvas: HTMLCanvasElement, onPick?: (term: number) =
     raycaster.params.Points.threshold = (camera.top - camera.bottom) / 100;
     const hit = raycaster.intersectObject(proxy, false)[0];
     if (hit?.index !== undefined) onPick(currentTermOf[proxySource[hit.index]!]!);
-  });
+  }
+  canvas.addEventListener('click', handleClick);
 
   function frame(): void {
     renderer.render(scene, camera);
@@ -100,10 +113,11 @@ export function createScene(canvas: HTMLCanvasElement, onPick?: (term: number) =
     halfExtent = framing.halfExtent;
     const [cx, cy, cz] = framing.centre;
     const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
-    camera.left = -halfExtent * aspect * 1.1;
-    camera.right = halfExtent * aspect * 1.1;
-    camera.top = halfExtent * 1.1;
-    camera.bottom = -halfExtent * 1.1;
+    const f = frustumFor(halfExtent, aspect);
+    camera.left = f.left;
+    camera.right = f.right;
+    camera.top = f.top;
+    camera.bottom = f.bottom;
     camera.updateProjectionMatrix();
     controls.target.set(cx, cy, cz);
     camera.position.set(cx, cy, cz + 100);
@@ -119,6 +133,43 @@ export function createScene(canvas: HTMLCanvasElement, onPick?: (term: number) =
   function reframe(): void {
     if (!currentRealBounds) return; // nothing drawn yet
     applyFraming(framingFor(currentRealBounds, currentNullBounds, currentNullOffsetX));
+  }
+
+  // Builds the THREE object for one panel's geometry, honouring `g.mode`:
+  // `THREE.Points` for `'points'`, `THREE.Line` for `'lines'` (the only mode
+  // any current view produces - `'points'` is for the spectral test the spec
+  // defers, see types.ts). Shared between setGeometry and setNullGeometry so
+  // the mode dispatch and material setup exist in exactly one place.
+  function buildDrawable(
+    g: Geometry3D,
+    colors: Uint8Array | undefined,
+    plainColor: number,
+  ): { object: THREE.Line | THREE.Points; material: THREE.LineBasicMaterial | THREE.PointsMaterial } {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(g.positions, 3));
+    if (colors) {
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3, true));
+    }
+    if (g.mode === 'points') {
+      const pointsMaterial = new THREE.PointsMaterial({
+        vertexColors: Boolean(colors),
+        color: colors ? 0xffffff : plainColor,
+        size: 3,
+        sizeAttenuation: false,
+        depthTest: false,
+        transparent: true,
+        opacity: 0.9,
+      });
+      return { object: new THREE.Points(geometry, pointsMaterial), material: pointsMaterial };
+    }
+    const lineMaterial = new THREE.LineBasicMaterial({
+      vertexColors: Boolean(colors),
+      color: colors ? 0xffffff : plainColor,
+      depthTest: false,
+      transparent: true,
+      opacity: 0.9,
+    });
+    return { object: new THREE.Line(geometry, lineMaterial), material: lineMaterial };
   }
 
   return {
@@ -139,19 +190,9 @@ export function createScene(canvas: HTMLCanvasElement, onPick?: (term: number) =
         proxy = null;
         proxyMaterial = null;
       }
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.BufferAttribute(g.positions, 3));
-      if (colors) {
-        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3, true));
-      }
-      material = new THREE.LineBasicMaterial({
-        vertexColors: Boolean(colors),
-        color: colors ? 0xffffff : 0x7fd4ff,
-        depthTest: false,
-        transparent: true,
-        opacity: 0.9,
-      });
-      object = new THREE.Line(geometry, material);
+      const built = buildDrawable(g, colors, 0x7fd4ff);
+      object = built.object;
+      material = built.material;
       // Index order is back-to-front because z is monotonic in index.
       object.renderOrder = 0;
       scene.add(object);
@@ -188,19 +229,9 @@ export function createScene(canvas: HTMLCanvasElement, onPick?: (term: number) =
         frame();
         return;
       }
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.BufferAttribute(g.positions, 3));
-      if (colors) {
-        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3, true));
-      }
-      nullMaterial = new THREE.LineBasicMaterial({
-        vertexColors: Boolean(colors),
-        color: colors ? 0xffffff : 0xff9f7f,
-        depthTest: false,
-        transparent: true,
-        opacity: 0.9,
-      });
-      nullObject = new THREE.Line(geometry, nullMaterial);
+      const builtNull = buildDrawable(g, colors, 0xff9f7f);
+      nullObject = builtNull.object;
+      nullMaterial = builtNull.material;
       // Offset along x by the null geometry's own width (1.2x, with a floor
       // for a degenerate zero-width bounds) rather than moved in view space -
       // this is the same scene and camera as `object`, so one drag rotates
@@ -220,21 +251,46 @@ export function createScene(canvas: HTMLCanvasElement, onPick?: (term: number) =
     resize() {
       renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
       const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
-      camera.left = -halfExtent * aspect * 1.1;
-      camera.right = halfExtent * aspect * 1.1;
-      camera.top = halfExtent * 1.1;
-      camera.bottom = -halfExtent * 1.1;
+      const f = frustumFor(halfExtent, aspect);
+      camera.left = f.left;
+      camera.right = f.right;
+      camera.top = f.top;
+      camera.bottom = f.bottom;
       camera.updateProjectionMatrix();
       frame();
     },
+    // Plain re-render: no canvas-size reassignment, no buffer reallocation,
+    // no frustum recompute. `resize()` does all of that and is for an actual
+    // window resize; a benchmark's per-frame loop wants only this.
+    render() {
+      frame();
+    },
     dispose() {
+      canvas.removeEventListener('click', handleClick);
       controls.dispose();
-      object?.geometry.dispose();
-      material?.dispose();
-      nullObject?.geometry.dispose();
-      nullMaterial?.dispose();
-      proxy?.geometry.dispose();
-      proxyMaterial?.dispose();
+      if (object) {
+        scene.remove(object);
+        object.geometry.dispose();
+        material?.dispose();
+      }
+      if (nullObject) {
+        scene.remove(nullObject);
+        nullObject.geometry.dispose();
+        nullMaterial?.dispose();
+      }
+      if (proxy) {
+        scene.remove(proxy);
+        proxy.geometry.dispose();
+        proxyMaterial?.dispose();
+      }
+      object = null;
+      material = null;
+      nullObject = null;
+      nullMaterial = null;
+      proxy = null;
+      proxyMaterial = null;
+      proxySource = null;
+      currentTermOf = null;
       renderer.dispose();
     },
   };

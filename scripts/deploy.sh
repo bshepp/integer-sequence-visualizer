@@ -37,7 +37,13 @@ echo "==> syncing dist/ to s3://$BUCKET/"
 # will request the worker chunk that just vanished, which surfaces as an
 # ensemble that never finishes rather than a clean error. Stale hashed assets
 # cost almost nothing; prune them deliberately, not on every deploy.
-if grep -rq "OrbitControls" dist/; then
+# OrbitControls alone only catches three.js's own controls module; a dev
+# file that imported three's core (a BufferGeometry, a Line, a raw material)
+# without ever touching OrbitControls would leave that string out of the
+# bundle entirely and slip past this check. Every THREE.* reference three
+# itself emits - class names in its own error/warning strings, at minimum -
+# so matching that too catches the core library, not just the controls add-on.
+if grep -rlE "OrbitControls|THREE\." dist/ > /dev/null; then
   echo "refusing to deploy: three.js reached dist/ (the 3D tool is dev-only)" >&2
   exit 1
 fi

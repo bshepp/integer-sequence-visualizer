@@ -1,7 +1,13 @@
 // tests/viz3d/rebuild.test.ts
 import { describe, it, expect } from 'vitest';
 import { registerAll } from '../../src/viz/all';
-import { createRebuilder, type SequenceLoader, type BFileLoader, type LoadReport } from '../../src/viz3d/dev/route';
+import {
+  createRebuilder,
+  type SequenceLoader,
+  type BFileLoader,
+  type LoadReport,
+  type OverBudgetInfo,
+} from '../../src/viz3d/dev/route';
 import type { ControlState } from '../../src/viz3d/dev/controls';
 import type { Sequence } from '../../src/sequence/sequence';
 import type { Geometry3D } from '../../src/viz3d/types';
@@ -175,5 +181,152 @@ describe('createRebuilder', () => {
 
     expect(calls).toHaveLength(1);
     expect(calls[0]!.positions).toHaveLength((70 + 1) * 3);
+  });
+
+  it('drops a superseded rebuild\'s b-file REJECTION, not just its resolution', async () => {
+    // Same ordering as the test above, but the superseded (first) request's
+    // b-file fetch REJECTS instead of resolving. Before the fix, the catch
+    // branch had no staleness check, so it ran onLoadReport/onSequence/
+    // setGeometry unconditionally with A_FIRST's stale data - clobbering
+    // whatever A_SECOND had already drawn.
+    const firstBfile = deferred<BFileResult>();
+    const secondBfile = deferred<BFileResult>();
+    const bfileCalls: string[] = [];
+    const loader: SequenceLoader = () => Promise.resolve(sequenceOf(3));
+    const bfileLoader: BFileLoader = (aNumber) => {
+      bfileCalls.push(aNumber);
+      return aNumber === 'A_FIRST' ? firstBfile.promise : secondBfile.promise;
+    };
+
+    const calls: Geometry3D[] = [];
+    const scene = {
+      setGeometry: (g: Geometry3D) => { calls.push(g); },
+      setNullGeometry: () => {},
+    };
+    const reports: LoadReport[] = [];
+    const rebuild = createRebuilder(scene, loader, undefined, undefined, (r) => reports.push(r), bfileLoader);
+
+    const firstState: ControlState = { ...baseState, terms: 50 };
+    const firstDone = rebuild(firstState);
+    await until(() => bfileCalls.includes('A_FIRST'));
+
+    const secondState: ControlState = { ...baseState, aNumber: 'A_SECOND', terms: 70 };
+    const secondDone = rebuild(secondState);
+    await until(() => bfileCalls.includes('A_SECOND'));
+
+    // The superseding (second) request succeeds first and draws.
+    secondBfile.resolve({ terms: bfileTermsOf(70), truncated: false });
+    await secondDone;
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.positions).toHaveLength((70 + 1) * 3);
+    expect(reports).toHaveLength(1);
+
+    // Then the superseded (first) request's b-file fetch rejects, after the
+    // fact. Nothing from it may reach the scene or the reader.
+    firstBfile.reject(new Error('B-file request failed (HTTP 500).'));
+    await firstDone;
+
+    expect(calls).toHaveLength(1); // still only the second request's geometry
+    expect(reports).toHaveLength(1); // no stale report from the first request
+  });
+
+  it('reports a load failure (e.g. a typo\'d A-number) instead of an unhandled rejection', async () => {
+    const loader: SequenceLoader = () => Promise.reject(new Error('"A1x" is not an OEIS A-number.'));
+    const calls: Geometry3D[] = [];
+    const scene = {
+      setGeometry: (g: Geometry3D) => { calls.push(g); },
+      setNullGeometry: () => {},
+    };
+    const errors: string[] = [];
+    const rebuild = createRebuilder(scene, loader, undefined, undefined, undefined, undefined, (m) => errors.push(m));
+
+    // If createRebuilder ever stops catching this, `void rebuild(...)`'s
+    // caller (route.ts) would produce an unhandled rejection - awaiting it
+    // directly here is what would surface that as a failed test instead.
+    await rebuild(baseState);
+
+    expect(errors).toEqual(['"A1x" is not an OEIS A-number.']);
+    expect(calls).toHaveLength(0); // the last object on screen is left alone
+  });
+
+  it('stays silent when a SUPERSEDED request\'s load fails', async () => {
+    const first = deferred<Sequence>();
+    const loader: SequenceLoader = (aNumber) => (aNumber === 'A_FIRST' ? first.promise : Promise.resolve(sequenceOf(3)));
+    const calls: Geometry3D[] = [];
+    const scene = {
+      setGeometry: (g: Geometry3D) => { calls.push(g); },
+      setNullGeometry: () => {},
+    };
+    const errors: string[] = [];
+    const rebuild = createRebuilder(scene, loader, undefined, undefined, undefined, undefined, (m) => errors.push(m));
+
+    const firstDone = rebuild(baseState); // A_FIRST, still pending
+    const secondState: ControlState = { ...baseState, aNumber: 'A_SECOND' };
+    const secondDone = rebuild(secondState); // supersedes it immediately
+    await secondDone;
+
+    first.reject(new Error('boom'));
+    await firstDone;
+
+    expect(errors).toHaveLength(0); // the superseded failure says nothing
+    expect(calls).toHaveLength(1); // the second request drew normally
+  });
+
+  it('counts BOTH objects toward the ceiling when the null model is on, and gates the build', async () => {
+    // 600,000 terms is 600,001 vertices for one turtle object - under the
+    // 1,000,000 ceiling alone, but the null model doubles it to 1,200,002,
+    // which is over. This is the case the doubling fix exists for: without
+    // it, this exact request would sail through ungated.
+    const loader: SequenceLoader = () => Promise.resolve(sequenceOf(600_000));
+    const calls: Geometry3D[] = [];
+    const scene = {
+      setGeometry: (g: Geometry3D) => { calls.push(g); },
+      setNullGeometry: () => {},
+    };
+    const overBudgetCalls: OverBudgetInfo[] = [];
+    const rebuild = createRebuilder(scene, loader, undefined, (info) => { overBudgetCalls.push(info); });
+
+    const state: ControlState = { ...baseState, terms: 600_000, nullOn: true };
+    await rebuild(state);
+
+    expect(calls).toHaveLength(0); // gated before geometryFor ever ran
+    expect(overBudgetCalls).toHaveLength(1);
+    expect(overBudgetCalls[0]!.vertices).toBe(2 * 600_001);
+  });
+
+  it('does not gate the same term count with the null model off', async () => {
+    const loader: SequenceLoader = () => Promise.resolve(sequenceOf(600_000));
+    const calls: Geometry3D[] = [];
+    const scene = {
+      setGeometry: (g: Geometry3D) => { calls.push(g); },
+      setNullGeometry: () => {},
+    };
+    const overBudgetCalls: OverBudgetInfo[] = [];
+    const rebuild = createRebuilder(scene, loader, undefined, (info) => { overBudgetCalls.push(info); });
+
+    const state: ControlState = { ...baseState, terms: 600_000, nullOn: false };
+    await rebuild(state);
+
+    expect(overBudgetCalls).toHaveLength(0);
+    expect(calls).toHaveLength(1);
+  });
+
+  it('builds anyway when the offered confirm callback is invoked', async () => {
+    const loader: SequenceLoader = () => Promise.resolve(sequenceOf(600_000));
+    const calls: Geometry3D[] = [];
+    const scene = {
+      setGeometry: (g: Geometry3D) => { calls.push(g); },
+      setNullGeometry: () => {},
+    };
+    let buildAnyway: (() => void) | undefined;
+    const rebuild = createRebuilder(scene, loader, undefined, (_info, confirm) => { buildAnyway = confirm; });
+
+    const state: ControlState = { ...baseState, terms: 600_000, nullOn: true };
+    await rebuild(state);
+    expect(calls).toHaveLength(0);
+
+    buildAnyway!();
+    await until(() => calls.length > 0);
+    expect(calls).toHaveLength(1);
   });
 });

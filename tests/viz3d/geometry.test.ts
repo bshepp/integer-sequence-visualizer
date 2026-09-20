@@ -16,7 +16,12 @@ describe('geometryFor', () => {
     const g = geometryFor('turtle', seq, { angle: 90, k: 4 }, flat)!;
     const path = turtlePath(seq, 90, 4);
     expect(g.positions).toHaveLength(path.length * 3);
-    path.forEach((p, i) => expect(g.positions[i * 3]).toBe(Math.fround(p.x)));
+    // xy, vertex for vertex - the canonical zero (spec: "Testing"), not just
+    // one coordinate standing in for both.
+    path.forEach((p, i) => {
+      expect(g.positions[i * 3]).toBe(Math.fround(p.x));
+      expect(g.positions[i * 3 + 1]).toBe(Math.fround(p.y));
+    });
     // Verify term mapping: first vertex belongs to term 0, last to final term
     expect(g.termOf[0]).toBe(0);
     expect(g.termOf[g.termOf.length - 1]).toBe(seq.length - 1);
@@ -33,7 +38,11 @@ describe('geometryFor', () => {
     const path = polyarcPath(seq, { ...opts, segments });
     const g = geometryFor('polyarc', seq, params, flat)!;
     expect(g.positions).toHaveLength(path.length * 3);
-    path.forEach((p, i) => expect(g.positions[i * 3 + 1]).toBe(Math.fround(p.y)));
+    // xy, vertex for vertex - both coordinates, not just y.
+    path.forEach((p, i) => {
+      expect(g.positions[i * 3]).toBe(Math.fround(p.x));
+      expect(g.positions[i * 3 + 1]).toBe(Math.fround(p.y));
+    });
     // Verify term mapping: first vertex belongs to term 0, last to final term
     expect(g.termOf[0]).toBe(0);
     expect(g.termOf[g.termOf.length - 1]).toBe(seq.length - 1);
@@ -51,6 +60,12 @@ describe('geometryFor', () => {
     const g = geometryFor('digitwalk', seq, { base: 10 }, flat)!;
     const path = digitWalkPath(seq, 10);
     expect(g.positions).toHaveLength(path.length * 3);
+    // xy, vertex for vertex - the digit walk was the one view this test left
+    // unpinned entirely; only its length and term mapping were checked.
+    path.forEach((p, i) => {
+      expect(g.positions[i * 3]).toBe(Math.fround(p.x));
+      expect(g.positions[i * 3 + 1]).toBe(Math.fround(p.y));
+    });
     // One vertex per digit after the origin, so the last vertex belongs to the
     // last term, and term indices never decrease along the walk.
     expect(g.termOf[g.termOf.length - 1]).toBe(seq.length - 1);

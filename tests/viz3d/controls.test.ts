@@ -37,6 +37,15 @@ describe('buildControls', () => {
     expect(onChange).toHaveBeenCalledWith({ ...initial, step: 0 });
   });
 
+  it('clamps the term count to the input\'s own max, matching the low-end clamp', () => {
+    const onChange = vi.fn();
+    const el = buildControls(initial, onChange);
+    const termsInput = el.querySelector<HTMLInputElement>('input.terms')!;
+    termsInput.value = '5000000'; // a typo away from a frozen tab - see finding 7
+    termsInput.dispatchEvent(new Event('change'));
+    expect(onChange).toHaveBeenCalledWith({ ...initial, terms: 100000 });
+  });
+
   it('reports the null-model toggle', () => {
     const onChange = vi.fn();
     const el = buildControls(initial, onChange);

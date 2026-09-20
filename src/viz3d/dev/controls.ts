@@ -48,7 +48,7 @@ export function buildControls(initial: ControlState, onChange: (s: ControlState)
   terms.min = '2';
   terms.max = '100000';
   terms.value = String(state.terms);
-  terms.addEventListener('change', () => emit({ terms: Math.max(2, Number(terms.value) || 2) }));
+  terms.addEventListener('change', () => emit({ terms: Math.min(100000, Math.max(2, Number(terms.value) || 2)) }));
 
   const step = document.createElement('input');
   step.className = 'step';

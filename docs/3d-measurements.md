@@ -13,8 +13,16 @@ vs_5_0 ps_5_0, D3D11)`
 
 ## What was measured
 
-Geometry build (JS) plus GPU upload (`setGeometry` followed by `gl.finish()`),
-against vertex count:
+Geometry build (JS) plus everything `setGeometry` does before the next frame
+is drawn, bracketed by `gl.finish()` so the timing waits for the GPU rather
+than for the JS call that only queued work for it. "GPU upload" undersells
+what that call does: it uploads the real object's own position/colour
+buffers, but it also decimates a picking proxy (`decimate` in
+`src/viz3d/pick.ts`, capped at 20,000 vertices - see `MAX_PICK_VERTICES` in
+`src/viz3d/dev/scene.ts`) and uploads that proxy's buffer separately,
+recomputes the camera framing from the new bounds (`reframe`/`framingFor`),
+and renders one frame. All of that runs inside the `setGeometry` call this
+table times, against vertex count:
 
 | vertices | build ms | upload ms | total ms |
 |---|---|---|---|
