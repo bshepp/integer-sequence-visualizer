@@ -9,6 +9,7 @@ import { colorsFor } from '../colors';
 import { createScene, type Scene3D } from './scene';
 import { buildControls, type ControlState } from './controls';
 import { surrogateView } from './panels';
+import { runBench, gpuName } from './bench';
 
 /** `lookupById`'s own shape, isolated so a test can substitute a fake loader with controllable timing. */
 export type SequenceLoader = (aNumber: string) => Promise<Sequence>;
@@ -89,6 +90,20 @@ export async function mount3dRoute(root: HTMLElement): Promise<void> {
     root.replaceChildren(p);
     return;
   }
+
+  // Benchmark mode: measure frame time against vertex count on this GPU and
+  // print the results, rather than mounting the normal controls. The guard's
+  // scene above was only created to prove WebGL works, so it's disposed here
+  // rather than left running alongside runBench's own scene on the same
+  // canvas.
+  if (new URLSearchParams(location.search).has('bench')) {
+    scene.dispose();
+    const rows = await runBench(canvas);
+    console.table(rows);
+    console.log('GPU:', gpuName(canvas));
+    return;
+  }
+
   scene.resize();
   window.addEventListener('resize', () => scene.resize());
 
