@@ -18,6 +18,25 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
+/** The body of every `if (import.meta.env.DEV …) { … }` block, brace-matched. */
+function devGuardedBlocks(source: string): string[] {
+  const blocks: string[] = [];
+  const marker = /if \(import\.meta\.env\.DEV/g;
+  for (let m = marker.exec(source); m; m = marker.exec(source)) {
+    const open = source.indexOf('{', m.index);
+    if (open < 0) continue;
+    let depth = 0;
+    for (let i = open; i < source.length; i++) {
+      if (source[i] === '{') depth++;
+      else if (source[i] === '}') {
+        depth--;
+        if (depth === 0) { blocks.push(source.slice(open + 1, i)); break; }
+      }
+    }
+  }
+  return blocks;
+}
+
 describe('the 3D tool stays out of the shipped bundle', () => {
   it('only files under src/viz3d/dev/ import three', () => {
     for (const file of sourceFiles(join(root, 'src'))) {
@@ -32,9 +51,19 @@ describe('the 3D tool stays out of the shipped bundle', () => {
     const line = main.split('\n').find((l) => l.includes('viz3d/dev/route'));
     expect(line, 'main.ts does not reference the 3D route').toBeTruthy();
     expect(line!).toMatch(/import\(/);
-    // Not just "a DEV guard appears somewhere earlier in the file" (the
-    // pre-existing ?ogcard block already satisfies that) - the dynamic
-    // import must sit inside its own `if (import.meta.env.DEV ...) { ... }`.
-    expect(main).toMatch(/if \(import\.meta\.env\.DEV[\s\S]{0,200}?\{[\s\S]{0,400}?import\('\.\/viz3d\/dev\/route'\)/);
+
+    // A wildcard scan can cross a preceding guard's closing brace and still
+    // "find" the marker text further down, unguarded - so this is a
+    // structural, brace-matched check rather than a regex with a distance
+    // cap. It also requires the reference to be unique, so a second,
+    // unguarded copy elsewhere in the file can't slip past the first check.
+    const blocks = devGuardedBlocks(main);
+    expect(blocks.some((b) => b.includes("import('./viz3d/dev/route')"))).toBe(true);
+    expect(main.split('viz3d/dev/route').length - 1).toBe(1);
+  });
+
+  it('the guard check itself trips when the import escapes its block', () => {
+    const escaped = "if (import.meta.env.DEV && a) { void import('./ui/ogCard'); }\nvoid import('./viz3d/dev/route');\n";
+    expect(devGuardedBlocks(escaped).some((b) => b.includes('viz3d/dev/route'))).toBe(false);
   });
 });
