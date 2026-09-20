@@ -69,8 +69,11 @@ produced.
 
 To measure steady-state frame rate (not attempted in this pass):
 
-1. Run `npm run dev`.
-2. Open `http://localhost:5173/?3d&bench` in an actual, focused, visible
+1. Run `npx vite --port 5179 --strictPort`. (`npm run dev` defaults to port
+   5173, which on this machine is already held by another project;
+   `--strictPort` fails loudly instead of silently landing on a different
+   port.)
+2. Open `http://localhost:5179/?3d&bench` in an actual, focused, visible
    browser tab or window - not a headless run, not a background tab, and not
    an automated tab driven by a tool that never brings it into the
    foreground. `document.hidden` must read `false` for the whole run.

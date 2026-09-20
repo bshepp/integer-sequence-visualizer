@@ -147,9 +147,13 @@ per `docs/3d-measurements.md`).
 
 Getting a real number needs a visible, focused tab — see
 `docs/3d-measurements.md`'s "Getting a real frame-rate number later"
-section for the exact steps (`npm run dev`, open `?3d&bench` in a tab that
-is never backgrounded, read `console.table`'s `framePacing` column before
-trusting `msPerFrame`). That has not been done as part of this smoke check;
+section for the exact steps (start the dev server, open `?3d&bench` in a
+tab that is never backgrounded, read `console.table`'s `framePacing`
+column before trusting `msPerFrame`). Use this document's Setup section
+for the actual dev-server command on this machine
+(`npx vite --port 5179 --strictPort`, `http://localhost:5179/?3d&bench`) —
+the same substitution made throughout this document, not a different port
+per document. That has not been done as part of this smoke check;
 `docs/3d-measurements.md` states build+upload cost as the measured fact and
 frame rate as unmeasured, and this document does not add a frame-rate claim
 that file doesn't make.
@@ -195,13 +199,13 @@ The over-budget warning (`overBudget` / `MEASURED_CEILING` in
 currently be triggered by hand through this route. The route draws every
 view at its default parameters, and at those defaults the polyarc view —
 the densest of the three supported views — samples 8 points per term
-(`MIN_SEGMENTS` in `src/viz/polyarc.ts`). Reaching the measured ceiling of 1,000,000 vertices at 8 points/term needs
-a 125,000-term b-file. A000045's b-file tops out at 2,001 terms (check 4
-above), nowhere close; no sequence this check has loaded has had a b-file
-anywhere near 125,000 terms either, and OEIS b-files that long are rare in
-general. So the warning path is exercised by `tests/viz3d/budget.test.ts`
-with a synthetic vertex count, but not by anything a person has actually
-loaded through `?3d`.
+(`MIN_SEGMENTS` in `src/viz/polyarc.ts`). Reaching the measured ceiling of
+1,000,000 vertices at 8 points/term needs a 125,000-term b-file. A000045's
+b-file tops out at 2,001 terms (check 4 above), nowhere close; no sequence
+this check has loaded has had a b-file anywhere near 125,000 terms either,
+and this project has not looked for one that is. So the warning path is
+exercised by `tests/viz3d/budget.test.ts` with a synthetic vertex count,
+but not by anything a person has actually loaded through `?3d`.
 
 What would change this: exposing the view's own parameters (polyarc's
 angle/modulus/offset, which `segmentsFor` uses to decide samples-per-term)
