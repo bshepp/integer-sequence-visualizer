@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { Geometry3D } from '../types';
 import { decimate } from '../pick';
+import { framingFor, type Framing } from '../frame';
 
 export interface Scene3D {
   setGeometry(g: Geometry3D, colors?: Uint8Array): void;
@@ -49,10 +50,17 @@ export function createScene(canvas: HTMLCanvasElement, onPick?: (term: number) =
   // second scene, so a single drag rotates both identically.
   let nullObject: THREE.Line | null = null;
   let nullMaterial: THREE.LineBasicMaterial | null = null;
-  // The half-extent fit() last computed, remembered so resize() can rebuild
-  // the frustum for the new aspect ratio without moving the camera or the
-  // orbit target - that would throw away the angle the viewer had chosen.
+  // The half-extent reframe() last computed, remembered so resize() can
+  // rebuild the frustum for the new aspect ratio without moving the camera or
+  // the orbit target - that would throw away the angle the viewer had chosen.
   let halfExtent = 1;
+  // The bounds and x-offset reframe() needs to recompute the union framing
+  // whenever either object changes - the real object's own bounds, and (when
+  // the null model is on) the null object's bounds plus where it actually
+  // sits in the scene.
+  let currentRealBounds: Geometry3D['bounds'] | null = null;
+  let currentNullBounds: Geometry3D['bounds'] | null = null;
+  let currentNullOffsetX = 0;
 
   // The picking proxy: an invisible, decimated THREE.Points copy of the real
   // object (see decimate() in ../pick.ts), cheap enough to raycast against on
@@ -83,21 +91,34 @@ export function createScene(canvas: HTMLCanvasElement, onPick?: (term: number) =
   }
   controls.addEventListener('change', frame);
 
-  function fit(g: Geometry3D): void {
-    const [minX, minY, minZ] = g.bounds.min;
-    const [maxX, maxY, maxZ] = g.bounds.max;
-    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, cz = (minZ + maxZ) / 2;
-    const half = Math.max(maxX - minX, maxY - minY, maxZ - minZ) / 2 || 1;
-    halfExtent = half;
+  // Applies a computed framing to the camera and orbit target. The only
+  // caller of this is reframe(), below - resize() deliberately does not call
+  // it, because a plain resize must not move the camera or the orbit target,
+  // only rebuild the frustum for the new aspect ratio from the halfExtent
+  // this last set.
+  function applyFraming(framing: Framing): void {
+    halfExtent = framing.halfExtent;
+    const [cx, cy, cz] = framing.centre;
     const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
-    camera.left = -half * aspect * 1.1;
-    camera.right = half * aspect * 1.1;
-    camera.top = half * 1.1;
-    camera.bottom = -half * 1.1;
+    camera.left = -halfExtent * aspect * 1.1;
+    camera.right = halfExtent * aspect * 1.1;
+    camera.top = halfExtent * 1.1;
+    camera.bottom = -halfExtent * 1.1;
     camera.updateProjectionMatrix();
     controls.target.set(cx, cy, cz);
     camera.position.set(cx, cy, cz + 100);
     controls.update();
+  }
+
+  // Re-runs the framing decision (see ../frame.ts) from whatever the real and
+  // null bounds currently are, and applies it. Called whenever either object
+  // changes - a new real geometry, or the null model appearing or
+  // disappearing - so the frustum always holds whatever is actually on
+  // screen: two objects when the null model is on, one when it is off or
+  // absent.
+  function reframe(): void {
+    if (!currentRealBounds) return; // nothing drawn yet
+    applyFraming(framingFor(currentRealBounds, currentNullBounds, currentNullOffsetX));
   }
 
   return {
@@ -145,7 +166,8 @@ export function createScene(canvas: HTMLCanvasElement, onPick?: (term: number) =
       proxySource = sourceIndex;
       currentTermOf = g.termOf;
 
-      fit(g);
+      currentRealBounds = g.bounds;
+      reframe();
       frame();
     },
     setNullGeometry(g, colors) {
@@ -157,6 +179,12 @@ export function createScene(canvas: HTMLCanvasElement, onPick?: (term: number) =
         nullMaterial = null;
       }
       if (!g) {
+        // The null model just turned off (or there is none): drop it from
+        // the framing too, or the camera keeps holding open space where it
+        // used to be.
+        currentNullBounds = null;
+        currentNullOffsetX = 0;
+        reframe();
         frame();
         return;
       }
@@ -173,13 +201,20 @@ export function createScene(canvas: HTMLCanvasElement, onPick?: (term: number) =
         opacity: 0.9,
       });
       nullObject = new THREE.Line(geometry, nullMaterial);
-      // Offset along x by the real object's own width (1.2x, with a floor for
-      // a degenerate zero-width bounds) rather than moved in view space -
+      // Offset along x by the null geometry's own width (1.2x, with a floor
+      // for a degenerate zero-width bounds) rather than moved in view space -
       // this is the same scene and camera as `object`, so one drag rotates
       // both identically. That shared camera is the whole point: two objects
       // under two cameras is not a comparison.
-      nullObject.position.x = (g.bounds.max[0] - g.bounds.min[0]) * 1.2 || 1;
+      const nullOffsetX = (g.bounds.max[0] - g.bounds.min[0]) * 1.2 || 1;
+      nullObject.position.x = nullOffsetX;
       scene.add(nullObject);
+      // The null object just appeared (or changed shape): re-frame so the
+      // camera actually holds both objects, rather than the real object's
+      // own solo framing with the null one sitting outside the frustum.
+      currentNullBounds = g.bounds;
+      currentNullOffsetX = nullOffsetX;
+      reframe();
       frame();
     },
     resize() {
