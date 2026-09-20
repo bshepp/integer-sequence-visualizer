@@ -1,6 +1,6 @@
 // src/viz3d/dev/route.ts
 import { registerAll } from '../../viz/all';
-import { lookupById } from '../../sequence/oeisClient';
+import { lookupById, fetchBFile, type BFileResult } from '../../sequence/oeisClient';
 import { SequenceView, type Sequence } from '../../sequence/sequence';
 import { getVisualizer } from '../../viz/registry';
 import { defaultParams } from '../../viz/types';
@@ -16,6 +16,37 @@ import { overBudget, MEASURED_CEILING } from '../budget';
 export type SequenceLoader = (aNumber: string) => Promise<Sequence>;
 
 /**
+ * `fetchBFile`'s own shape, isolated the same way `SequenceLoader` isolates
+ * `lookupById` above - so a test can substitute a fake b-file fetch with its
+ * own controllable timing, independent of the primary load's.
+ */
+export type BFileLoader = (aNumber: string, cap: number) => Promise<BFileResult>;
+
+/**
+ * What a rebuild actually drew, as distinct from what the control state
+ * asked for. `lookupById` reads the site's inline shard data, which caps
+ * every sequence at 80 terms regardless of what the term-count control
+ * says - so "requested 5,000, drew 80" has to reach the reader, not pass
+ * silently as if 5,000 had been honoured.
+ */
+export interface LoadReport {
+  /** `state.terms` for this rebuild. */
+  requested: number;
+  /** Terms actually behind the drawn geometry. */
+  loaded: number;
+  /** Whether those terms came from the inline shard data or a b-file fetch. */
+  source: 'inline' | 'bfile';
+  /**
+   * Only meaningful when `source` is `'bfile'`: false means the b-file
+   * itself ran out before `requested`, not that the cap did - the same
+   * distinction `fetchBFile` reports and `sequencePanel.ts` reads.
+   */
+  truncated?: boolean;
+  /** Set when a b-file fetch was attempted and failed; `source` is then `'inline'`. */
+  error?: string;
+}
+
+/**
  * Builds a rebuild function for one mounted scene, stamped with a
  * request-generation token: every call bumps `generation`, and a call whose
  * fetch resolves after a newer call has started is dropped rather than
@@ -25,6 +56,13 @@ export type SequenceLoader = (aNumber: string) => Promise<Sequence>;
  * or typing an A-number, then another, then back to the first - and whichever
  * fetch happens to resolve LAST wins, even when it is the stale one: the
  * screen can end up showing a sequence the controls no longer name.
+ *
+ * There are now TWO awaits in the happy path: the inline load, and - when the
+ * requested term count needs more than the inline data provides - a b-file
+ * fetch. Both are checked against `generation` after they resolve. Checking
+ * only the first would reopen exactly the bug this guard exists for: a slow
+ * b-file fetch from an old request resolving after a newer request has
+ * already drawn, and overwriting it.
  */
 export function createRebuilder(
   scene: Pick<Scene3D, 'setGeometry' | 'setNullGeometry'>,
@@ -37,13 +75,46 @@ export function createRebuilder(
   // that is about to be drawn - a warning, not a gate: the build proceeds
   // either way.
   onOverBudget?: (vertices: number) => void,
+  // Reports what was actually loaded for the winning rebuild - see LoadReport.
+  onLoadReport?: (report: LoadReport) => void,
+  // `fetchBFile`'s production default, isolated so a test can substitute a
+  // fake with controllable timing without touching the network.
+  bfileLoader: BFileLoader = fetchBFile,
 ): (state: ControlState) => Promise<void> {
   let generation = 0;
   return async function rebuild(state: ControlState): Promise<void> {
     const mine = ++generation;
     const loaded = await loader(state.aNumber);
     if (mine !== generation) return; // a newer rebuild started while this was in flight
-    const seq = new SequenceView({ ...loaded, terms: loaded.terms.slice(0, state.terms) });
+
+    // The inline data (lookupById's shard entry) caps every sequence at 80
+    // terms. Reach further the same way the engine's own b-file button does
+    // (sequencePanel.ts): fetch the b-file, capped at what was actually
+    // asked for. A fetch failure degrades to the inline terms rather than
+    // failing the draw - the dev route is a tool, not a gate.
+    let terms = loaded.terms;
+    let report: LoadReport;
+    if (state.terms > terms.length) {
+      try {
+        const bfile = await bfileLoader(state.aNumber, state.terms);
+        // Second await, second staleness check - see the doc comment above.
+        if (mine !== generation) return;
+        terms = bfile.terms;
+        report = { requested: state.terms, loaded: terms.length, source: 'bfile', truncated: bfile.truncated };
+      } catch (e) {
+        report = {
+          requested: state.terms,
+          loaded: terms.length,
+          source: 'inline',
+          error: e instanceof Error ? e.message : String(e),
+        };
+      }
+    } else {
+      report = { requested: state.terms, loaded: Math.min(state.terms, terms.length), source: 'inline' };
+    }
+    onLoadReport?.(report);
+
+    const seq = new SequenceView({ ...loaded, terms: terms.slice(0, state.terms) });
     onSequence?.(seq);
     const defaults = defaultParams(getVisualizer(state.vizId).params);
     const geometry = geometryFor(state.vizId, seq, defaults, { step: state.step });
@@ -61,6 +132,29 @@ export function createRebuilder(
       : null;
     scene.setNullGeometry(nullGeometry, nullGeometry ? colorsFor(nullGeometry, seq.length) : undefined);
   };
+}
+
+/**
+ * Turns a LoadReport into the sentence the readout shows, so "asked for
+ * 5,000, got 80" is something the reader sees rather than something they
+ * have to notice on their own.
+ */
+export function describeLoad(report: LoadReport): string {
+  const requested = report.requested.toLocaleString();
+  const loaded = report.loaded.toLocaleString();
+  if (report.error) {
+    return `loaded ${loaded} terms (the b-file fetch failed: ${report.error} - showing the inline data instead).`;
+  }
+  if (report.source === 'bfile') {
+    if (!report.truncated && report.loaded < report.requested) {
+      return `loaded ${loaded} of ${requested} requested terms - the b-file itself only has ${loaded}.`;
+    }
+    return `loaded ${loaded} terms from the b-file.`;
+  }
+  if (report.loaded < report.requested) {
+    return `loaded ${loaded} of ${requested} requested terms.`;
+  }
+  return `loaded ${loaded} terms.`;
 }
 
 /**
@@ -116,11 +210,24 @@ export async function mount3dRoute(root: HTMLElement): Promise<void> {
   window.addEventListener('resize', () => scene.resize());
 
   let state: ControlState = { vizId: 'turtle', aNumber: 'A000002', terms: 500, step: 0.5, nullOn: true };
-  const rebuild = createRebuilder(scene, undefined, (seq) => { seqRef = seq; }, (vertices) => {
-    readout.textContent =
-      `${vertices.toLocaleString()} vertices is past the measured ceiling ` +
-      `(${MEASURED_CEILING.toLocaleString()}) - this may drop frames.`;
-  });
+  // What the last rebuild actually loaded, kept so an over-budget warning -
+  // which fires after the load report, for the same rebuild - can be shown
+  // alongside it instead of erasing it.
+  let loadStatus = '';
+  const rebuild = createRebuilder(
+    scene,
+    undefined,
+    (seq) => { seqRef = seq; },
+    (vertices) => {
+      readout.textContent =
+        `${loadStatus} ${vertices.toLocaleString()} vertices is past the measured ceiling ` +
+        `(${MEASURED_CEILING.toLocaleString()}) - this may drop frames.`;
+    },
+    (report) => {
+      loadStatus = describeLoad(report);
+      readout.textContent = loadStatus;
+    },
+  );
 
   root.appendChild(buildControls(state, (next) => {
     state = next;
