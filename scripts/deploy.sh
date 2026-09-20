@@ -37,6 +37,10 @@ echo "==> syncing dist/ to s3://$BUCKET/"
 # will request the worker chunk that just vanished, which surfaces as an
 # ensemble that never finishes rather than a clean error. Stale hashed assets
 # cost almost nothing; prune them deliberately, not on every deploy.
+if grep -rq "OrbitControls" dist/; then
+  echo "refusing to deploy: three.js reached dist/ (the 3D tool is dev-only)" >&2
+  exit 1
+fi
 aws s3 sync dist/ "s3://$BUCKET/" --exclude "$INDEX_KEY" --only-show-errors
 
 echo "==> uploading pre-compressed search index"
