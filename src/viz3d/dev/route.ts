@@ -10,6 +10,7 @@ import { createScene, type Scene3D } from './scene';
 import { buildControls, type ControlState } from './controls';
 import { surrogateView } from './panels';
 import { runBench, gpuName } from './bench';
+import { overBudget, MEASURED_CEILING } from '../budget';
 
 /** `lookupById`'s own shape, isolated so a test can substitute a fake loader with controllable timing. */
 export type SequenceLoader = (aNumber: string) => Promise<Sequence>;
@@ -32,6 +33,10 @@ export function createRebuilder(
   // so the route can resolve a picked term index to its value without
   // re-fetching or duplicating the generation guard below.
   onSequence?: (seq: SequenceView) => void,
+  // Reports a vertex count that is past MEASURED_CEILING, for the geometry
+  // that is about to be drawn - a warning, not a gate: the build proceeds
+  // either way.
+  onOverBudget?: (vertices: number) => void,
 ): (state: ControlState) => Promise<void> {
   let generation = 0;
   return async function rebuild(state: ControlState): Promise<void> {
@@ -42,7 +47,10 @@ export function createRebuilder(
     onSequence?.(seq);
     const defaults = defaultParams(getVisualizer(state.vizId).params);
     const geometry = geometryFor(state.vizId, seq, defaults, { step: state.step });
-    if (geometry) scene.setGeometry(geometry, colorsFor(geometry, seq.length));
+    if (geometry) {
+      if (overBudget(geometry.termOf.length)) onOverBudget?.(geometry.termOf.length);
+      scene.setGeometry(geometry, colorsFor(geometry, seq.length));
+    }
 
     // Same view, params and lift as the real object, fed the same sequence
     // scrambled by the site's own permutation null model - so the only
@@ -108,7 +116,11 @@ export async function mount3dRoute(root: HTMLElement): Promise<void> {
   window.addEventListener('resize', () => scene.resize());
 
   let state: ControlState = { vizId: 'turtle', aNumber: 'A000002', terms: 500, step: 0.5, nullOn: true };
-  const rebuild = createRebuilder(scene, undefined, (seq) => { seqRef = seq; });
+  const rebuild = createRebuilder(scene, undefined, (seq) => { seqRef = seq; }, (vertices) => {
+    readout.textContent =
+      `${vertices.toLocaleString()} vertices is past the measured ceiling ` +
+      `(${MEASURED_CEILING.toLocaleString()}) - this may drop frames.`;
+  });
 
   root.appendChild(buildControls(state, (next) => {
     state = next;
