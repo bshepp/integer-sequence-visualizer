@@ -85,9 +85,17 @@ export interface Geometry3D {
 }
 ```
 
-No colours in v1: the existing 2D views colour by index through
-`styleFromParams`, and reproducing that is a second decision better taken once
-the object is on screen. `termOf` is what a later colouring needs anyway.
+**Colour by index is wanted, and is deferred in order rather than in
+principle.** It needs no change to this interface: the 2D side already turns a
+position along the walk into a colour with `strokeColorAt(style, t)`, where `t`
+runs 0 to 1, so the renderer can build a per-vertex colour attribute from
+`termOf[i] / (terms - 1)` and the visitor's existing style settings. That is a
+change inside `dev/scene.ts` and nowhere else, and it keeps the 3D object's
+colours identical to the 2D drawing's, which matters for the canonical zero:
+top-down should match the flat picture in colour as well as in shape. Stage 1
+ships a single colour so that the first thing on screen is geometry rather than
+a palette; the attribute lands in stage 3 alongside depth fade, which is the
+other thing that changes how a vertex looks.
 
 ### `src/viz3d/lift.ts`
 
@@ -203,8 +211,9 @@ and refuses to deploy if it appears.
 1. Dev route, three.js scene, turtle walk lifted, orbit working, canonical-zero
    test green.
 2. Polyarc and digit walk through the same lift.
-3. Depth test off, back-to-front order, optional depth fade; real and surrogate
-   panels under one camera.
+3. Depth test off, back-to-front order, colour by index from the visitor's own
+   style settings, optional depth fade; real and surrogate panels under one
+   camera.
 4. Benchmark, measured ceiling, warning in the route.
 5. Write up what the object shows that the flat picture does not — then decide
    about the grid views, and separately about whether any of this ships.
