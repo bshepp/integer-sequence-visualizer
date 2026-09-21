@@ -1,0 +1,58 @@
+// @vitest-environment jsdom
+// tests/viz3d/controls.test.ts
+import { describe, it, expect, vi } from 'vitest';
+import { buildControls, type ControlState } from '../../src/viz3d/dev/controls';
+
+const initial: ControlState = { vizId: 'turtle', aNumber: 'A000002', terms: 500, step: 0.5, nullOn: true };
+
+describe('buildControls', () => {
+  it('offers exactly the views that support 3D', () => {
+    const el = buildControls(initial, () => {});
+    const options = [...el.querySelectorAll<HTMLOptionElement>('select.viz option')].map((o) => o.value);
+    expect(options.sort()).toEqual(['digitwalk', 'polyarc', 'turtle']);
+  });
+
+  it('reports a new lift step without losing the rest of the state', () => {
+    const onChange = vi.fn();
+    const el = buildControls(initial, onChange);
+    const slider = el.querySelector<HTMLInputElement>('input.step')!;
+    slider.value = '1.5';
+    slider.dispatchEvent(new Event('input'));
+    expect(onChange).toHaveBeenCalledWith({ ...initial, step: 1.5 });
+  });
+
+  it('reports a view change', () => {
+    const onChange = vi.fn();
+    const el = buildControls(initial, onChange);
+    const select = el.querySelector<HTMLSelectElement>('select.viz')!;
+    select.value = 'digitwalk';
+    select.dispatchEvent(new Event('change'));
+    expect(onChange).toHaveBeenCalledWith({ ...initial, vizId: 'digitwalk' });
+  });
+
+  it('has a flat button that returns the step to zero', () => {
+    const onChange = vi.fn();
+    const el = buildControls(initial, onChange);
+    el.querySelector<HTMLButtonElement>('button.flat')!.click();
+    expect(onChange).toHaveBeenCalledWith({ ...initial, step: 0 });
+  });
+
+  it('clamps the term count to the input\'s own max, matching the low-end clamp', () => {
+    const onChange = vi.fn();
+    const el = buildControls(initial, onChange);
+    const termsInput = el.querySelector<HTMLInputElement>('input.terms')!;
+    termsInput.value = '5000000'; // a typo away from a frozen tab - see finding 7
+    termsInput.dispatchEvent(new Event('change'));
+    expect(onChange).toHaveBeenCalledWith({ ...initial, terms: 100000 });
+  });
+
+  it('reports the null-model toggle', () => {
+    const onChange = vi.fn();
+    const el = buildControls(initial, onChange);
+    const checkbox = el.querySelector<HTMLInputElement>('input.nulltoggle')!;
+    expect(checkbox.checked).toBe(true);
+    checkbox.checked = false;
+    checkbox.dispatchEvent(new Event('change'));
+    expect(onChange).toHaveBeenCalledWith({ ...initial, nullOn: false });
+  });
+});
