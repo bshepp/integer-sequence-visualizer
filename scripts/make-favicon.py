@@ -91,4 +91,8 @@ if __name__ == '__main__':
     # Full bleed: iOS applies its own mask, so our rounded corners would show
     # as a dark halo inside Apple's smaller radius.
     render(180, 0).save('public/apple-touch-icon.png')
-    print('wrote public/favicon.svg, favicon-32.png, apple-touch-icon.png')
+    # favicon.ico for the blind /favicon.ico request older clients and some
+    # bookmark tools still make; 48/32/16 frames from the same geometry.
+    render(48, TILE_RADIUS).save('public/favicon.ico', format='ICO', sizes=[(48, 48), (32, 32), (16, 16)],
+                                 append_images=[render(32, TILE_RADIUS), render(16, TILE_RADIUS)])
+    print('wrote public/favicon.svg, favicon-32.png, apple-touch-icon.png, favicon.ico')
