@@ -7,7 +7,7 @@ import { defaultParams } from '../../viz/types';
 import { geometryFor } from '../geometry';
 import { colorsFor } from '../colors';
 import { createScene, type Scene3D } from './scene';
-import { buildControls, type ControlState } from './controls';
+import { buildControls, stateFromQuery, type ControlState } from './controls';
 import { surrogateView } from './panels';
 import { runBench, gpuName } from './bench';
 import { overBudget, estimatedVertices, MEASURED_CEILING } from '../budget';
@@ -148,7 +148,7 @@ export function createRebuilder(
 
       const seq = new SequenceView({ ...loaded, terms: terms.slice(0, state.terms) });
       onSequence?.(seq);
-      const defaults = defaultParams(getVisualizer(state.vizId).params);
+      const defaults = { ...defaultParams(getVisualizer(state.vizId).params), ...state.params };
 
       // Estimated BEFORE geometryFor runs, not after - the whole point of the
       // gate. The null model draws the same view at the same term count, so
@@ -260,7 +260,10 @@ export async function mount3dRoute(root: HTMLElement): Promise<void> {
   scene.resize();
   window.addEventListener('resize', () => scene.resize());
 
-  let state: ControlState = { vizId: 'turtle', aNumber: 'A000002', terms: 500, step: 0.5, nullOn: true };
+  let state: ControlState = stateFromQuery(
+    location.search,
+    { vizId: 'turtle', aNumber: 'A000002', terms: 500, step: 0.5, nullOn: true },
+  );
   // What the last rebuild actually loaded, kept so an over-budget warning -
   // which fires after the load report, for the same rebuild - can be shown
   // alongside it instead of erasing it.

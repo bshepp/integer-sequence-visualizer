@@ -8,6 +8,54 @@ export interface ControlState {
   step: number;
   /** Whether the null-model panel is drawn beside the real object. Defaults to true. */
   nullOn: boolean;
+  /**
+   * View parameters laid over the view's own defaults. Only the address sets
+   * these - there is no control for them - and they exist because the curve
+   * view defaults to mod 7 while NCurve's drawings are all mod 360 - 180.
+   */
+  params?: Record<string, number>;
+}
+
+/** Address keys the route reads for itself; anything else numeric is a view parameter. */
+const FRAME_KEYS = new Set(['3d', 'bench', 'viz', 'seq', 'terms', 'step', 'null']);
+
+const TERMS_MIN = 2, TERMS_MAX = 100000;
+
+/**
+ * The starting state the address asks for, over `base`.
+ *
+ *   ?3d&viz=polyarc&seq=A000217&terms=2160&angle=1&modulus=360&offset=-180
+ *
+ * Anything missing or unreadable keeps its value from `base` rather than
+ * failing, so a mistyped address still opens the tool.
+ */
+export function stateFromQuery(search: string, base: ControlState): ControlState {
+  const q = new URLSearchParams(search);
+  const state: ControlState = { ...base };
+
+  const viz = q.get('viz');
+  if (viz && (SUPPORTED_3D as readonly string[]).includes(viz)) state.vizId = viz;
+
+  const seq = q.get('seq')?.trim();
+  if (seq) state.aNumber = seq;
+
+  const terms = Number(q.get('terms') ?? NaN);
+  if (Number.isFinite(terms)) state.terms = Math.min(TERMS_MAX, Math.max(TERMS_MIN, Math.round(terms)));
+
+  const step = Number(q.get('step') ?? NaN);
+  if (Number.isFinite(step)) state.step = step;
+
+  if (q.has('null')) state.nullOn = q.get('null') !== '0';
+
+  const params: Record<string, number> = {};
+  for (const [key, value] of q) {
+    if (FRAME_KEYS.has(key) || value === '') continue;
+    const n = Number(value);
+    if (Number.isFinite(n)) params[key] = n;
+  }
+  if (Object.keys(params).length > 0) state.params = params;
+
+  return state;
 }
 
 /**
@@ -34,7 +82,9 @@ export function buildControls(initial: ControlState, onChange: (s: ControlState)
     viz.appendChild(option);
   }
   viz.value = state.vizId;
-  viz.addEventListener('change', () => emit({ vizId: viz.value }));
+  // Overrides were written for the view the address named; carrying a curve
+  // view's angle into the turtle walk would be a setting nobody chose.
+  viz.addEventListener('change', () => emit({ vizId: viz.value, params: undefined }));
 
   const aNumber = document.createElement('input');
   aNumber.className = 'anumber';
@@ -45,10 +95,10 @@ export function buildControls(initial: ControlState, onChange: (s: ControlState)
   const terms = document.createElement('input');
   terms.className = 'terms';
   terms.type = 'number';
-  terms.min = '2';
-  terms.max = '100000';
+  terms.min = String(TERMS_MIN);
+  terms.max = String(TERMS_MAX);
   terms.value = String(state.terms);
-  terms.addEventListener('change', () => emit({ terms: Math.min(100000, Math.max(2, Number(terms.value) || 2)) }));
+  terms.addEventListener('change', () => emit({ terms: Math.min(TERMS_MAX, Math.max(TERMS_MIN, Number(terms.value) || TERMS_MIN)) }));
 
   const step = document.createElement('input');
   step.className = 'step';

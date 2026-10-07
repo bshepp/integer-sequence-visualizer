@@ -329,4 +329,18 @@ describe('createRebuilder', () => {
     await until(() => calls.length > 0);
     expect(calls).toHaveLength(1);
   });
+
+  it("applies the state's parameter overrides on top of the view's defaults", async () => {
+    // The curve view's own defaults are mod 7; these figures need mod 360.
+    // Residues 1..6 are identical under both moduli, so the offset is what
+    // has to differ for this to prove the override reached the path.
+    const seen: Geometry3D[] = [];
+    const scene = { setGeometry: (g: Geometry3D) => { seen.push(g); }, setNullGeometry: () => {} };
+    const rebuild = createRebuilder(scene, async () => sequenceOf(6));
+    const state: ControlState = { vizId: 'polyarc', aNumber: 'A', terms: 6, step: 0, nullOn: false };
+    await rebuild(state);
+    await rebuild({ ...state, params: { angle: 1, modulus: 360, offset: -180 } });
+    expect(seen).toHaveLength(2);
+    expect(Array.from(seen[1]!.positions)).not.toEqual(Array.from(seen[0]!.positions));
+  });
 });

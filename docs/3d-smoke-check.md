@@ -40,6 +40,26 @@ This is the dev-only route (`src/viz3d/dev/route.ts`, mounted from
 param). It replaces the whole page with the 3D tool's own canvas and
 controls — it does not coexist with the normal engine UI in the same tab.
 
+### Starting it on a particular drawing
+
+The address can name the starting state, so a drawing can be reopened or
+passed around without setting the controls by hand:
+
+```
+http://localhost:5179/?3d&viz=polyarc&seq=A000217&terms=2160&angle=1&modulus=360&offset=-180&null=0
+```
+
+`viz`, `seq`, `terms`, `step` (the lift) and `null=0` (null model off) set
+the controls. Any other numeric key is a parameter of the view, laid over
+its defaults — which is the only way to reach NCurve's settings
+(`angle=1&modulus=360&offset=-180`), since the curve view defaults to mod 7
+and the tool has no controls for those. Changing the view in the dropdown
+drops them. Anything missing or unreadable keeps its default.
+
+Added 2026-10-06 to draw the polygonal numbers at NCurve's settings. Seen
+on screen that day: the address above drew the 2,160-term triangular
+figure from the b-file, and dragging the canvas orbited it.
+
 ## Checks verified on screen
 
 ### 1. It draws
