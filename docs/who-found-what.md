@@ -104,6 +104,30 @@ else yet.
 | **a(n) = n: real structure that distinguishes nothing** | A screenshot Brian added on 6 August | Claude read it as the fingerprint of a roughly linear sequence and built the example. Whether the screenshot was exactly that is not recorded |
 | **The parameter sweep** | Claude proposed it on 5 August, from Bill's remark that he had iterated no parameters. Brian chose to include it | Claude. Brian pressed on 31 August for Bill to be credited for what the remark actually was |
 
+## The fold counts of polygonal numbers (A400844)
+
+Added 2026-10-07, after the period this page was first written to cover.
+
+- **Eddie Lin asked the question.** On the SeqFan list, 4 October 2026: why do
+  triangular numbers show up as triangles and squares as squares, and is that
+  down to how Claude encoded things?
+- **Brian drew them and did not accept the first answer.** He rendered the
+  polygonal sequences, worked out from the colours that a drawing in one or
+  two colours is a figure being retraced, and when Claude called the match
+  between a polygon's name and its fold count a coincidence he said he was
+  sceptical, pointing at eight groups inside the four-fold octagonal figure.
+  He was right to be.
+- **Claude measured and proved.** The residue periods, the turn per period,
+  the table of fold counts, the closed form gcd(m, K) with K of period 12, and
+  the [proof](fold-count-proof.md) are Claude's. So is the remark that the
+  octagonal sequence shifted by 90 terms keeps its even steps and turns its odd
+  steps by half a circle, which is the arithmetic behind Brian's eight groups;
+  that remark has not been checked against the drawing.
+- **A second model checked it.** Brian gave the statement to a model with no
+  context. It proved the algebra independently and caught an overclaim, below.
+- **Nobody with mathematical training has read the proof.** Brian submitted the
+  sequence to the OEIS as A400844 on that basis and says so.
+
 ## The null models
 
 - **The null-model layer** was Brian's idea (the first message, quoted above).
@@ -148,6 +172,19 @@ Collected here because most of these were stated confidently first.
 - **7.7% for a value that rounds to 7.6%**, from rounding twice.
 - **A000464's verdict**, changed from "split" to "untestable".
 - **Presenting Joshua Weinstein's rule as the project's own**, as above.
+- **Calling the triangle a coincidence.** Claude wrote that triangular numbers
+  draw a three-fold figure "only by coincidence" and that it was "a coincidence
+  of 360", and Brian quoted the first of those to the SeqFan list on 7 October
+  2026. The table in that message is correct. The framing was too strong: with
+  a full turn divided into m parts, triangular numbers give three folds at
+  every modulus divisible by 3, and squares give gcd(m, 12). What is true is
+  only that the fold count does not equal the number of sides in general.
+- **"Never closes" where only "no net turn" was proved.** A fold count of 1
+  means one repeat is a straight shift; Claude wrote that the curve therefore
+  never closes. If the shift is zero it closes at once, and under straight
+  steps the pentagonal numbers do exactly that at m = 4. Caught by the second
+  model. Under arcs no such case has been found, which is a search and not a
+  proof.
 - **Writing its own mistakes into a draft in Brian's voice.** A draft of the
   SeqFan reply said "three predictions of mine that the measurements refuted".
   The predictions were Claude's.
