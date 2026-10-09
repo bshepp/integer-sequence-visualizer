@@ -105,7 +105,9 @@ export function createRebuilder(
   // Reports a load failure - most commonly a typo'd A-number throwing out of
   // `lookupById` - for the winning rebuild only. The route wires this into
   // the readout; the last object already on screen is left alone.
-  onLoadError?: (message: string) => void,
+  // `kind` is 'view' when the sequence loaded fine and it is the view that has
+  // nothing to draw, so the route does not report it as a failed load.
+  onLoadError?: (message: string, kind?: 'load' | 'view') => void,
 ): (state: ControlState, force?: boolean) => Promise<void> {
   let generation = 0;
   const rebuild = async (state: ControlState, force = false): Promise<void> => {
@@ -160,17 +162,28 @@ export function createRebuilder(
         return;
       }
 
-      const geometry = geometryFor(state.vizId, seq, defaults, { step: state.step });
-      if (geometry) {
-        scene.setGeometry(geometry, colorsFor(geometry, seq.length));
+      const lift = { step: state.step, depth: state.depth };
+      const geometry = geometryFor(state.vizId, seq, defaults, lift);
+      if (!geometry) {
+        // The one way to get here from the controls: asking the turtle or
+        // digit walk for depth from the next digit. Say so and leave the last
+        // object on screen, as a failed load does.
+        onLoadError?.(
+          state.depth === 'digit'
+            ? `the next-digit tilt is only defined for the polyarc view, not ${state.vizId}`
+            : `${state.vizId} has no 3D form`,
+          'view',
+        );
+        return;
       }
+      scene.setGeometry(geometry, colorsFor(geometry, seq.length));
 
       // Same view, params and lift as the real object, fed the same sequence
       // scrambled by the site's own permutation null model - so the only
       // difference between the two panels is the scrambling, not the geometry
       // pipeline that draws them.
       const nullGeometry = state.nullOn
-        ? geometryFor(state.vizId, surrogateView(seq, 'permutation', 1), defaults, { step: state.step })
+        ? geometryFor(state.vizId, surrogateView(seq, 'permutation', 1), defaults, lift)
         : null;
       scene.setNullGeometry(nullGeometry, nullGeometry ? colorsFor(nullGeometry, seq.length) : undefined);
     } catch (e) {
@@ -297,10 +310,10 @@ export async function mount3dRoute(root: HTMLElement): Promise<void> {
       readout.textContent = loadStatus;
     },
     undefined,
-    (message) => {
+    (message, kind) => {
       // The spec's promise: show the message, leave the last object on
       // screen. Nothing here touches the scene.
-      readout.textContent = `couldn't load ${state.aNumber}: ${message}`;
+      readout.textContent = kind === 'view' ? message : `couldn't load ${state.aNumber}: ${message}`;
     },
   );
 

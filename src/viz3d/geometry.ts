@@ -4,6 +4,7 @@ import { turtlePath } from '../viz/turtle';
 import { polyarcPath, segmentsFor, handOf } from '../viz/polyarc';
 import { digitWalkPath, digitWalkOwners } from '../viz/digitWalk';
 import { liftPath, type LiftOptions } from './lift';
+import { polyarc3dGeometry } from './polyarc3d';
 import type { Geometry3D } from './types';
 
 /** The views whose drawing is a cumulative path, so an index-lift means something. */
@@ -24,6 +25,11 @@ export function geometryFor(
   params: Params,
   lift: LiftOptions,
 ): Geometry3D | null {
+  // The digit walk is defined for the curve view only: it needs a modulus to
+  // read a second digit against, and an arc to tilt. Null, not a silent
+  // fallback to the index lift, so the tool says it has nothing to draw.
+  if (lift.depth === 'digit' && vizId !== 'polyarc') return null;
+
   if (vizId === 'turtle') {
     const path = turtlePath(seq, Number(params.angle), Number(params.k));
     return liftPath(path, (i) => Math.max(0, i - 1), lift);
@@ -37,6 +43,7 @@ export function geometryFor(
       hand: handOf(params),
     };
     const segments = segmentsFor(seq, opts);
+    if (lift.depth === 'digit') return polyarc3dGeometry(seq, { ...opts, segments });
     const path = polyarcPath(seq, { ...opts, segments });
     return liftPath(path, (i) => Math.min(seq.length - 1, Math.max(0, Math.floor((i - 1) / segments))), lift);
   }

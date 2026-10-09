@@ -14,10 +14,16 @@ export interface ControlState {
    * view defaults to mod 7 while NCurve's drawings are all mod 360 - 180.
    */
   params?: Record<string, number>;
+  /**
+   * Where the third dimension comes from: height by position in the sequence
+   * (the default, and what an absent value means), or tilt from the term's
+   * next base-b digit. The second is defined for the curve view only.
+   */
+  depth?: 'position' | 'digit';
 }
 
 /** Address keys the route reads for itself; anything else numeric is a view parameter. */
-const FRAME_KEYS = new Set(['3d', 'bench', 'viz', 'seq', 'terms', 'step', 'null']);
+const FRAME_KEYS = new Set(['3d', 'bench', 'viz', 'seq', 'terms', 'step', 'null', 'depth']);
 
 const TERMS_MIN = 2, TERMS_MAX = 100000;
 
@@ -46,6 +52,8 @@ export function stateFromQuery(search: string, base: ControlState): ControlState
   if (Number.isFinite(step)) state.step = step;
 
   if (q.has('null')) state.nullOn = q.get('null') !== '0';
+
+  if (q.get('depth') === 'digit') state.depth = 'digit';
 
   const params: Record<string, number> = {};
   for (const [key, value] of q) {
@@ -109,6 +117,18 @@ export function buildControls(initial: ControlState, onChange: (s: ControlState)
   step.value = String(state.step);
   step.addEventListener('input', () => emit({ step: Number(step.value) }));
 
+  // Height by position, or tilt from the digit the flat rule throws away.
+  const depth = document.createElement('select');
+  depth.className = 'depth';
+  for (const [value, label] of [['position', 'height: position'], ['digit', 'tilt: next digit']] as const) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+    depth.appendChild(option);
+  }
+  depth.value = state.depth ?? 'position';
+  depth.addEventListener('change', () => emit({ depth: depth.value === 'digit' ? 'digit' : 'position' }));
+
   const flat = document.createElement('button');
   flat.className = 'flat';
   flat.type = 'button';
@@ -126,6 +146,6 @@ export function buildControls(initial: ControlState, onChange: (s: ControlState)
   nullToggle.addEventListener('change', () => emit({ nullOn: nullToggle.checked }));
   nullToggleLabel.append(nullToggle, document.createTextNode('null'));
 
-  el.append(viz, aNumber, terms, step, flat, nullToggleLabel);
+  el.append(viz, aNumber, terms, depth, step, flat, nullToggleLabel);
   return el;
 }

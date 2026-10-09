@@ -56,6 +56,16 @@ its defaults — which is the only way to reach NCurve's settings
 and the tool has no controls for those. Changing the view in the dropdown
 drops them. Anything missing or unreadable keeps its default.
 
+`depth=digit` takes the third dimension from the sequence instead of from
+position in it: the term is read in base `modulus`, the last digit sets the
+sideways turn exactly as in the flat drawing, and the next digit sets an
+up-or-down tilt over the same step (`src/viz3d/polyarc3d.ts`). It is the
+"tilt: next digit" choice in the dropdown beside the term count, it is
+defined for the curve view only, and the lift slider does nothing while it
+is on. Added 2026-10-09. Seen on screen that day: the squares at NCurve's
+settings, 2,160 terms, as a string of knots beside a shapeless shuffled
+null. Orbiting and the other sequences were not tried.
+
 Added 2026-10-06 to draw the polygonal numbers at NCurve's settings. Seen
 on screen that day: the address above drew the 2,160-term triangular
 figure from the b-file, and dragging the canvas orbited it.

@@ -343,4 +343,35 @@ describe('createRebuilder', () => {
     expect(seen).toHaveLength(2);
     expect(Array.from(seen[1]!.positions)).not.toEqual(Array.from(seen[0]!.positions));
   });
+
+  it("passes the depth source through, to the real object and the null alike", async () => {
+    const real: Geometry3D[] = []; const nulls: (Geometry3D | null)[] = [];
+    const scene = {
+      setGeometry: (g: Geometry3D) => { real.push(g); },
+      setNullGeometry: (g: Geometry3D | null) => { nulls.push(g); },
+    };
+    const big = (): Sequence => ({ terms: Array.from({ length: 40 }, (_, i) => BigInt(i * i * 97)), name: 't', offset: 0, source: 'oeis' });
+    const rebuild = createRebuilder(scene, async () => big());
+    const state: ControlState = {
+      vizId: 'polyarc', aNumber: 'A', terms: 40, step: 0, nullOn: true,
+      params: { angle: 1, modulus: 360, offset: -180 },
+    };
+    await rebuild(state);
+    await rebuild({ ...state, depth: 'digit' });
+    const zRange = (g: Geometry3D): number => g.bounds.max[2] - g.bounds.min[2];
+    expect(zRange(real[0]!)).toBe(0);            // lift 0: flat
+    expect(zRange(real[1]!)).toBeGreaterThan(1); // depth from the digits
+    expect(zRange(nulls[1]!)).toBeGreaterThan(1);
+  });
+
+  it("says so, and draws nothing new, when a view has no digit walk", async () => {
+    const seen: Geometry3D[] = []; const errors: string[] = [];
+    const scene = { setGeometry: (g: Geometry3D) => { seen.push(g); }, setNullGeometry: () => {} };
+    const rebuild = createRebuilder(scene, async () => sequenceOf(6), undefined, undefined, undefined, undefined,
+      (message) => { errors.push(message); });
+    await rebuild({ vizId: 'turtle', aNumber: 'A', terms: 6, step: 0, nullOn: false, depth: 'digit' });
+    expect(seen).toHaveLength(0);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/polyarc/);
+  });
 });

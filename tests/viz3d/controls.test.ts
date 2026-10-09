@@ -107,3 +107,26 @@ describe('buildControls with parameter overrides', () => {
     expect(onChange).toHaveBeenCalledWith({ ...withParams, vizId: 'turtle', params: undefined });
   });
 });
+
+describe('depth from the next digit', () => {
+  it('is read from the address, and anything else leaves the position lift', () => {
+    expect(stateFromQuery('?3d&viz=polyarc&depth=digit', initial).depth).toBe('digit');
+    expect(stateFromQuery('?3d&depth=sideways', initial).depth).toBeUndefined();
+    expect(stateFromQuery('?3d&depth=digit', initial).params).toBeUndefined();
+  });
+
+  it('is switched by its own control without losing the rest of the state', () => {
+    const onChange = vi.fn();
+    const el = buildControls(initial, onChange);
+    const select = el.querySelector<HTMLSelectElement>('select.depth')!;
+    expect(select.value).toBe('position');
+    select.value = 'digit';
+    select.dispatchEvent(new Event('change'));
+    expect(onChange).toHaveBeenCalledWith({ ...initial, depth: 'digit' });
+  });
+
+  it('shows the state it was opened with', () => {
+    const el = buildControls({ ...initial, depth: 'digit' }, () => {});
+    expect(el.querySelector<HTMLSelectElement>('select.depth')!.value).toBe('digit');
+  });
+});

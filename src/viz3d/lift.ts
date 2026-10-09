@@ -8,6 +8,13 @@ export interface LiftOptions {
    * what keeps z monotonic and the strand count readable.
    */
   step: number;
+  /**
+   * Where the third dimension comes from. 'position' (the default) is the
+   * index lift this file implements: height is how far along the sequence a
+   * vertex is. 'digit' takes it from the sequence itself - see polyarc3d.ts -
+   * and ignores `step`.
+   */
+  depth?: 'position' | 'digit';
 }
 
 export function liftPath(
