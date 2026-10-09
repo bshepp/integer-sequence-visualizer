@@ -10,8 +10,19 @@ brute force for every s from 2 to 79 and every modulus m from 1 to 200
 (15,600 cases, no mismatch). A second model, given only the statement,
 proved the algebraic theorem independently by the same route, checked it for
 s = 3..39 and m < 400, and caught an overclaim in the geometry, corrected
-below. **No mathematician has read it.** The computation it is checked
-against is `src/experiments/foldCount.ts`, pinned by
+below. **No mathematician has read it.**
+
+**The algebraic theorem is machine-checked.** On 2026-10-09 it was proved in
+Lean 4 with Mathlib, for every `a` and every modulus `m >= 1`, in
+[`lean/FoldCount`](../lean/FoldCount/): `theorem fold_count : addOrderOf (S a m
+hm) = Nat.gcd m (K a)`, with no `sorry`, no `native_decide`, and only Lean's
+three standard axioms. The Lean proof takes a different route from the one
+below (an explicit least period, then a finite check mod 12, with no reduction
+to prime powers). What Lean cannot check is that its statement says what is
+meant; the five definitions that carries are listed in that folder's README.
+The geometric reading in the Setup section is not formalised.
+
+The computation the prose proof was first checked against is `src/experiments/foldCount.ts`, pinned by
 `tests/experiments/foldCount.test.ts`.
 
 ## Setup

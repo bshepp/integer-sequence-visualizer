@@ -125,6 +125,11 @@ Added 2026-10-07, after the period this page was first written to cover.
   that remark has not been checked against the drawing.
 - **A second model checked it.** Brian gave the statement to a model with no
   context. It proved the algebra independently and caught an overclaim, below.
+- **Lean checked the algebra.** On 9 October 2026, at Brian's request, Claude
+  proved the theorem in Lean 4 with Mathlib ([`lean/FoldCount`](../lean/FoldCount/)),
+  for every modulus, with no gaps. Allan Wechsler had suggested on the SeqFan
+  list that day that Lean is a way to gain confidence in AI-written proofs. The
+  geometric reading of the theorem is not part of what Lean checked.
 - **Nobody with mathematical training has read the proof.** Brian submitted the
   sequence to the OEIS as A400844 on that basis and says so.
 
