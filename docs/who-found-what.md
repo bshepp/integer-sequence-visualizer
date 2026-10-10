@@ -133,6 +133,31 @@ Added 2026-10-07, after the period this page was first written to cover.
 - **Nobody with mathematical training has read the proof.** Brian submitted the
   sequence to the OEIS as A400844 on that basis and says so.
 
+## Ring or helix: the slide of a periodic 3D walk (draft)
+
+Added 2026-10-09. A draft, [`ring-or-helix.md`](ring-or-helix.md), unreviewed.
+
+- **Brian set the direction.** He asked for a third dimension taken from the
+  numbers rather than from position in the sequence, chose the next-digit rule
+  for the first film, asked why the results looked random and why the Zipper
+  looked symmetric, and then asked what rule could carry mathematical meaning.
+  When Claude reported a numerical zero he asked whether it could be proved
+  exactly, which is what produced the theorem.
+- **Claude found the zero and proved it.** Measuring the per-period motion of
+  the walk under the coprime-modulus rule, the slide was zero to rounding for
+  the triangular numbers and squares and not for the pentagonal numbers. The
+  explanation (a reflection symmetry of the turn sequence forbids a
+  handed screw), the solvability condition for polygonal numbers, and the
+  prediction that the pentagonal numbers ring at moduli 7 and 11, confirmed
+  before anything else was computed, are Claude's.
+- **Claude's first framing was wrong.** It called the ring-or-helix split "the
+  same split as the fold-count theorem" on three cases. The fourth, the
+  hexagonal numbers, closes in the plane and corkscrews in space. The two
+  conditions are different; see the draft's remarks.
+- **Nobody has reviewed it, and it is not formalised.** Brian wants the drafts
+  to appear in this repository as they are written rather than as a finished
+  result, so this one is here at its first state.
+
 ## The null models
 
 - **The null-model layer** was Brian's idea (the first message, quoted above).
@@ -193,6 +218,9 @@ Collected here because most of these were stated confidently first.
 - **Writing its own mistakes into a draft in Brian's voice.** A draft of the
   SeqFan reply said "three predictions of mine that the measurements refuted".
   The predictions were Claude's.
+- **"The same split as the fold-count theorem."** Said of the ring-or-helix
+  result on 9 October 2026 after three cases; the hexagonal numbers are a
+  counterexample. Corrected the same day in the draft and above.
 
 ## What Brian decided
 
