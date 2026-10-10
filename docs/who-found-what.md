@@ -158,6 +158,32 @@ Added 2026-10-09. A draft, [`ring-or-helix.md`](ring-or-helix.md), unreviewed.
   to appear in this repository as they are written rather than as a finished
   result, so this one is here at its first state.
 
+## The literature behind the drawings (draft)
+
+Added 2026-10-10. A draft, [`literature-and-classes.md`](literature-and-classes.md),
+from one night's search; unreviewed.
+
+- **Brian asked the question.** Rather than render the whole catalogue, he asked
+  for the current literature and for classes of sequences worth highlighting in
+  different renderings.
+- **Allouche had already pointed at the answer.** His two 1980s references in the
+  SeqFan thread (Dekking–Mendès France 1981, Deshouillers 1985) are the start of
+  the exponential-sum strand that the draft traces to Dell–Milićević 2025.
+- **Claude's contribution is the bridge and the sorting.** The observation that
+  the project's drawing of a sequence is the polygonal path of the exponential
+  sum of its partial sums (so the thread's polygonal-number figures are complete
+  rational Weyl sums one degree up, Lehmer's incomplete Gauss sums are the
+  drawing of the odd numbers, and the curlicue literature is the drawing of
+  a(n) = n at an irrational angle) is elementary and is surely known to the
+  people who write those papers; Claude did not find it stated for turtle
+  drawings of integer sequences. The seven classes, the rendering proposed for
+  each, and the check that the arc rule keeps the segment literature's pictures
+  are Claude's. Mendès France's temperature as a feature is the literature's,
+  applied here for the first time to these drawings.
+- **Nothing in 3D was found.** The search found no paper on turning walks in
+  space driven by a sequence; that is a statement about one night's search in
+  English, not about the literature.
+
 ## The null models
 
 - **The null-model layer** was Brian's idea (the first message, quoted above).
@@ -221,6 +247,12 @@ Collected here because most of these were stated confidently first.
 - **"The same split as the fold-count theorem."** Said of the ring-or-helix
   result on 9 October 2026 after three cases; the hexagonal numbers are a
   counterexample. Corrected the same day in the draft and above.
+- **The first literature contact sheet** (9 October 2026, night). Two errors at
+  once: bends were not reduced to the signed range, so an arc bending 270
+  degrees coiled backwards where the literature's turtle turns right, and the
+  renderer's default next-digit tilt was left on, so four panels were quietly
+  three-dimensional. Both found by looking at the picture; the sheet was redone
+  with the segment version beside it.
 
 ## What Brian decided
 
